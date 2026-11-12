@@ -24,6 +24,14 @@ Requirements: Node.js 22 and a model server. In production, run it behind HTTPS 
 
 Settings are environment variables — see [.env.example](.env.example). How it works — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Deploy
+
+- **Your server:** `docker compose up -d` — the app and a speech-to-text server, voice input works out of the box.
+- **Cloud:** [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/YourLast/Korvex-AI-Chat)
+  · Railway and Fly.io — a few steps in [docs/DEPLOY.md](docs/DEPLOY.md).
+- **Vercel** is not supported yet: long answers, background jobs and SQLite need a long-running server —
+  see [why, and what it would take](docs/DEPLOY.md#why-not-vercel-yet).
+
 ## Models
 
 Add models in **Admin → Models**: pick a provider — any OpenAI-compatible server, OpenAI, Anthropic, OpenRouter, Ollama or
@@ -49,7 +57,7 @@ variable with the key.
 - Voice input needs a speech-to-text server with an OpenAI-compatible `/v1/audio/transcriptions` (set `STT_URL`).
 - Previews of Office documents need a Docker image with LibreOffice; PDF, spreadsheets and text open without it.
 - Web search needs a SearXNG address (`KX_SEARX_URL`).
-- No Docker image or automatic updates yet, and no Vercel profile yet — they are next.
+- No Vercel version yet — see [docs/DEPLOY.md](docs/DEPLOY.md#why-not-vercel-yet).
 
 ## License
 

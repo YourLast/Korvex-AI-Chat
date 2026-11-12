@@ -1,0 +1,18 @@
+# Render Blueprint: one web service from the Dockerfile with a persistent disk for the database and files.
+# A persistent disk needs a paid instance type (starter or higher).
+services:
+  - type: web
+    name: korvex-ai-chat
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /login
+    envVars:
+      - key: COOKIE_SECURE
+        value: "1"
+      - key: DATA_DIR
+        value: /data
+    disk:
+      name: korvex-data
+      mountPath: /data
+      sizeGB: 5
