@@ -1,0 +1,113 @@
+
+:root {
+  color-scheme: dark;
+
+  --bg:        #000000;
+  --surface-1: #000000;
+  --surface-2: rgba(255, 255, 255, .04);
+  --surface-3: rgba(255, 255, 255, .06);
+  --surface-press: rgba(255, 255, 255, .08);
+  --surface-pop: #070707;
+
+  --line-1: rgba(255, 255, 255, .06);
+  --line-2: rgba(255, 255, 255, .10);
+  --line-3: rgba(255, 255, 255, .16);
+  --line-pop: rgba(255, 255, 255, .14);
+  --line-pop-hover: rgba(255, 255, 255, .24);
+  --line-focus: rgba(255, 255, 255, .42);
+
+  --text-strong: #ffffff;
+  --text-1:      #ededed;
+  --text-2:      #a1a1a1;
+  --text-3:      #7a7a7a;
+  --text-4:      #606060;
+
+  --accent:         #ffffff;
+  --accent-hover:   #e6e6e6;
+  --accent-active:  #cfcfcf;
+  --on-accent:      #000000;
+
+  --max-from: #dbeafe;
+  --max-via:  #93c5fd;
+  --max-to:   #60a5fa;
+  --max-gradient: linear-gradient(90deg, var(--max-from), var(--max-via), var(--max-to));
+  --effort-slate: rgba(100, 116, 139, .30);
+  --effort-glow: rgba(96, 165, 250, .6);
+  --effort-spark: #dbeafe;
+
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fw-regular: 400;
+  --fw-medium:  500;
+
+  --fs-display: 28px;  --lh-display: 36px;  --ls-display: -.03em;
+  --fs-body:    15px;  --lh-body:    24px;  --ls-body:    -.011em;
+  --fs-ui:      13px;  --lh-ui:      20px;  --ls-ui:      -.006em;
+  --fs-cap:     12px;  --lh-cap:     16px;  --ls-cap:      .004em;
+
+  --s-1: 4px;   --s-2: 8px;   --s-3: 12px;  --s-4: 16px;  --s-5: 20px;
+  --s-6: 24px;  --s-8: 32px;  --s-10: 40px; --s-12: 48px; --s-16: 64px; --s-20: 80px;
+
+  --r-1: 8px;
+  --r-2: 12px;
+  --r-3: 16px;
+  --r-4: 20px;
+  --r-5: 28px;
+  --r-full: 999px;
+  --r-mark: 3px;
+
+  --ctl-sm: 28px;  --ctl-md: 32px;  --ctl-lg: 40px;  --ctl-xl: 48px;
+  --hit: 44px;
+  --icon: 20px;  --icon-sm: 16px;
+  --icon-stroke: 1.5px;
+
+  --sidebar-w: 264px;
+  --topbar-h: 56px;
+  --col-w: 720px;
+  --col-wide: 1080px;
+  --pop-w: 400px;
+
+  --tick-pitch: 4px;
+  --tick-h: 8px;
+  --tick-h-major: 12px;
+  --tick-off: rgba(255, 255, 255, .16);
+  --tick-off-major: rgba(255, 255, 255, .28);
+  --tick-on: #ffffff;
+
+  --shadow-pop: 0 0 0 1px var(--line-pop);
+  --shadow-sheet: 0 -1px 0 var(--line-3);
+  --shadow-focus: 0 0 0 4px rgba(255, 255, 255, .06);
+  --focus-ring: 2px solid rgba(255, 255, 255, .72);
+  --focus-offset: 2px;
+  --edge-light: 0 0 0 0 transparent;
+
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease:     cubic-bezier(.2, 0, 0, 1);
+  --ease-in:  cubic-bezier(.4, 0, 1, 1);
+  --ease-out: cubic-bezier(0, 0, .2, 1);
+
+  --z-top: 10;  --z-drawer: 30;  --z-pop: 40;  --z-sheet: 50;  --z-toast: 60;
+
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --pos: #5fb08a;
+  --neg: #d9776e;
+  --warn: #c49a50;
+}
+
+@media (max-width: 760px) {
+  :root {
+    --fs-display: 26px;  --lh-display: 32px;
+    --fs-body:    16px;  --lh-body:    24px;
+    --fs-ui:      14px;  --lh-ui:      20px;
+    --fs-cap:     12px;  --lh-cap:     16px;
+    --topbar-h: 52px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; --dur-slow: 0ms; }
+}

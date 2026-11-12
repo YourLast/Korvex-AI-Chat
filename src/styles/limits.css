@@ -1,0 +1,9 @@
+.lim-week { display: flex; flex-direction: column; gap: var(--s-2); padding: var(--s-4); }
+.lim-top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
+.lim-pct { font-size: var(--fs-body); line-height: var(--lh-body); letter-spacing: var(--ls-body); color: var(--text-1); font-variant-numeric: tabular-nums; }
+.lim-bar { height: 8px; border-radius: var(--r-full); background: var(--surface-3); overflow: hidden; }
+.lim-bar i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width 600ms var(--ease-out); }
+.lim-week[data-phase='warn'] .lim-bar i, .lim-week[data-phase='over'] .lim-bar i, .lim-week[data-phase='blocked'] .lim-bar i { background: var(--warn); }
+.lim-week[data-phase='none'] .lim-bar i { background: var(--text-3); }
+.lim-sub { font-size: var(--fs-ui); line-height: var(--lh-ui); letter-spacing: var(--ls-ui); color: var(--text-3); font-variant-numeric: tabular-nums; }
+@media (prefers-reduced-motion: reduce) { .lim-bar i { transition: none; } }

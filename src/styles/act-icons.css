@@ -1,0 +1,5 @@
+.ai { overflow: visible; transition: color 240ms var(--ease), opacity 240ms var(--ease); }
+.ai[data-st="err"] { color: var(--neg); }
+.ai[data-st="warn"] { color: var(--warn); }
+.ai[data-st="off"] { opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .ai { transition: none; } }

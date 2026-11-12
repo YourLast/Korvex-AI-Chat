@@ -1,0 +1,28 @@
+
+.home-hero, .suggest { width: min(100%, calc(var(--col-w) + var(--s-12))); }
+
+.cmp > .ans-a { padding: 0 var(--s-8) 0 0; border-right: 1px solid var(--line-1); }
+.cmp > .ans-b { padding: 0 0 0 var(--s-8); }
+@media (max-width: 760px) {
+  .cmp > .ans-a, .cmp > .ans-b { padding: 0; border: 0; }
+  .cmp[data-active="a"] > .ans-a, .cmp[data-active="b"] > .ans-b { display: flex; }
+}
+
+@media (max-width: 760px) {
+  .mem { height: auto; min-height: var(--ctl-md); flex-wrap: wrap; white-space: normal; row-gap: var(--s-1); padding-top: var(--s-1); padding-bottom: var(--s-1); max-width: 100%; }
+  .mem .ruler { order: 5; margin-left: calc(var(--icon-sm) + var(--s-3)); }
+  .mem .chev { order: 4; }
+}
+
+.home { justify-content: flex-start; padding: var(--s-6) 0; }
+.home > :first-child { margin-top: auto; }
+.home > :last-child { margin-bottom: auto; }
+@media (max-width: 760px) {
+  .home { padding: var(--s-6) 0; }
+  .suggest { flex: none; }
+}
+
+.mark { --mark-img: url(/korvex-mark-small-tight.svg); width: calc(var(--mark, 24px) * .5907); height: var(--mark, 24px);
+  background: var(--text-strong); -webkit-mask: var(--mark-img) center / contain no-repeat; mask: var(--mark-img) center / contain no-repeat; }
+.auth-card .mark, .home-hero .mark, .k-solo-in > .mark, .k-auth > .mark { --mark-img: url(/korvex-mark-tight.svg); }
+.brand .mark { --mark: 2.0em; }

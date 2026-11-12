@@ -1,0 +1,11 @@
+export const OUT_PREFIX = '/out/';
+export const prepareModel = (_reason: 'open' | 'visible' | 'new-chat', _sel?: { modelId?: string; levelId?: string } | null): void => {};
+export const prepareOnReturn = (): (() => void) => () => {};
+export const ADMIN_LINKS: { title: string; sub: string; href: string; testId: string }[] = [];
+export const EXTRA_KEY = 'ext';
+export const MODEL_PREFIX = '';
+export const BRAND_WORDS = /Korvex/g;
+export const INTRO_DRAFT = { modelId: '', levelId: '' };
+export const API_MEMORY_KEY = '';
+export const FOOTER_TEXT = '© 2026 Korvex · Apache-2.0';
+export const FOOTER_LINK: { word: string; href: string } | null = { word: 'Korvex', href: 'https://korvexai.site' };

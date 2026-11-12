@@ -1,0 +1,259 @@
+{
+  "models": [
+    {
+      "id": "alpha",
+      "name": "Alpha",
+      "fullName": "Alpha 0 Preview",
+      "blurb": "Файлы и расчёты",
+      "tagline": "корпоративная",
+      "upstreamModel": "up-alpha-35b",
+      "apiNames": [
+        "up-alpha-0-preview",
+        "up-alpha-latest"
+      ],
+      "baseUrl": "http://127.0.0.1:9/v1",
+      "extract": true,
+      "extractTimeoutSec": 900,
+      "unavailableText": "Alpha временно недоступна, попробуйте чуть позже.",
+      "maxConcurrent": 5,
+      "defaultLevel": "medium",
+      "levels": [
+        {
+          "id": "off",
+          "label": "off",
+          "effort": "none",
+          "hint": "Без размышления"
+        },
+        {
+          "id": "low",
+          "label": "low",
+          "effort": "low",
+          "hint": "Быстро"
+        },
+        {
+          "id": "medium",
+          "label": "medium",
+          "effort": "medium",
+          "hint": "Обычно"
+        },
+        {
+          "id": "xhigh",
+          "label": "xhigh",
+          "effort": "xhigh",
+          "hint": "Глубоко"
+        },
+        {
+          "id": "max",
+          "label": "max",
+          "effort": "max",
+          "hint": "Максимально глубоко",
+          "userHint": "Максимально тщательно"
+        }
+      ],
+      "images": true,
+      "tools": true,
+      "contextTokens": 5767168,
+      "engineContextTokens": 49152,
+      "maxOutputTokens": 32000
+    },
+    {
+      "id": "gamma",
+      "name": "Gamma",
+      "fullName": "Gamma Korvex",
+      "blurb": "Сложные задачи и код",
+      "tagline": "альфа",
+      "provider": "anthropic",
+      "upstreamModel": "claude-sonnet-5-5",
+      "via": "ext",
+      "baseUrl": "http://127.0.0.1:9/v1",
+      "extract": true,
+      "extractTimeoutSec": 900,
+      "unavailableText": "Gamma временно недоступна, попробуйте чуть позже.",
+      "roles": [
+        "alpha",
+        "admin"
+      ],
+      "maxConcurrent": 8,
+      "defaultLevel": "medium",
+      "levels": [
+        {
+          "id": "off",
+          "label": "off",
+          "effort": "none",
+          "hint": "Без размышления"
+        },
+        {
+          "id": "low",
+          "label": "low",
+          "effort": "low",
+          "hint": "Быстро"
+        },
+        {
+          "id": "medium",
+          "label": "medium",
+          "effort": "medium",
+          "hint": "Обычно"
+        },
+        {
+          "id": "high",
+          "label": "high",
+          "effort": "high",
+          "hint": "Тщательно"
+        },
+        {
+          "id": "xhigh",
+          "label": "xhigh",
+          "effort": "xhigh",
+          "hint": "Глубоко"
+        },
+        {
+          "id": "max",
+          "label": "max",
+          "effort": "max",
+          "hint": "Максимально глубоко"
+        }
+      ],
+      "images": true,
+      "tools": true,
+      "contextTokens": 1000000,
+      "engineContextTokens": 65536,
+      "maxOutputTokens": 64000
+    },
+    {
+      "id": "delta",
+      "name": "Delta",
+      "fullName": "Delta Korvex",
+      "blurb": "Самые сложные задачи",
+      "tagline": "флагманская",
+      "provider": "anthropic",
+      "upstreamModel": "claude-opus-5-5",
+      "via": "ext",
+      "baseUrl": "http://127.0.0.1:9/v1",
+      "extract": true,
+      "extractTimeoutSec": 900,
+      "unavailableText": "Delta временно недоступна, попробуйте чуть позже.",
+      "roles": [
+        "alpha",
+        "admin"
+      ],
+      "maxConcurrent": 4,
+      "defaultLevel": "medium",
+      "levels": [
+        {
+          "id": "low",
+          "label": "low",
+          "effort": "low",
+          "hint": "Быстро"
+        },
+        {
+          "id": "medium",
+          "label": "medium",
+          "effort": "medium",
+          "hint": "Обычно"
+        },
+        {
+          "id": "high",
+          "label": "high",
+          "effort": "high",
+          "hint": "Тщательно"
+        },
+        {
+          "id": "xhigh",
+          "label": "xhigh",
+          "effort": "xhigh",
+          "hint": "Глубоко"
+        },
+        {
+          "id": "max",
+          "label": "max",
+          "effort": "max",
+          "hint": "Максимально глубоко"
+        }
+      ],
+      "images": true,
+      "tools": true,
+      "contextTokens": 1000000,
+      "engineContextTokens": 65536,
+      "maxOutputTokens": 64000
+    },
+    {
+      "id": "beta",
+      "name": "Beta",
+      "fullName": "Beta 0 4B",
+      "blurb": "Быстрые ответы",
+      "tagline": "лёгкая",
+      "upstreamModel": "up-beta-0-4b",
+      "baseUrl": "http://127.0.0.1:9/v1",
+      "extract": true,
+      "extractTimeoutSec": 900,
+      "unavailableText": "Beta временно недоступна, попробуйте Alpha.",
+      "maxConcurrent": 1,
+      "queue": "beta-mac",
+      "defaultLevel": "off",
+      "levels": [
+        {
+          "id": "off",
+          "label": "off",
+          "effort": "none",
+          "hint": "Без размышления"
+        },
+        {
+          "id": "on",
+          "label": "on",
+          "effort": "on",
+          "hint": "Размышлять"
+        }
+      ],
+      "images": true,
+      "variantName": "С ускорителем",
+      "variantHint": "Печатает быстрее",
+      "tools": false,
+      "contextTokens": 1769472,
+      "hidden": true
+    },
+    {
+      "id": "beta-plain",
+      "name": "Beta",
+      "fullName": "Beta 0 4B без ускорителя",
+      "blurb": "Быстрые ответы",
+      "tagline": "лёгкая",
+      "upstreamModel": "up-beta-0-4b-plain",
+      "baseUrl": "http://127.0.0.1:9/v1",
+      "extract": true,
+      "extractTimeoutSec": 900,
+      "unavailableText": "Beta временно недоступна, попробуйте Alpha.",
+      "maxConcurrent": 1,
+      "queue": "beta-mac",
+      "defaultLevel": "off",
+      "levels": [
+        {
+          "id": "off",
+          "label": "off",
+          "effort": "none",
+          "hint": "Без размышления"
+        },
+        {
+          "id": "on",
+          "label": "on",
+          "effort": "on",
+          "hint": "Размышлять"
+        }
+      ],
+      "images": true,
+      "variantOf": "beta",
+      "variantName": "Без ускорителя",
+      "variantHint": "Обычная скорость",
+      "tools": false,
+      "contextTokens": 1769472,
+      "hidden": true
+    }
+  ],
+  "queues": {
+    "beta-mac": {
+      "maxConcurrent": 1
+    }
+  },
+  "anthropicKeys": [
+    "test-key"
+  ]
+}

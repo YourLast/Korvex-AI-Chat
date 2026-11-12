@@ -1,0 +1,30 @@
+# docker compose up -d  →  http://localhost:3000 (the first account becomes the admin; add models in Admin → Models).
+# Voice input works out of the box: the speech-to-text server (speaches, faster-whisper) runs next to the app.
+services:
+  app:
+    image: ghcr.io/yourlast/korvex-ai-chat:latest
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      STT_URL: http://stt:8000/v1
+      STT_MODEL: Systran/faster-whisper-small
+      COOKIE_SECURE: "0"   # set to "1" behind HTTPS
+    env_file:
+      - path: .env.local
+        required: false
+    volumes:
+      - korvex-data:/data
+    depends_on:
+      - stt
+    restart: unless-stopped
+
+  stt:
+    image: ghcr.io/speaches-ai/speaches:latest-cpu
+    volumes:
+      - stt-models:/home/ubuntu/.cache/huggingface/hub
+    restart: unless-stopped
+
+volumes:
+  korvex-data:
+  stt-models:

@@ -1,0 +1,50 @@
+.mem-upd { display: inline-flex; align-items: center; gap: var(--s-2); min-height: 32px; margin: var(--s-2) 0 0 -6px; padding: 0 var(--s-2) 0 6px;
+  border-radius: var(--r-full); font-size: var(--fs-ui); line-height: var(--lh-ui); color: var(--text-3); text-decoration: none; }
+.mem-upd .i { color: var(--text-3); }
+.mem-upd:hover { background: var(--surface-2); color: var(--text-1); }
+.mem-upd:hover .i { color: var(--text-1); }
+.temp-note { display: flex; align-items: center; justify-content: center; gap: var(--s-2); padding: var(--s-1) var(--s-4);
+  font-size: var(--fs-ui); line-height: var(--lh-ui); color: var(--text-3); }
+.temp-note .i { color: var(--text-3); }
+.k-row--blocked .k-row-t { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--text-4); }
+.k-row-warn { color: var(--warn); }
+.mm-src { color: var(--text-3); }
+.temp-corner { position: absolute; top: var(--s-3); right: var(--s-4); z-index: 3; }
+.ann-wrap ~ .temp-corner { position: static; display: flex; justify-content: flex-end; padding: var(--s-2) var(--s-4) 0; }
+
+.mem-lines { display: flex; flex-direction: column; gap: 6px; margin-top: var(--s-4); }
+.mem-lines p { margin: 0; color: var(--text-2); font-size: var(--fs-ui); line-height: var(--lh-ui); letter-spacing: var(--ls-ui); }
+.mem-lines p:first-child { color: var(--text-1); }
+
+.mem-upd-row { display: flex; align-items: center; gap: var(--s-1); flex-wrap: wrap; }
+.mem-upd-row .mem-upd { margin-right: 0; }
+.mem-upd--undone { cursor: default; }
+.mem-upd--undone:hover { background: none; color: var(--text-3); }
+.mem-undo { min-height: 32px; margin-top: var(--s-2); padding: 0 var(--s-2); border: 0; border-radius: var(--r-full); background: none; font: inherit;
+  font-size: var(--fs-ui); line-height: var(--lh-ui); color: var(--text-3); text-decoration: underline; text-decoration-color: var(--line-3); text-underline-offset: 3px; cursor: pointer; }
+.mem-undo:hover { color: var(--text-1); background: var(--surface-2); }
+.mem-undo:disabled { opacity: .5; cursor: default; }
+
+.sheet.mi-sheet { height: 80%; }
+.sheet.mi-sheet .pop-body.mi-body, .mi-dlg .mi-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0; -webkit-mask-image: none; mask-image: none; overflow: hidden; }
+.mi-dlg { height: min(680px, 86vh); width: min(640px, calc(100vw - 32px)); max-width: none; }
+.mi-list { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.mi-feed { display: flex; flex-direction: column; gap: var(--s-5); padding: var(--s-3) var(--s-5) var(--s-5); }
+.mi-a { min-width: 0; }
+.mi-u { display: flex; flex-direction: column; align-items: flex-end; }
+.mi-u .mem-upd-row { justify-content: flex-end; }
+.mi-u .mem-upd { margin-left: 0; }
+.mi-note { margin: 0; color: var(--text-3); font-size: var(--fs-ui); line-height: var(--lh-ui); }
+.mi-note--err { color: var(--warn); }
+.mi-restart { display: flex; justify-content: center; padding-top: var(--s-2); }
+.mi-restart-btn { display: inline-flex; align-items: center; gap: var(--s-1); min-height: 32px; padding: 0 var(--s-3); border: 0; border-radius: var(--r-full); background: none;
+  font: inherit; font-size: var(--fs-ui); line-height: var(--lh-ui); color: var(--text-3); cursor: pointer; }
+.mi-restart-btn:hover { color: var(--text-1); background: var(--surface-2); }
+.mi-restart-btn:disabled { opacity: .5; cursor: default; }
+.mi-comp { width: 100%; min-width: 0; }
+.mi-comp .dock { width: 100%; margin: 0; padding: 0; }
+.sheet.mi-sheet .pop-foot { padding: var(--s-2) var(--s-3) max(var(--s-2), calc(var(--safe-b) - var(--s-3))); border-top-color: var(--line-1); }
+.mi-foot { padding: var(--s-3) var(--s-5) var(--s-4); }
+.mem-maybe-acts { display: inline-flex; gap: var(--s-1); flex: none; }
+.mem-maybe-acts button { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: var(--r-full); background: none; color: var(--text-3); cursor: pointer; }
+.mem-maybe-acts button:hover { background: var(--surface-2); color: var(--text-1); }

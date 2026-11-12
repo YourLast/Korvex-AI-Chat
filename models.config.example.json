@@ -1,0 +1,22 @@
+{
+  "models": [
+    {
+      "id": "assistant",
+      "name": "Assistant",
+      "fullName": "Assistant (OpenAI-compatible)",
+      "blurb": "Everyday questions",
+      "tagline": "default",
+      "baseUrl": "http://127.0.0.1:11434/v1",
+      "upstreamModel": "llama3.1:8b",
+      "maxConcurrent": 2,
+      "defaultLevel": "off",
+      "levels": [
+        { "id": "off", "label": "off", "effort": null, "hint": "No reasoning" }
+      ],
+      "images": false,
+      "tools": true,
+      "contextTokens": 131072,
+      "maxOutputTokens": 8192
+    }
+  ]
+}

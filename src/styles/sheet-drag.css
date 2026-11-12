@@ -1,0 +1,5 @@
+.sheet { touch-action: none; }
+.sheet .pop-body { touch-action: pan-x pan-y; }
+.sheet[data-drag]:not(.is-closing), .scrim[data-drag]:not(.is-closing) { animation: none; }
+.sheet[data-drag="active"] { will-change: transform; }
+.sheet[data-drag="active"]::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 160px; background: var(--bg); pointer-events: none; }

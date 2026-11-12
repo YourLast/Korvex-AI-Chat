@@ -1,0 +1,15 @@
+DROP TRIGGER IF EXISTS `search_msg_ai`;
+DROP TRIGGER IF EXISTS `search_msg_au`;
+DROP TRIGGER IF EXISTS `search_msg_ad`;
+DROP TRIGGER IF EXISTS `search_thr_ai`;
+DROP TRIGGER IF EXISTS `search_thr_au`;
+DROP TRIGGER IF EXISTS `search_thr_ad`;
+DROP TRIGGER IF EXISTS `search_file_ai`;
+DROP TRIGGER IF EXISTS `search_file_au`;
+DROP TRIGGER IF EXISTS `search_file_ad`;
+DROP TABLE IF EXISTS `search_fts`;
+DROP TABLE IF EXISTS `search_docs`;
+DROP TABLE IF EXISTS `search_dirty`;
+DROP TABLE IF EXISTS `search_meta`;
+ALTER TABLE `threads` DROP COLUMN `title_manual`;
+ALTER TABLE `threads` DROP COLUMN `title_gen`;

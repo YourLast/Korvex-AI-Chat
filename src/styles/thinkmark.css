@@ -1,0 +1,13 @@
+.tm { display: block; flex: none; overflow: visible; color: currentColor; height: 1.35em; width: auto; aspect-ratio: 433 / 733; }
+
+.hm { transition: color 260ms var(--ease); }
+.hm[data-pose="check"] { color: var(--text-strong); }
+.hm[data-pose="error"] { color: var(--neg); }
+.hm[data-pose="stop"] { color: var(--text-2); }
+
+.wk--live .wk-sum-t > b.wk-shim { background: linear-gradient(100deg, var(--text-2) 34%, var(--text-strong) 50%, var(--text-2) 66%); background-size: 230% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; animation: kx-shim 2.6s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hm { transition: none; }
+  .wk--live .wk-sum-t > b.wk-shim { animation: none; background: none; color: var(--text-1); -webkit-text-fill-color: currentColor; }
+}
