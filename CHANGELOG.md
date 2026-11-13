@@ -2,6 +2,11 @@
 
 Notable changes. Every release also has automatic notes on the [Releases](https://github.com/YourLast/Korvex-AI-Chat/releases) page.
 
+## v0.1.6
+
+- A long wait that is not the answer's own work — a model server's queue of heavy requests or its maintenance — now extends
+  the 4-hour limit of an answer by up to 8 hours (`KX_HOLD_MAX_H`), not 4: a server with a long queue answers itself.
+
 ## v0.1.5
 
 - **MCP tools.** Remote MCP servers (Streamable HTTP) in **Admin → MCP**: the address and an optional key header (stored

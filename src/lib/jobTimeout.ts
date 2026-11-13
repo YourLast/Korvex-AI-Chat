@@ -4,6 +4,7 @@ import { Agent, fetch as undiciFetch } from 'undici';
 export const JOB_TIMEOUT_MS = 30 * 60_000;
 export const MAX_IDLE_MS = 15 * 60_000;
 export const MAX_CEILING_MS = 4 * 60 * 60_000;
+export const holdMaxMs = (ceilingMs: number) => Math.max(ceilingMs, (Number(process.env.KX_HOLD_MAX_H) || 8) * 3_600_000);
 const IDLE_TICK_MS = 15_000;
 
 export type TimeoutPlan = { kind: 'total'; ms: number } | { kind: 'idle'; idleMs: number; ceilingMs: number };
@@ -60,7 +61,7 @@ export function armJobTimeout(plan: TimeoutPlan, onTimeout: (message: string) =>
     last = now();
     if (fired || !(ms > 0)) return;
     if (plan.kind === 'total') { deadline += ms; armTotal(); return; }
-    const add = Math.min(ms, plan.ceilingMs - held);
+    const add = Math.min(ms, holdMaxMs(plan.ceilingMs) - held);
     if (add <= 0) return;
     held += add;
     deadline += add;

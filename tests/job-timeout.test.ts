@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { armJobTimeout, modelFetch, timeoutPlan, upstreamBytes, upstreamHold, upstreamNetMs, withUpstreamActivity, JOB_TIMEOUT_MS, MAX_IDLE_MS, MAX_CEILING_MS } from '@/lib/jobTimeout';
+import { armJobTimeout, holdMaxMs, modelFetch, timeoutPlan, upstreamBytes, upstreamHold, upstreamNetMs, withUpstreamActivity, JOB_TIMEOUT_MS, MAX_IDLE_MS, MAX_CEILING_MS } from '@/lib/jobTimeout';
 import { streamChat } from '@/lib/upstream';
 
 afterEach(() => { vi.useRealTimers(); });
@@ -62,10 +62,15 @@ describe('armJobTimeout (фейковые часы)', () => {
     expect(got).toEqual(['Превышено время ответа (4 ч)']);
     const got2: string[] = [];
     const g2 = armJobTimeout(timeoutPlan('max'), (m) => got2.push(m));
-    for (let i = 0; i < 6 * 60 * 8 - 1; i++) { vi.advanceTimersByTime(10_000); g2.touch(); g2.hold(10_000); }
+    for (let i = 0; i < 6 * 60 * 12 - 1; i++) { vi.advanceTimersByTime(10_000); g2.touch(); g2.hold(10_000); }
     expect(got2).toEqual([]);
     vi.advanceTimersByTime(20_000);
     expect(got2).toEqual(['Превышено время ответа (4 ч)']);
+    process.env.KX_HOLD_MAX_H = '1';
+    expect(holdMaxMs(MAX_CEILING_MS)).toBe(MAX_CEILING_MS);
+    process.env.KX_HOLD_MAX_H = '10';
+    expect(holdMaxMs(MAX_CEILING_MS)).toBe(10 * 3_600_000);
+    delete process.env.KX_HOLD_MAX_H;
   });
 
   it('max: ход 90 минут с keepalive каждые 10 с не рвётся; после 15 минут тишины — рвётся один раз', () => {
