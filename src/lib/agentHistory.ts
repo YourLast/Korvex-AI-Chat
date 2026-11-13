@@ -13,6 +13,7 @@ import type { ChatMsg, OaiMsg } from './upstream';
 import { ext } from '@/ext';
 import { PLAIN_DIALECT } from './dialect';
 import { userLang } from './userLang';
+import { orgCardFor } from './orgCard';
 
 const REPLAY_TURNS = 2;
 const META_TOOL_MAX = 4000;
@@ -20,8 +21,10 @@ const META_TOOL_MAX = 4000;
 export function folderInstruction(folderId: string | null, userId: string): string | null {
   if (!folderId) return null;
   const f = getDb().select().from(schema.folders).where(and(eq(schema.folders.id, folderId), eq(schema.folders.userId, userId))).get();
-  if (!f || !f.instruction.trim()) return null;
-  return `Инструкция папки «${f.name}» (общая для всех чатов этой папки):\n${f.instruction.trim()}`;
+  if (!f) return null;
+  const card = orgCardFor(userId, folderId);
+  const instr = f.instruction.trim() ? `Инструкция папки «${f.name}» (общая для всех чатов этой папки):\n${f.instruction.trim()}` : null;
+  return [instr, card].filter(Boolean).join('\n\n') || null;
 }
 
 export function composeSystem(o: { model: ModelCfg; tz: string | null; rules: string | null; folderSys: string | null; pctx?: PCtx }): string {

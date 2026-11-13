@@ -9,6 +9,8 @@ import { tr, type Lang } from '@/lib/i18n/core';
 import { errText } from '@/lib/i18n/errors';
 import { useT } from '@/lib/i18n/react';
 import { Icon } from './Icon';
+import { useOrgMode } from './orgMode';
+import { SaveLink } from './SaveLink';
 import { Markdown, OutImage, thumbClick } from './Markdown';
 import { thumbSet, thumbSrc } from './OutImage';
 import { MemoryLine } from './Memory';
@@ -172,6 +174,31 @@ export function sharedShots(m: Pick<MsgView, 'steps' | 'content'>): { url: strin
   }
   return out;
 }
+export function resultFiles(content: string): { url: string; name: string }[] {
+  const esc = OUT_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const out: { url: string; name: string }[] = [];
+  for (const m of content.matchAll(new RegExp(`${esc}[0-9a-f]{32}/[^\\s)\\]"'<>]+`, 'g'))) {
+    const url = m[0].replace(/[.,;:!?]+$/, '');
+    if (/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(url) || out.some((x) => x.url === url)) continue;
+    let name = url.split('/').pop() ?? url;
+    try { name = decodeURIComponent(name); } catch {  }
+    out.push({ url, name });
+  }
+  return out;
+}
+function Results({ m }: { m: MsgView }) {
+  const tx = useT();
+  const org = useOrgMode();
+  const list = useMemo(() => (org && !m.streaming ? resultFiles(m.content ?? '') : []), [org, m.streaming, m.content]);
+  if (!list.length) return null;
+  return (
+    <div className="ans-results" data-testid="results">
+      <small>{tx('org.results')}</small>
+      {list.map((x) => <SaveLink key={x.url} href={x.url} name={x.name} label={`${tx('org.download')} ${x.name}`} testid="result-file"><Icon n="download" sm /><span>{x.name}</span></SaveLink>)}
+    </div>
+  );
+}
+
 function SharedShots({ m }: { m: MsgView }) {
   const list = useMemo(() => sharedShots(m), [m.steps, m.content]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!list.length) return null;
@@ -230,6 +257,7 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
       {shown && <SrcCtx.Provider value={srcCtx}><Markdown text={shown} live={!!m.streaming} /></SrcCtx.Provider>}
       <SrcList sources={sources} live={!!m.streaming} />
       <SharedShots m={m} />
+      <Results m={m} />
       {m.streaming && m.content && <span className="caret" aria-hidden="true" />}
       {meta.stopped && !m.content && <p className="t-cap">{tx('msg.stopped')}</p>}
       {(meta.errorUser || meta.error) && (

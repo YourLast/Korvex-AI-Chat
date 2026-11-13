@@ -14,6 +14,7 @@ import { activePath, allMessages, sessionOfPath, setLeaf } from './tree';
 import type { ChatMsg, ChatPart } from './upstream';
 import { tr } from './i18n/core';
 import { userLang } from './userLang';
+import { orgCard, libraryFile } from './orgCard';
 
 export const MARKER = '⁠‌⁠';
 
@@ -85,7 +86,8 @@ export function prepare(inp: TurnInput): Prepared {
   if (inp.mode === 'send') {
     const ids = inp.fileIds ?? [];
     if (!visible && !ids.length) throw new TurnError(400, 'empty message');
-    const fids = addFiles(ids);
+    const pol = policyToAttach(inp.userId, thread.folderId ?? null, thread.id, ids);
+    const fids = addFiles(pol ? [...ids, pol] : ids);
     const u = makeUser(path0[path0.length - 1]?.id ?? null, sessionOfPath(path0, thread.id), fids);
     const first = all.length === 0;
     const title = first && thread.title === 'Новый чат' ? shortTitle(text) : undefined;
@@ -192,4 +194,16 @@ export function sameContentOriginal(f: { id: string; userId: string; sha256: str
     if (b) return b;
   }
   return null;
+}
+
+
+function policyToAttach(userId: string, folderId: string | null, threadId: string, ids: string[]): string | null {
+  if (!folderId) return null;
+  const pid = orgCard(folderId).policyFileId;
+  if (!pid || ids.includes(pid)) return null;
+  const pol = libraryFile(userId, folderId, pid);
+  if (!pol) return null;
+  const has = getDb().select({ id: schema.files.id }).from(schema.files)
+    .where(and(eq(schema.files.threadId, threadId), eq(schema.files.name, pol.name), eq(schema.files.size, pol.size))).get();
+  return has ? null : pid;
 }

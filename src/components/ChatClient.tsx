@@ -653,7 +653,7 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
       {code.st && threadId && <CodePanel threadId={threadId} st={code.st} rev={code.rev} open={panel.open} tab={panel.tab} onClose={() => setPanel({ open: false })} reload={() => void code.reload()} />}
       {}
       <Composer ref={comp} busy={busy} onHolds={setHeld}
-        docsSlot={shell.orgMode && docOrg ? <DocsButton org={docOrg} orgName={docOrgName} onAdd={(c) => comp.current?.addFiles(c)} /> : undefined}
+        docsSlot={shell.orgMode && docOrg ? <DocsButton org={docOrg} orgName={docOrgName} onAdd={(c, text) => { comp.current?.addFiles(c); if (text) { comp.current?.setText(text); comp.current?.focus(); } }} /> : undefined}
         overlay={!preview && working ? <WorkBar m={working} offscreen={offscreen} onDecide={workJob ? (st, allow) => { void workActions.decide(workJob, st, allow); } : undefined} onShowFeed={showFeed} onLive={(st, all) => workActions.openLive({ step: st, all })} /> : null}
         onSteer={!preview && working && !cmpOn ? onSteer : undefined} placeholder={cmpOn ? (many ? tx('chat.phCmpMany') : tx('chat.phCmpOne')) : codeMode || code.st ? (narrow ? tx('chat.phCodeShort') : tx('chat.phCode')) : empty ? tx('chat.phEmpty') : tx('chat.phNext')} modelSlot={slot} onStop={stop}
         onSend={(t, f, o) => (editRef.current ? sendEdit(t, f) : doSend(t, f, o?.holdId ? { holdId: o.holdId } : undefined))} edit={editView} onEditCancel={cancelEdit}

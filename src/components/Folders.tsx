@@ -1,6 +1,7 @@
 'use client';
 import { useFT, useOrgMode } from './orgMode';
 import { OrgInbox } from './OrgInbox';
+import { OrgCard } from './OrgCard';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
@@ -245,6 +246,7 @@ export function ProjectDialog({ edit, onClose, onSaved, onCreated }: { edit: Fol
       ) : (
         <button type="button" className="pj-more" onClick={() => setShowInstr(true)} data-testid="folder-instr-open"><Icon n="plus" sm />{t('fld.instr')}</button>
       )}
+      {orgMode && edit && edit !== 'new' && <OrgCard folderId={edit.id} />}
       {orgMode && edit && edit !== 'new' && <OrgInbox folderId={edit.id} />}
       <div className="pj-note">
         <button type="button" className="pj-info" aria-expanded={why} onClick={() => setWhy((v) => !v)} data-testid="folder-why"

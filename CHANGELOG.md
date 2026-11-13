@@ -2,6 +2,16 @@
 
 Notable changes. Every release also has automatic notes on the [Releases](https://github.com/YourLast/Korvex-AI-Chat/releases) page.
 
+## v0.1.9
+
+- **Organizations mode: tools for accountants.**
+  - Scenario buttons in the documents panel: «primary documents → register», «reconcile bank with 1C», «duplicates and payments
+    without documents», «unpaid documents», «VAT for the period». Pick the documents and the period, and a ready request goes into
+    the message box.
+  - An organization card in its settings: INN, KPP, tax regime, VAT rate, accounting policy file. The model gets the card in every
+    answer for the organization, and the policy file is attached to the first message of a chat.
+  - Files the model made in an answer (a register, a 1C file, a reconciliation report) get «Download» buttons under it.
+
 ## v0.1.8
 
 - Organization mail intake: a sender that is not a bare `local@domain` address is reported with the reason `sender`, the same

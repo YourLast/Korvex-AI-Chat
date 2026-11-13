@@ -10,6 +10,7 @@ import { errText } from '@/lib/i18n/errors';
 import type { Key } from '@/lib/i18n/core';
 import type { FileChip, FolderView } from '@/lib/types';
 import { DOC_TYPES, type DocType } from '@/lib/docType';
+import { SCENARIOS, scenarioText, type ScenarioId } from '@/lib/orgScenarios';
 import { archiveKind } from '@/lib/upload/paths';
 import '@/styles/org.css';
 
@@ -67,14 +68,14 @@ export function quickPeriod(kind: 'this' | 'last' | 'quarter', now = new Date())
 }
 const ru = (d: string | null) => (d ? d.split('-').reverse().join('.') : '');
 
-export function DocsButton({ org, orgName, onAdd }: { org: string | null; orgName: string | null; onAdd: (chips: FileChip[]) => void }) {
+export function DocsButton({ org, orgName, onAdd }: { org: string | null; orgName: string | null; onAdd: (chips: FileChip[], text?: string) => void }) {
   const t = useFT();
   const [open, setOpen] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);
   return (
     <>
       <button ref={btn} type="button" className="icon-btn org-docs-btn" aria-label={t('org.docs')} title={orgName ? t('org.docsOf', { name: orgName }) : t('org.docs')} onClick={() => setOpen(true)} data-testid="org-docs"><Icon n="layers" /></button>
-      <DocsPanel open={open} onClose={() => setOpen(false)} org={org} orgName={orgName} anchor={btn.current} onAdd={(c) => { onAdd(c); setOpen(false); toast(t('org.added', { n: c.length })); }} />
+      <DocsPanel open={open} onClose={() => setOpen(false)} org={org} orgName={orgName} anchor={btn.current} onAdd={(c, text) => { onAdd(c, text); setOpen(false); if (c.length) toast(t('org.added', { n: c.length })); }} />
     </>
   );
 }
@@ -88,9 +89,10 @@ async function upJson(r: Response | null): Promise<Record<string, unknown> & { e
   return j as Record<string, unknown> & { error?: string };
 }
 
-export function DocsPanel({ open, onClose, org, orgName, anchor, onAdd }: { open: boolean; onClose: () => void; org: string | null; orgName: string | null; anchor?: HTMLElement | null; onAdd: (chips: FileChip[]) => void }) {
+export function DocsPanel({ open, onClose, org, orgName, anchor, onAdd }: { open: boolean; onClose: () => void; org: string | null; orgName: string | null; anchor?: HTMLElement | null; onAdd: (chips: FileChip[], text?: string) => void }) {
   const t = useFT();
   const [type, setType] = useState<DocType | ''>('');
+  const [scen, setScen] = useState<ScenarioId | null>(null);
   const [[from, to], setPeriod] = useState<[string, string]>(() => quickPeriod('last'));
   const [q, setQ] = useState('');
   const [docs, setDocs] = useState<Doc[] | null>(null);
@@ -114,13 +116,19 @@ export function DocsPanel({ open, onClose, org, orgName, anchor, onAdd }: { open
     setSel((s) => new Set([...s].filter((id) => j.docs.some((d) => d.id === id))));
   }, [org, type, from, to, q, t]);
   useEffect(() => { if (!open) return; const id = window.setTimeout(() => void load(), q ? 250 : 0); return () => window.clearTimeout(id); }, [open, load, q]);
-  useEffect(() => { if (!open) { setSel(new Set()); setUp(null); } }, [open]);
+  useEffect(() => { if (!open) { setSel(new Set()); setUp(null); setScen(null); } }, [open]);
 
   const total = useMemo(() => Object.values(counts).reduce((a, b) => a + b, 0), [counts]);
   const all = docs ?? [];
   const allOn = all.length > 0 && all.every((d) => sel.has(d.id));
   const toggle = (id: string) => setSel((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-  const add = () => onAdd(all.filter((d) => sel.has(d.id)).map((d) => ({ id: d.id, name: d.name, size: d.size, mime: d.mime })));
+  const add = async () => {
+    const chosen = all.filter((d) => sel.has(d.id));
+    const chips = chosen.map((d) => ({ id: d.id, name: d.name, size: d.size, mime: d.mime }));
+    if (!scen) { onAdd(chips); return; }
+    const card = org ? await fetch(`/api/folders/${org}/card`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null) as { card?: { inn?: string } } | null : null;
+    onAdd(chips, scenarioText(scen, { org: orgName ?? '', inn: card?.card?.inn || null, from, to, files: chosen.map((d) => d.name) }));
+  };
   const remove = async (d: Doc) => { const r = await fetch(`/api/docs/${d.id}`, { method: 'DELETE' }).catch(() => null); if (r?.ok) void load(); };
 
   const upload = async (list: FileList) => {
@@ -160,9 +168,14 @@ export function DocsPanel({ open, onClose, org, orgName, anchor, onAdd }: { open
           <Button onClick={() => files.current?.click()} disabled={!org} icon="clip" testId="org-up">{t('org.uploadFiles')}</Button>
           <Button onClick={() => folder.current?.click()} disabled={!org} icon="folder" testId="org-up-dir">{t('org.uploadFolder')}</Button>
         </span>
-        <Button kind="primary" onClick={add} disabled={!sel.size} testId="org-add">{t('org.add', { n: sel.size })}</Button>
+        <Button kind="primary" onClick={() => void add()} disabled={!sel.size && !scen} testId="org-add">{scen ? t('org.sc.ask', { n: sel.size }) : t('org.add', { n: sel.size })}</Button>
       </div>}>
       <div className="od">
+        <div className="od-scen" role="radiogroup" aria-label={t('org.sc.title')} data-testid="org-scenarios">
+          {SCENARIOS.map((x) => (
+            <button key={x} type="button" role="radio" aria-checked={scen === x} className={scen === x ? 'is-on' : ''} onClick={() => setScen(scen === x ? null : x)} data-testid={`org-sc-${x}`}>{t(`org.sc.${x}` as never)}</button>
+          ))}
+        </div>
         <div className="od-period" role="group" aria-label={t('org.period')}>
           <label><span>{t('org.from')}</span><input type="date" value={from} onChange={(e) => setPeriod([e.target.value, to])} data-testid="org-from" /></label>
           <label><span>{t('org.to')}</span><input type="date" value={to} onChange={(e) => setPeriod([from, e.target.value])} data-testid="org-to" /></label>
