@@ -1,4 +1,5 @@
 'use client';
+import { adm } from '@/lib/i18n/adm';
 import Link from 'next/link';
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
@@ -319,7 +320,7 @@ export function SkeletonList({ rows = 3, title }: { rows?: number; title?: boole
 export function PageSkeleton({ title }: { title: string }) {
   return (
     <>
-    <Topbar title={title} />
+    <Topbar title={adm(title)} />{}
     <div className="page"><div className="k-page" aria-busy="true">
       <header className="k-head"><div className="k-head-t"><span className="k-sk" style={{ width: 180, height: 28 }} /><span className="k-sk" style={{ width: '70%', height: 14, marginTop: 12 }} /></div></header>
       <SkeletonList rows={3} title /><SkeletonList rows={2} title />

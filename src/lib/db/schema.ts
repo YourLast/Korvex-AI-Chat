@@ -118,7 +118,12 @@ export const files = sqliteTable('files', {
   text: text('text').notNull().default(''),
   info: text('info', { mode: 'json' }).$type<Record<string, unknown>>(),
   createdAt: integer('created_at').notNull(),
-}, (t) => [index('files_thread_idx').on(t.threadId)]);
+  folderId: text('folder_id'),
+  docType: text('doc_type'),
+  docDate: text('doc_date'),
+  docFrom: text('doc_from'),
+  docTo: text('doc_to'),
+}, (t) => [index('files_thread_idx').on(t.threadId), index('files_user_folder').on(t.userId, t.folderId)]);
 
 export type Invite = typeof invites.$inferSelect;
 export type User = typeof users.$inferSelect;

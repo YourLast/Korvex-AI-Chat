@@ -7,6 +7,7 @@ import { ChatClient } from './ChatClient';
 import { CompareClient } from './CompareClient';
 import { Topbar, useShell } from './Shell';
 import { Icon } from './Icon';
+import { FootNote } from './FootNote';
 
 export function ThreadPreview({ href }: { href: string }) {
   const { models, threads } = useShell();
@@ -61,7 +62,7 @@ export function ThreadSkeleton({ title }: { title: string }) {
             <button type="button" className="send" disabled tabIndex={-1}><Icon n="arrow-up" /></button>
           </div>
         </div>
-        <div className="foot-note">{tx('shell.footNote')}</div>
+        <FootNote text={tx('shell.footNote')} />
       </div>
     </>
   );

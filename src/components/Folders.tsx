@@ -1,4 +1,5 @@
 'use client';
+import { useFT } from './orgMode';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
@@ -49,7 +50,7 @@ function emptyHint(t: ReturnType<typeof useT>, fine: boolean) {
 export function FolderSection({ folders, threads, row, onChanged, setFolders }: {
   folders: FolderView[]; threads: ThreadLite[]; row: (t: ThreadLite) => ReactNode; onChanged: () => void; setFolders: (f: FolderView[]) => void;
 }) {
-  const t = useT();
+  const t = useFT();
   const [edit, setEdit] = useState<FolderView | 'new' | null>(null);
   const [over, setOver] = useState<string | null>(null);
   const [delAsk, setDelAsk] = useState<FolderView | null>(null);
@@ -182,7 +183,7 @@ export function ProjectShell({ open, onClose, label, children, foot, testId, onE
 }
 
 function AutoArea({ value, onChange, placeholder, testId, autoFocus, maxLength }: { value: string; onChange: (v: string) => void; placeholder: string; testId?: string; autoFocus?: boolean; maxLength?: number }) {
-  const t = useT();
+  const t = useFT();
   const ref = useRef<HTMLTextAreaElement>(null);
   useLayoutEffect(() => { const el = ref.current; if (!el) return; el.style.height = 'auto'; el.style.height = `${Math.min(240, el.scrollHeight)}px`; }, [value]);
   useEffect(() => { if (autoFocus) ref.current?.focus({ preventScroll: true }); }, [autoFocus]);
@@ -190,7 +191,7 @@ function AutoArea({ value, onChange, placeholder, testId, autoFocus, maxLength }
 }
 
 export function ProjectDialog({ edit, onClose, onSaved, onCreated }: { edit: FolderView | 'new' | null; onClose: () => void; onSaved: () => void; onCreated?: (f: FolderView) => void }) {
-  const t = useT();
+  const t = useFT();
   const [name, setName] = useState('');
   const [instr, setInstr] = useState('');
   const [color, setColor] = useState('');
@@ -253,7 +254,7 @@ export function ProjectDialog({ edit, onClose, onSaved, onCreated }: { edit: Fol
 }
 
 export function MoveButton({ t, folders, onMoved }: { t: ThreadLite; folders: FolderView[]; onMoved: () => void }) {
-  const tx = useT();
+  const tx = useFT();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const btn = useRef<HTMLButtonElement>(null);

@@ -151,7 +151,7 @@ export async function runClaude(h: ClaudeHost): Promise<ClaudeResult> {
   const flags = claudeFlags();
   const tools = claudeTools(h);
   const names = new Set(tools.map((t) => t.name));
-  const system = claudeSystem(model, { rules: agentRules(false), browser: toolRules(names), web: names.has('web_search') });
+  const system = claudeSystem(model, { rules: agentRules(false, h.lang === 'ru' ? 'ru' : 'en'), browser: toolRules(names), web: names.has('web_search') });
   const ctxParts = { now: nowLine(h.tz, h.lang), folder: h.ctx.folder, chat: h.ctx.chat, mem: h.ctx.mem };
   const prev = h.continuing ? recordOf(h.hist.at(-1)) : null;
   let built: Built = await buildHistory({ hist: h.hist, userId: h.userId, lang: h.lang, mode, effort, continuing: h.continuing, ctxParts });

@@ -6,8 +6,9 @@ import type { Lang } from './i18n/core';
 import type { LoadEvent, LoadPersist } from './loadWatch';
 import { standDefault } from './cfg';
 import { modelKey } from './providers';
+import { LOCAL_ID, localBanner, localReady } from './localModel';
 import {
-  ALL, BUSY_MODES, MAX_TEXT, altModel, busyBanner, busyInit, busyOn, busyStep, downNotice, entryFor, loadBanner, manualBanner, modelLive,
+  ALL, BUSY_MODES, MAX_TEXT, PROBE_DOWN_AFTER, altModel, busyBanner, busyInit, busyOn, busyStep, downNotice, entryFor, loadBanner, manualBanner, modelLive,
   type BannerLevel, type BusyAuto, type BusyMode, type LoadMap, type LoadState, type ManualBanner, type ModelLive, type Probe, type StatusView,
 } from './announce';
 
@@ -142,7 +143,7 @@ export function statusFor(tz: string, now = Date.now(), lang: Lang = 'ru'): Stat
   const s = st();
   const busy = busyOn(s.store.busyMode, s.busy.on)
     ? busyBanner(s.busy.eta, s.store.busyMode === 'on' ? `bf${s.store.busyRev}` : `b${s.busy.since ?? 0}`, lang) : null;
-  const banners = [manualBanner(s.store.banner, now), loadBanner(shown(), s.store.load, probesObj(s), tz, now, lang), busy].filter((b): b is NonNullable<typeof b> => !!b);
+  const banners = [localBanner(lang), manualBanner(s.store.banner, now), loadBanner(shown(), s.store.load, probesObj(s), tz, now, lang), busy].filter((b): b is NonNullable<typeof b> => !!b);
   return { now, banners, models: modelStates(now) };
 }
 
@@ -196,6 +197,7 @@ function setProbe(id: string, ok: boolean) {
 export async function probeOnce(fetchImpl: typeof fetch = fetch, timeoutMs = 8000): Promise<void> {
   await Promise.all(getModels().filter((m) => !isClaudeDirect(m)).map(async (m) => {
     let ok = false;
+    if (m.id === LOCAL_ID && !localReady()) { st().probes.set(m.id, { ok: false, fails: PROBE_DOWN_AFTER, at: Date.now() }); return; }
     try {
       const key = modelKey(m);
       const r = await fetchImpl(m.baseUrl.replace(/\/+$/, '') + '/models', { signal: AbortSignal.timeout(timeoutMs), cache: 'no-store', ...(key ? { headers: { Authorization: `Bearer ${key}` } } : {}) });

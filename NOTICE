@@ -3,3 +3,6 @@ Copyright 2026 Korvex
 
 This product includes software developed by Korvex (https://korvexai.site/).
 Licensed under the Apache License, Version 2.0 (see LICENSE).
+See LICENSE for the attribution condition.
+
+Third-party software included in the Docker image and its licenses are listed in THIRD_PARTY_NOTICES.md.

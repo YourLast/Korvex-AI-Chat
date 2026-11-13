@@ -1,16 +1,17 @@
 'use client';
+import { adm, admLang, admf } from '@/lib/i18n/adm';
 import type { ReactNode } from 'react';
 import { reasonLabel } from '@/lib/rating';
 import { relTime } from '@/lib/schedule';
 import { Icon } from './Icon';
 import '@/styles/admin-view.css';
 
-export const when = (ts: number | null | undefined, tz: string) => (ts ? relTime(ts, tz) : '—');
+export const when = (ts: number | null | undefined, tz: string) => (ts ? relTime(ts, tz, Date.now(), admLang()) : '—');
 
 export function RateCounts({ up, down, className, upFirst }: { up: number; down: number; className?: string; upFirst?: boolean }) {
   if (!up && !down) return null;
-  const dn = down > 0 && <span className="adm-rate adm-rate--down" title="Плохих оценок"><Icon n="thumb" sm className="flip" /><b className="tnum">{down}</b><span className="sr">плохих</span></span>;
-  const upEl = up > 0 && <span className="adm-rate adm-rate--up" title="Хороших оценок"><Icon n="thumb" sm /><b className="tnum">{up}</b><span className="sr">хороших</span></span>;
+  const dn = down > 0 && <span className="adm-rate adm-rate--down" title={adm("Плохих оценок")}><Icon n="thumb" sm className="flip" /><b className="tnum">{down}</b><span className="sr">{adm("плохих")}</span></span>;
+  const upEl = up > 0 && <span className="adm-rate adm-rate--up" title={adm("Хороших оценок")}><Icon n="thumb" sm /><b className="tnum">{up}</b><span className="sr">{adm("хороших")}</span></span>;
   return (
     <span className={`adm-rates${className ? ' ' + className : ''}`} data-testid="rate-counts">
       {upFirst ? <>{upEl}{dn}</> : <>{dn}{upEl}</>}
@@ -22,7 +23,7 @@ export function ReasonTags({ reasons, comment }: { reasons: string[]; comment?: 
   if (!reasons.length && !comment) return null;
   return (
     <span className="k-tags">
-      {reasons.map((r) => <span key={r} className="k-tag">{reasonLabel(r)}</span>)}
+      {reasons.map((r) => <span key={r} className="k-tag">{adm(reasonLabel(r))}</span>)}
       {comment && <span className="k-quote">«{comment}»</span>}
     </span>
   );

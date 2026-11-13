@@ -1,4 +1,5 @@
 'use client';
+import { adm, admErr, admf } from '@/lib/i18n/adm';
 import { useState } from 'react';
 import type { PersonRow } from '@/lib/adminTypes';
 import { Button, Field, Group, Row, Sheet, toast } from './Kit';
@@ -11,27 +12,27 @@ async function moderate(id: string, body: Record<string, unknown>): Promise<{ ok
   try {
     const r = await fetch(`/api/admin/users/${id}/moderate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const j = (await r.json().catch(() => ({}))) as { error?: string };
-    return { ok: r.ok, error: j.error };
-  } catch { return { ok: false, error: 'Нет связи с сервером' }; }
+    return { ok: r.ok, error: admErr(j.error) };
+  } catch { return { ok: false, error: adm("Нет связи с сервером") }; }
 }
 
-const COPY: Record<Exclude<Act, 'unblock'>, { title: string; lead: string; effects: string[]; cta: string; done: string }> = {
+const COPY = (): Record<Exclude<Act, 'unblock'>, { title: string; lead: string; effects: string[]; cta: string; done: string }> => ({
   pause: {
-    title: 'Забрать доступ', cta: 'Забрать доступ', done: 'Доступ забран',
-    lead: 'Временная мера: человек не сможет войти, пока вы не вернёте доступ. Чаты и данные остаются.',
-    effects: ['сразу закрываются все его сессии на всех устройствах', 'отзываются ключи API и удаляются подписки на уведомления', 'идущие ответы останавливаются', 'вернуть доступ можно в один клик'],
+    title: adm("Забрать доступ"), cta: adm("Забрать доступ"), done: adm("Доступ забран"),
+    lead: adm("Временная мера: человек не сможет войти, пока вы не вернёте доступ. Чаты и данные остаются."),
+    effects: [adm("сразу закрываются все его сессии на всех устройствах"), adm("отзываются ключи API и удаляются подписки на уведомления"), adm("идущие ответы останавливаются"), adm("вернуть доступ можно в один клик")],
   },
   ban: {
-    title: 'Заблокировать', cta: 'Заблокировать', done: 'Заблокирован',
-    lead: 'Человек не сможет войти. Чаты и данные остаются; блокировку можно снять.',
-    effects: ['сразу закрываются все его сессии на всех устройствах', 'отзываются ключи API и удаляются подписки на уведомления', 'идущие ответы останавливаются', 'в списке людей он помечен «заблокирован», в журнале — причина'],
+    title: adm("Заблокировать"), cta: adm("Заблокировать"), done: adm("Заблокирован"),
+    lead: adm("Человек не сможет войти. Чаты и данные остаются; блокировку можно снять."),
+    effects: [adm("сразу закрываются все его сессии на всех устройствах"), adm("отзываются ключи API и удаляются подписки на уведомления"), adm("идущие ответы останавливаются"), adm("в списке людей он помечен «заблокирован», в журнале — причина")],
   },
   delete: {
-    title: 'Удалить аккаунт', cta: 'Удалить насовсем', done: 'Аккаунт удалён',
-    lead: 'Это нельзя отменить.',
-    effects: ['удаляются человек и все его чаты, сообщения, загруженные и созданные моделью файлы, оценки, ключи API, папки и память', 'ссылка, по которой он пришёл, и запись о регистрации остаются (имя — как было)', 'запись об удалении остаётся в журнале администраторов'],
+    title: adm("Удалить аккаунт"), cta: adm("Удалить насовсем"), done: adm("Аккаунт удалён"),
+    lead: adm("Это нельзя отменить."),
+    effects: [adm("удаляются человек и все его чаты, сообщения, загруженные и созданные моделью файлы, оценки, ключи API, папки и память"), adm("ссылка, по которой он пришёл, и запись о регистрации остаются (имя — как было)"), adm("запись об удалении остаётся в журнале администраторов")],
   },
-};
+});
 
 export function UserModeration({ user: u, meId, tz, onChanged }: { user: P; meId: string; tz: string; onChanged: () => void }) {
   const [act, setAct] = useState<Act | null>(null);
@@ -49,32 +50,32 @@ export function UserModeration({ user: u, meId, tz, onChanged }: { user: P; meId
     setBusy(true); setErr('');
     const r = await moderate(u.id, { action: act, reason: reason.trim() || undefined, confirm: act === 'delete' ? typed.trim() : undefined });
     setBusy(false);
-    if (!r.ok) { setErr(r.error || 'Не получилось. Попробуйте ещё раз'); return; }
-    const done = act === 'unblock' ? 'Доступ возвращён' : COPY[act].done;
+    if (!r.ok) { setErr(r.error || adm("Не получилось. Попробуйте ещё раз")); return; }
+    const done = act === 'unblock' ? adm("Доступ возвращён") : COPY()[act].done;
     close(); toast(`${done}: ${name}`); onChanged();
   };
 
   const blocked = !!u.disabled;
-  const kindText = u.blockKind === 'ban' ? 'Заблокирован' : 'Доступ забран (пауза)';
-  const c = act && act !== 'unblock' ? COPY[act] : null;
+  const kindText = u.blockKind === 'ban' ? adm("Заблокирован") : adm("Доступ забран (пауза)");
+  const c = act && act !== 'unblock' ? COPY()[act] : null;
   return (
     <>
-      <Group title="Доступ и аккаунт" testId="user-moderation"
-        foot={self ? 'Свой аккаунт заблокировать или удалить нельзя — это делает другой администратор. Последнего действующего администратора тоже нельзя.' : 'Каждое действие пишется в журнал администраторов: кто, что, когда и почему.'}>
+      <Group title={adm("Доступ и аккаунт")} testId="user-moderation"
+        foot={self ? adm("Свой аккаунт заблокировать или удалить нельзя — это делает другой администратор. Последнего действующего администратора тоже нельзя.") : adm("Каждое действие пишется в журнал администраторов: кто, что, когда и почему.")}>
         {blocked && <Row title={kindText} tone="danger" testId="mod-status"
-          sub={`${u.blockedAt ? when(u.blockedAt, tz) : ''}${u.blockReason ? ` · причина: ${u.blockReason}` : ''}`.replace(/^ · /, '')} />}
+          sub={`${u.blockedAt ? when(u.blockedAt, tz) : ''}${u.blockReason ? admf(" · причина: {0}", u.blockReason) : ''}`.replace(/^ · /, '')} />}
         {blocked
-          ? <Row icon="check" title={u.blockKind === 'ban' ? 'Разблокировать' : 'Вернуть доступ'} sub="Человек сможет войти снова; ключи API и подписки на уведомления заводятся заново" onClick={() => open('unblock')} disabled={self} testId="mod-unblock" />
+          ? <Row icon="check" title={u.blockKind === 'ban' ? adm("Разблокировать") : adm("Вернуть доступ")} sub={adm("Человек сможет войти снова; ключи API и подписки на уведомления заводятся заново")} onClick={() => open('unblock')} disabled={self} testId="mod-unblock" />
           : <>
-              <Row icon="lock" title="Забрать доступ…" sub="На время: войти нельзя, данные сохранены" onClick={() => open('pause')} disabled={self} testId="mod-pause" />
-              <Row icon="alert" title="Заблокировать…" sub="Вход закрыт, ключи и сессии сброшены, ответы остановлены" onClick={() => open('ban')} disabled={self} testId="mod-ban" />
+              <Row icon="lock" title={adm("Забрать доступ…")} sub={adm("На время: войти нельзя, данные сохранены")} onClick={() => open('pause')} disabled={self} testId="mod-pause" />
+              <Row icon="alert" title={adm("Заблокировать…")} sub={adm("Вход закрыт, ключи и сессии сброшены, ответы остановлены")} onClick={() => open('ban')} disabled={self} testId="mod-ban" />
             </>}
-        <Row icon="trash" tone="danger" title="Удалить аккаунт…" sub="Насовсем: человек и все его чаты, файлы и память" onClick={() => open('delete')} disabled={self} testId="mod-delete" />
+        <Row icon="trash" tone="danger" title={adm("Удалить аккаунт…")} sub={adm("Насовсем: человек и все его чаты, файлы и память")} onClick={() => open('delete')} disabled={self} testId="mod-delete" />
       </Group>
 
-      <Sheet open={act === 'unblock'} onClose={close} title={u.blockKind === 'ban' ? 'Разблокировать' : 'Вернуть доступ'} sub={name} testId="mod-sheet-unblock"
-        foot={<Button kind="primary" size="lg" block busy={busy} onClick={() => void go()} testId="mod-submit">{u.blockKind === 'ban' ? 'Разблокировать' : 'Вернуть доступ'}</Button>}>
-        <p className="k-sheet-p">Человек снова сможет войти по своей почте и паролю. Отозванные ключи API и подписки на уведомления не возвращаются — он заведёт их заново.</p>
+      <Sheet open={act === 'unblock'} onClose={close} title={u.blockKind === 'ban' ? adm("Разблокировать") : adm("Вернуть доступ")} sub={name} testId="mod-sheet-unblock"
+        foot={<Button kind="primary" size="lg" block busy={busy} onClick={() => void go()} testId="mod-submit">{u.blockKind === 'ban' ? adm("Разблокировать") : adm("Вернуть доступ")}</Button>}>
+        <p className="k-sheet-p">{adm("Человек снова сможет войти по своей почте и паролю. Отозванные ключи API и подписки на уведомления не возвращаются — он заведёт их заново.")}</p>
         {err && <p className="k-neg" role="alert">{err}</p>}
       </Sheet>
 
@@ -83,8 +84,8 @@ export function UserModeration({ user: u, meId, tz, onChanged }: { user: P; meId
         {c && <>
           <p className="k-sheet-p">{c.lead}</p>
           <ul className="k-sheet-ul">{c.effects.map((e) => <li key={e}>{e}</li>)}</ul>
-          <Group><Field label="Причина (необязательно)" value={reason} onChange={setReason} maxLength={500} placeholder="Например, «спам» или «ошибочная регистрация»" testId="mod-reason" /></Group>
-          {act === 'delete' && <Group foot={<span>Чтобы подтвердить, введите имя: <b>{name}</b></span>}><Field label="Имя человека" value={typed} onChange={setTyped} placeholder={name} autoComplete="off" testId="mod-confirm-name" /></Group>}
+          <Group><Field label={adm("Причина (необязательно)")} value={reason} onChange={setReason} maxLength={500} placeholder={adm("Например, «спам» или «ошибочная регистрация»")} testId="mod-reason" /></Group>
+          {act === 'delete' && <Group foot={<span>{adm("Чтобы подтвердить, введите имя:")} <b>{name}</b></span>}><Field label={adm("Имя человека")} value={typed} onChange={setTyped} placeholder={name} autoComplete="off" testId="mod-confirm-name" /></Group>}
           {err && <p className="k-neg" role="alert" data-testid="mod-error">{err}</p>}
         </>}
       </Sheet>

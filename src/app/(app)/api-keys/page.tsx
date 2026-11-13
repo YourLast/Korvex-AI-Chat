@@ -21,6 +21,6 @@ export default async function ApiPage() {
   const h = await headers();
   const host = h.get('x-forwarded-host') || h.get('host') || cfg('KX_DEFAULT_HOST', 'localhost');
   const proto = h.get('x-forwarded-proto') || (/^(127\.0\.0\.1|localhost)(:\d+)?$/.test(host) ? 'http' : 'https');
-  const models = forRole(getModels().filter((m) => !m.hidden && !isClaude(m)).map((m) => ({ id: m.id, apiId: apiNameOf(m), name: m.name, fullName: m.fullName, defaultLevel: m.defaultLevel, maxConcurrent: m.maxConcurrent, images: m.images !== false, tools: m.tools === true, contextTokens: m.contextTokens, maxOutputTokens: m.maxOutputTokens, variantOf: m.variantOf, variantName: m.variantName, levels: m.levels.filter((l) => !isRestrictedLevel(l.id)).map((l) => ({ id: l.id, label: l.label, hint: levelHint(me.role, lang, l) ?? '' })) })), me.role);
+  const models = forRole(getModels().filter((m) => !m.hidden && !isClaude(m)).map((m) => ({ id: m.id, apiId: apiNameOf(m), name: m.name, fullName: m.fullName, defaultLevel: m.defaultLevel, maxConcurrent: m.maxConcurrent, images: m.images !== false, tools: m.tools === true, contextTokens: m.contextTokens, maxOutputTokens: m.maxOutputTokens, variantOf: m.variantOf, variantName: m.variantName, levels: m.levels.filter((l) => !isRestrictedLevel(l.id)).map((l) => ({ id: l.id, label: l.label, hint: levelHint(me.role, lang, l) ?? '' })) })), me.role, me.id);
   return <ApiClient base={apiBase(host, proto)} admin={me.role === 'admin'} initial={listKeys(me)} models={models} />;
 }

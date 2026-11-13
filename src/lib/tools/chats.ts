@@ -12,6 +12,7 @@ import { publish } from '../bus';
 import { registerTool } from './registry';
 import { saveAttachment } from '../agentLoop';
 import type { ToolCtx } from './types';
+import { chatsWord, m, mLang, qt, step, uiLang } from './say';
 
 export const READ_MAX = 20_000;
 export const FILE_PART = 20_000;
@@ -24,9 +25,10 @@ const PAIR_WINDOW_MS = 10 * 60_000;
 
 
 const norm = (s: string) => s.replace(/[«»"„“”']/g, '').trim().toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ');
-const fmtDate = (ms: number) => new Date(ms).toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
-const clip = (s: string, n: number) => (s.length <= n ? s : s.slice(0, n) + `…[ещё ${s.length - n} симв.]`);
-const q = (s: string) => `«${s}»`;
+type ML = 'ru' | 'en';
+const fmtDate = (ms: number, l: ML = 'ru') => new Date(ms).toLocaleString(l === 'ru' ? 'ru-RU' : 'en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Moscow' });
+const clip = (s: string, n: number, l: ML = 'ru') => (s.length <= n ? s : s.slice(0, n) + (l === 'ru' ? `…[ещё ${s.length - n} симв.]` : `…[${s.length - n} more chars]`));
+const q = (s: string, l: ML = 'ru') => (l === 'ru' ? `«${s}»` : `“${s}”`);
 
 type Found = { t: Thread | null; candidates: Thread[] };
 
@@ -56,6 +58,8 @@ const chatName = (userId: string | undefined, ref: unknown, here?: string) => { 
 
 function notFound(userId: string, ref: string, f: Found): string {
   const sug = f.candidates.length ? f.candidates : resolveChat(userId, ref.split(/\s+/)[0] ?? '').candidates;
+  const l = mLang(userId);
+  if (l === 'en') return `Chat ${q(ref, l)} not found.${sug.length ? ` Similar: ${sug.slice(0, 5).map((t) => `${q(t.title, l)} (id ${t.id})`).join(', ')}.` : ' See the list: chat_list.'}`;
   return `Чат ${q(ref)} не найден.${sug.length ? ` Похожие: ${sug.slice(0, 5).map((t) => `${q(t.title)} (id ${t.id})`).join(', ')}.` : ' Посмотри список: chat_list.'}`;
 }
 
@@ -69,8 +73,8 @@ function chatLines(t: Thread): Line[] {
   return activePath(all, t.leafId).filter((m) => m.content.trim()).map((m) => ({ id: m.id, role: m.role, at: m.createdAt, text: m.content.replace(/⁠‌⁠/g, '') }));
 }
 
-function render(lines: Line[], perMsg = 4000): string {
-  return lines.map((l) => `[${l.role === 'user' ? 'Пользователь' : 'Ответ модели'}, ${fmtDate(l.at)}]\n${clip(l.text, perMsg)}`).join('\n\n');
+function render(lines: Line[], perMsg = 4000, lg: ML = 'ru'): string {
+  return lines.map((l) => `[${l.role === 'user' ? m(lg, 'Пользователь', 'User') : m(lg, 'Ответ модели', 'Model answer')}, ${fmtDate(l.at, lg)}]\n${clip(l.text, perMsg, lg)}`).join('\n\n');
 }
 
 function matchLines(lines: Line[], query: string): Line[] {
@@ -93,21 +97,24 @@ registerTool<{ query?: string; folder?: string; limit?: number }>({
   description: 'List the user\'s chats (newest first) or search all of them by words. Returns titles, ids, folders.',
   parameters: { type: 'object', properties: { query: { type: 'string' }, folder: { type: 'string' }, limit: { type: 'integer' } } },
   enabled: (c) => !!c.threadId,
-  title: (a) => (a.query ? `Ищет в чатах ${q(a.query)}` : a.folder ? `Смотрит чаты папки ${q(a.folder)}` : 'Смотрит список чатов'),
+  title: (a, c) => (a.query ? step(c?.userId, 'step.chatsSearch', { q: a.query }) : a.folder ? step(c?.userId, 'step.chatsFolder', { q: a.folder }) : step(c?.userId, 'step.chatsList')),
   run: async (a, ctx) => {
     const db = getDb();
+    const L = mLang(ctx.userId);
     const limit = Math.min(100, Math.max(1, Number(a.limit) || 30));
     const folders = db.select().from(schema.folders).where(eq(schema.folders.userId, ctx.userId)).all();
     const fname = new Map(folders.map((f) => [f.id, f.name]));
     let only: string | null = null;
     if (a.folder) {
       const f = findFolderByName(ctx.userId, a.folder);
-      if (!f) return { content: `Папки ${q(a.folder)} нет. Папки: ${folders.map((x) => q(x.name)).join(', ') || 'нет'}.`, error: true };
+      if (!f) return { content: m(L, `Папки ${q(a.folder)} нет. Папки: ${folders.map((x) => q(x.name)).join(', ') || 'нет'}.`, `There is no folder ${q(a.folder, L)}. Folders: ${folders.map((x) => q(x.name, L)).join(', ') || 'none'}.`), error: true };
       only = f.id;
     }
     const counts = new Map(db.select({ f: schema.threads.folderId, n: sql<number>`count(*)` }).from(schema.threads).where(eq(schema.threads.userId, ctx.userId)).groupBy(schema.threads.folderId).all().map((r) => [r.f, Number(r.n)]));
-    const head = folders.length ? `Папки пользователя: ${folders.map((f) => `${q(f.name)} — чатов: ${counts.get(f.id) ?? 0}`).join('; ')}. Чат без пометки «папка …» — вне папок.\n` : '';
-    const mark = (t: { id: string; folderId: string | null }) => [t.id === ctx.threadId ? 'этот чат' : '', t.folderId ? `папка ${q(fname.get(t.folderId) ?? '?')}` : ''].filter(Boolean).join(', ');
+    const head = !folders.length ? '' : L === 'ru'
+      ? `Папки пользователя: ${folders.map((f) => `${q(f.name)} — чатов: ${counts.get(f.id) ?? 0}`).join('; ')}. Чат без пометки «папка …» — вне папок.\n`
+      : `User's folders: ${folders.map((f) => `${q(f.name, L)}: ${counts.get(f.id) ?? 0} chats`).join('; ')}. A chat without a "folder …" mark is outside folders.\n`;
+    const mark = (t: { id: string; folderId: string | null }) => [t.id === ctx.threadId ? m(L, 'этот чат', 'this chat') : '', t.folderId ? `${m(L, 'папка', 'folder')} ${q(fname.get(t.folderId) ?? '?', L)}` : ''].filter(Boolean).join(', ');
     if (a.query && a.query.trim()) {
       const r = searchChats(ctx.userId, a.query, limit);
       const ids = r.hits.map((h) => /\/c\/([0-9a-f-]{36})/.exec(h.href)?.[1] ?? null);
@@ -118,16 +125,16 @@ registerTool<{ query?: string; folder?: string; limit?: number }>({
         if (only && t?.folderId !== only) return null;
         const title = h.title.map(([s]) => s).join('');
         const snip = h.snippet ? h.snippet.map(([s]) => s).join('').replace(/\s+/g, ' ').trim() : '';
-        const m = t ? mark(t) : '';
-        return `- ${q(title)} (id ${t?.id ?? h.key}${m ? ', ' + m : ''}, ${fmtDate(h.at)})${snip ? `\n  найдено: ${clip(snip, 300)}` : ''}`;
+        const mk = t ? mark(t) : '';
+        return `- ${q(title, L)} (id ${t?.id ?? h.key}${mk ? ', ' + mk : ''}, ${fmtDate(h.at, L)})${snip ? `\n  ${m(L, 'найдено', 'found')}: ${clip(snip, 300, L)}` : ''}`;
       }).filter(Boolean);
-      ctx.emit({ detail: out.length ? `Найдено чатов: ${out.length}` : 'Ничего не найдено' });
-      return { content: out.length ? `${head}Чаты по запросу ${q(a.query)} (${out.length}):\n${out.join('\n')}` : `${head}По запросу ${q(a.query)} ничего не найдено в чатах пользователя.` };
+      ctx.emit({ detail: out.length ? step(ctx.userId, 'step.foundChats', { n: out.length }) : step(ctx.userId, 'step.nothing') });
+      return { content: out.length ? `${head}${m(L, `Чаты по запросу ${q(a.query)}`, `Chats for ${q(a.query, L)}`)} (${out.length}):\n${out.join('\n')}` : `${head}${m(L, `По запросу ${q(a.query)} ничего не найдено в чатах пользователя.`, `Nothing found for ${q(a.query, L)} in the user's chats.`)}` };
     }
     const where = only ? and(eq(schema.threads.userId, ctx.userId), eq(schema.threads.folderId, only)) : eq(schema.threads.userId, ctx.userId);
     const rows = db.select().from(schema.threads).where(where).orderBy(desc(schema.threads.updatedAt)).limit(limit * 2).all().filter((t) => t.side !== 'b' && !t.temporary).slice(0, limit);
-    ctx.emit({ detail: `Чатов: ${rows.length}` });
-    return { content: `${head}Чаты пользователя (${rows.length}, новые первыми):\n` + rows.map((t) => { const m = mark(t); return `- ${q(t.title)} (id ${t.id}${m ? ', ' + m : ''}, ${fmtDate(t.updatedAt)})`; }).join('\n') };
+    ctx.emit({ detail: step(ctx.userId, 'step.chatsN', { n: rows.length }) });
+    return { content: `${head}${m(L, `Чаты пользователя (${rows.length}, новые первыми)`, `User's chats (${rows.length}, newest first)`)}:\n` + rows.map((t) => { const mk = mark(t); return `- ${q(t.title, L)} (id ${t.id}${mk ? ', ' + mk : ''}, ${fmtDate(t.updatedAt, L)})`; }).join('\n') };
   },
 });
 
@@ -136,23 +143,28 @@ registerTool<{ chat: string; query?: string; last?: number }>({
   description: 'Read another chat of the user (id or title): latest messages or only those about query, and its files.',
   parameters: { type: 'object', properties: { chat: { type: 'string' }, query: { type: 'string' }, last: { type: 'integer' } }, required: ['chat'] },
   enabled: (c) => !!c.threadId,
-  title: (a, c) => `Читает чат ${q(chatName(c?.userId, a.chat, c?.threadId))}`,
+  title: (a, c) => step(c?.userId, 'step.chatRead', { q: chatName(c?.userId, a.chat, c?.threadId) }),
   run: async (a, ctx) => {
     const f = resolveChat(ctx.userId, a.chat, ctx.threadId);
     if (!f.t) return { content: notFound(ctx.userId, a.chat, f), error: true };
     const t = f.t;
-    ctx.emit({ title: `Читает чат ${q(t.title)}` });
+    const L = mLang(ctx.userId);
+    ctx.emit({ title: step(ctx.userId, 'step.chatRead', { q: t.title }) });
     const lines = chatLines(t);
     let pick = a.query?.trim() ? matchLines(lines, a.query) : lines.slice(-Math.min(200, Math.max(1, Number(a.last) || 20)));
-    let body = render(pick);
+    let body = render(pick, 4000, L);
     if (body.length > READ_MAX) {
-      while (pick.length > 1 && render(pick).length > READ_MAX) pick = pick.slice(1);
-      body = clip(render(pick), READ_MAX);
+      while (pick.length > 1 && render(pick, 4000, L).length > READ_MAX) pick = pick.slice(1);
+      body = clip(render(pick, 4000, L), READ_MAX, L);
     }
     const files = chatFiles(ctx.userId, t.id);
-    const fl = files.length ? `\n\nФайлы чата: ${files.map((x) => `${x.name} (id ${x.id})`).join(', ')}` : '';
+    const fl = files.length ? `\n\n${m(L, 'Файлы чата', 'Chat files')}: ${files.map((x) => `${x.name} (id ${x.id})`).join(', ')}` : '';
     const fld = folderName(ctx.userId, t.folderId);
-    ctx.emit({ detail: a.query?.trim() ? `Найдено сообщений: ${pick.length}` : `Сообщений: ${pick.length} из ${lines.length}` });
+    ctx.emit({ detail: a.query?.trim() ? step(ctx.userId, 'step.foundMsgs', { n: pick.length }) : step(ctx.userId, 'step.msgsOf', { n: pick.length, m: lines.length }) });
+    if (L === 'en') {
+      if (!pick.length) return { content: `Chat ${q(t.title, L)} (id ${t.id}) has no messages${a.query ? ` about ${q(a.query, L)}` : ''}.${fl}` };
+      return { content: `Chat ${q(t.title, L)} (id ${t.id}${fld ? `, folder ${q(fld, L)}` : ''}), ${a.query?.trim() ? `messages about ${q(a.query, L)}` : `the last ${pick.length} of ${lines.length}`}:\n\n${body}${fl}` };
+    }
     if (!pick.length) return { content: `В чате ${q(t.title)} (id ${t.id}) нет сообщений${a.query ? ` про ${q(a.query)}` : ''}.${fl}` };
     return { content: `Чат ${q(t.title)} (id ${t.id}${fld ? `, папка ${q(fld)}` : ''}), ${a.query?.trim() ? `сообщения про ${q(a.query)}` : `последние ${pick.length} из ${lines.length}`}:\n\n${body}${fl}` };
   },
@@ -161,17 +173,18 @@ registerTool<{ chat: string; query?: string; last?: number }>({
 type Peer = { t: Thread; rowId: string; queued: boolean; jobId?: string; messageId?: string };
 
 async function postToChat(ctx: ToolCtx, t: Thread, text: string, kind: 'agent' | 'send'): Promise<Peer | string> {
-  if (t.id === ctx.threadId) return 'Это этот же чат: писать в него не нужно.';
-  if (ctx.depth >= MAX_DEPTH) return 'Слишком длинная цепочка переписки агентов: этот ход сам вызван агентом другого чата.';
+  const L = mLang(ctx.userId);
+  if (t.id === ctx.threadId) return m(L, 'Это этот же чат: писать в него не нужно.', 'This is the same chat: no need to write to it.');
+  if (ctx.depth >= MAX_DEPTH) return m(L, 'Слишком длинная цепочка переписки агентов: этот ход сам вызван агентом другого чата.', 'The chain of agent messages is too long: this turn was itself started by another chat\'s agent.');
   const db0 = getDb();
   const perTurn = db0.select({ n: sql<number>`count(*)` }).from(schema.agentMsgs).where(and(eq(schema.agentMsgs.userId, ctx.userId), eq(schema.agentMsgs.fromJob, ctx.jobId))).get();
-  if (Number(perTurn?.n ?? 0) >= MAX_PER_TURN) return `Предел переписки в одном ходе: уже ${MAX_PER_TURN} сообщений в другие чаты. Ответь пользователю тем, что есть.`;
+  if (Number(perTurn?.n ?? 0) >= MAX_PER_TURN) return m(L, `Предел переписки в одном ходе: уже ${MAX_PER_TURN} сообщений в другие чаты. Ответь пользователю тем, что есть.`, `Message limit for one turn: already ${MAX_PER_TURN} messages to other chats. Answer the user with what you have.`);
   const pair = db0.select({ n: sql<number>`count(*)` }).from(schema.agentMsgs).where(and(eq(schema.agentMsgs.userId, ctx.userId), sql`${schema.agentMsgs.createdAt} > ${Date.now() - PAIR_WINDOW_MS}`,
     sql`((${schema.agentMsgs.fromThread} = ${ctx.threadId} AND ${schema.agentMsgs.toThread} = ${t.id}) OR (${schema.agentMsgs.fromThread} = ${t.id} AND ${schema.agentMsgs.toThread} = ${ctx.threadId}))`)).get();
-  if (Number(pair?.n ?? 0) >= MAX_PER_PAIR) return `Чаты ${q(t.title)} и этот уже обменялись ${MAX_PER_PAIR} сообщениями за 10 минут: похоже на зацикливание, остановись и ответь пользователю.`;
+  if (Number(pair?.n ?? 0) >= MAX_PER_PAIR) return m(L, `Чаты ${q(t.title)} и этот уже обменялись ${MAX_PER_PAIR} сообщениями за 10 минут: похоже на зацикливание, остановись и ответь пользователю.`, `Chat ${q(t.title, L)} and this one already exchanged ${MAX_PER_PAIR} messages in 10 minutes: this looks like a loop, stop and answer the user.`);
   const { jobOfThread } = await import('../jobs');
   const busy = !!jobOfThread(t.id);
-  if (busy && ctx.depth >= 1) return `В чате ${q(t.title)} сейчас идёт ответ: попробуй позже.`;
+  if (busy && ctx.depth >= 1) return m(L, `В чате ${q(t.title)} сейчас идёт ответ: попробуй позже.`, `Chat ${q(t.title, L)} is answering right now: try later.`);
   const rowId = randomUUID();
   db0.insert(schema.agentMsgs).values({ id: rowId, userId: ctx.userId, kind: kind === 'agent' ? 'ask' : 'send', fromThread: ctx.threadId, toThread: t.id, fromJob: ctx.jobId,
     question: text.slice(0, 20_000), status: 'queued', depth: ctx.depth + 1, createdAt: Date.now() }).run();
@@ -189,22 +202,23 @@ registerTool<{ chat: string; text: string }>({
   description: 'Post a message into another chat as the user; that chat\'s agent answers there.',
   parameters: { type: 'object', properties: { chat: { type: 'string' }, text: { type: 'string' } }, required: ['chat', 'text'] },
   enabled: (c) => !!c.threadId && c.depth < MAX_DEPTH,
-  title: (a, c) => `Пишет в чат ${q(chatName(c?.userId, a.chat, c?.threadId))}`,
+  title: (a, c) => step(c?.userId, 'step.chatWrite', { q: chatName(c?.userId, a.chat, c?.threadId) }),
   confirm: (a, ctx) => {
     const f = resolveChat(ctx.userId, a.chat, ctx.threadId);
     if (!f.t) return null;
-    return `Написать в чат ${q(f.t.title)}: ${q(clip(String(a.text ?? ''), 200))}?`;
+    return step(ctx.userId, 'step.askSend', { q: f.t.title, text: qt(clip(String(a.text ?? ''), 200), uiLang(ctx.userId)) });
   },
   run: async (a, ctx) => {
-    if (!String(a.text ?? '').trim()) return { content: 'Пустое сообщение.', error: true };
+    const L = mLang(ctx.userId);
+    if (!String(a.text ?? '').trim()) return { content: m(L, 'Пустое сообщение.', 'Empty message.'), error: true };
     const f = resolveChat(ctx.userId, a.chat, ctx.threadId);
     if (!f.t) return { content: notFound(ctx.userId, a.chat, f), error: true };
-    ctx.emit({ title: `Пишет в чат ${q(f.t.title)}` });
+    ctx.emit({ title: step(ctx.userId, 'step.chatWrite', { q: f.t.title }) });
     const p = await postToChat(ctx, f.t, String(a.text), 'send');
     if (typeof p === 'string') return { content: p, error: true };
-    if (p.queued) { ctx.emit({ detail: `В очереди: в чате идёт ответ. ${clip(String(a.text), 300)}` }); return { content: `В чате ${q(p.t.title)} сейчас идёт ответ: сообщение поставлено в очередь и уйдёт туда, когда ответ закончится.` }; }
-    ctx.emit({ detail: `Отправлено: ${clip(String(a.text), 300)}` });
-    return { content: `Сообщение отправлено в чат ${q(p.t.title)} (id ${p.t.id}); агент того чата отвечает там.` };
+    if (p.queued) { ctx.emit({ detail: step(ctx.userId, 'step.queued', { text: clip(String(a.text), 300, L) }) }); return { content: m(L, `В чате ${q(p.t.title)} сейчас идёт ответ: сообщение поставлено в очередь и уйдёт туда, когда ответ закончится.`, `Chat ${q(p.t.title, L)} is answering right now: the message is queued and will go there when the answer ends.`) }; }
+    ctx.emit({ detail: step(ctx.userId, 'step.sent', { text: clip(String(a.text), 300, L) }) });
+    return { content: m(L, `Сообщение отправлено в чат ${q(p.t.title)} (id ${p.t.id}); агент того чата отвечает там.`, `The message was sent to chat ${q(p.t.title, L)} (id ${p.t.id}); that chat's agent answers there.`) };
   },
 });
 
@@ -213,26 +227,28 @@ registerTool<{ chat: string; message: string; wait_seconds?: number }>({
   description: 'Ask another chat\'s agent (id or title) and get its answer; a late answer comes here as a new message.',
   parameters: { type: 'object', properties: { chat: { type: 'string' }, message: { type: 'string' }, wait_seconds: { type: 'integer' } }, required: ['chat', 'message'] },
   enabled: (c) => !!c.threadId && c.depth < MAX_DEPTH,
-  title: (a, c) => `Спрашивает чат ${q(chatName(c?.userId, a.chat, c?.threadId))}`,
+  title: (a, c) => step(c?.userId, 'step.chatAsk', { q: chatName(c?.userId, a.chat, c?.threadId) }),
   confirm: (a, ctx) => {
     const f = resolveChat(ctx.userId, a.chat, ctx.threadId);
     if (!f.t || f.t.id === ctx.threadId || sameFolder(ctx, f.t)) return null;
-    return `Спросить агента чата ${q(f.t.title)}: ${q(clip(String(a.message ?? ''), 200))}?`;
+    return step(ctx.userId, 'step.askAgent', { q: f.t.title, text: qt(clip(String(a.message ?? ''), 200), uiLang(ctx.userId)) });
   },
   run: async (a, ctx) => {
     const msg = String(a.message ?? '').trim();
-    if (!msg) return { content: 'Пустое сообщение.', error: true };
+    const L = mLang(ctx.userId);
+    if (!msg) return { content: m(L, 'Пустое сообщение.', 'Empty message.'), error: true };
     const f = resolveChat(ctx.userId, a.chat, ctx.threadId);
     if (!f.t) return { content: notFound(ctx.userId, a.chat, f), error: true };
     const t = f.t;
     const ex = { threadId: t.id, threadTitle: t.title, question: msg };
-    ctx.emit({ title: `Спрашивает чат ${q(t.title)}`, agent: { ...ex, state: 'asking' } });
+    ctx.emit({ title: step(ctx.userId, 'step.chatAsk', { q: t.title }), agent: { ...ex, state: 'asking' } });
     const p = await postToChat(ctx, t, msg, 'agent');
     if (typeof p === 'string') { ctx.emit({ agent: { ...ex, state: 'error' }, detail: p }); return { content: p, error: true }; }
-    const later = `Ответ агента чата ${q(t.title)} придёт в этот чат отдельным сообщением. Скажи пользователю, что вопрос передан и ответ придёт позже; не жди и не спрашивай снова.`;
+    const later = m(L, `Ответ агента чата ${q(t.title)} придёт в этот чат отдельным сообщением. Скажи пользователю, что вопрос передан и ответ придёт позже; не жди и не спрашивай снова.`,
+      `The answer of chat ${q(t.title, L)}'s agent will come to this chat as a separate message. Tell the user the question was passed on and the answer will come later; do not wait and do not ask again.`);
     if (p.queued) {
-      ctx.emit({ agent: { ...ex, state: 'queued' }, detail: 'Чат занят: вопрос в очереди, ответ придёт сюда отдельным сообщением' });
-      return { content: `Чат ${q(t.title)} сейчас занят (там идёт ответ): вопрос поставлен в очередь. ${later}` };
+      ctx.emit({ agent: { ...ex, state: 'queued' }, detail: step(ctx.userId, 'step.askQueued') });
+      return { content: `${m(L, `Чат ${q(t.title)} сейчас занят (там идёт ответ): вопрос поставлен в очередь.`, `Chat ${q(t.title, L)} is busy right now (it is answering): the question is queued.`)} ${later}` };
     }
     const { waitJob } = await import('../jobs');
     const wait = Math.min(ASK_WAIT_MAX, Math.max(5, Number(a.wait_seconds) || ASK_WAIT_DEFAULT)) * 1000;
@@ -242,19 +258,19 @@ registerTool<{ chat: string; message: string; wait_seconds?: number }>({
     if (!res) {
       db.update(schema.agentMsgs).set({ status: 'pending' }).where(and(eq(schema.agentMsgs.id, p.rowId), eq(schema.agentMsgs.status, 'asking'))).run();
       void (await import('../agentMail')).mailPump();
-      if (ctx.signal.aborted) return { content: 'Остановлено.' };
-      ctx.emit({ agent: { ...ex, state: 'queued', messageId: p.messageId }, detail: 'Ответ придёт сюда отдельным сообщением' });
-      return { content: `Агент чата ${q(t.title)} ещё отвечает. ${later}` };
+      if (ctx.signal.aborted) return { content: m(L, 'Остановлено.', 'Stopped.') };
+      ctx.emit({ agent: { ...ex, state: 'queued', messageId: p.messageId }, detail: step(ctx.userId, 'step.answerLater') });
+      return { content: `${m(L, `Агент чата ${q(t.title)} ещё отвечает.`, `Chat ${q(t.title, L)}'s agent is still answering.`)} ${later}` };
     }
     const answer = res.content.trim();
     if (res.status !== 'done' || !answer) {
       db.update(schema.agentMsgs).set({ status: 'error', answer: answer || null, answeredAt: Date.now() }).where(eq(schema.agentMsgs.id, p.rowId)).run();
       ctx.emit({ agent: { ...ex, state: 'error', answer: answer || undefined, messageId: p.messageId } });
-      return { content: `Агент чата ${q(t.title)} не смог ответить${res.error ? `: ${res.error}` : ''}.${answer ? `\nЧастичный ответ:\n${clip(answer, 4000)}` : ''}`, error: true };
+      return { content: m(L, `Агент чата ${q(t.title)} не смог ответить${res.error ? `: ${res.error}` : ''}.${answer ? `\nЧастичный ответ:\n${clip(answer, 4000)}` : ''}`, `Chat ${q(t.title, L)}'s agent could not answer${res.error ? `: ${res.error}` : ''}.${answer ? `\nPartial answer:\n${clip(answer, 4000, L)}` : ''}`), error: true };
     }
     db.update(schema.agentMsgs).set({ status: 'answered', answer: answer.slice(0, 50_000), answeredAt: Date.now() }).where(eq(schema.agentMsgs.id, p.rowId)).run();
     ctx.emit({ agent: { ...ex, state: 'answered', answer: clip(answer, 2000), messageId: p.messageId } });
-    return { content: `Ответ агента чата ${q(t.title)} (id ${t.id}):\n${clip(answer, 12_000)}` };
+    return { content: `${m(L, `Ответ агента чата ${q(t.title)}`, `Answer of chat ${q(t.title, L)}'s agent`)} (id ${t.id}):\n${clip(answer, 12_000, L)}` };
   },
 });
 
@@ -263,17 +279,18 @@ registerTool<{ chats: string[]; folder: string; create?: boolean }>({
   description: 'Move chats (ids/titles, "этот" = this) into a folder by name; created if missing; "" = out of folders.',
   parameters: { type: 'object', properties: { chats: { type: 'array', items: { type: 'string' } }, folder: { type: 'string' } }, required: ['chats', 'folder'] },
   enabled: (c) => !!c.threadId,
-  title: (a) => (String(a.folder ?? '').trim() ? `Переносит чаты в папку ${q(String(a.folder))}` : 'Убирает чаты из папки'),
+  title: (a, c) => (String(a.folder ?? '').trim() ? step(c?.userId, 'step.chatsMove', { q: String(a.folder) }) : step(c?.userId, 'step.chatsUnfolder')),
   run: async (a, ctx) => {
+    const L = mLang(ctx.userId);
     const refs = (Array.isArray(a.chats) ? a.chats : [a.chats]).map(String).filter((x) => x.trim()).slice(0, 100);
-    if (!refs.length) return { content: 'Не указаны чаты.', error: true };
+    if (!refs.length) return { content: m(L, 'Не указаны чаты.', 'No chats given.'), error: true };
     const name = String(a.folder ?? '').trim();
     let folderId: string | null = null;
     let created = false;
     if (name) {
       let f = findFolderByName(ctx.userId, name);
       if (!f) {
-        if (a.create === false) return { content: `Папки ${q(name)} нет.`, error: true };
+        if (a.create === false) return { content: m(L, `Папки ${q(name)} нет.`, `There is no folder ${q(name, L)}.`), error: true };
         f = createFolder(ctx.userId, name); created = true;
       }
       folderId = f.id;
@@ -285,10 +302,14 @@ registerTool<{ chats: string[]; folder: string; create?: boolean }>({
     }
     const moved = ids.length ? moveThreads(ctx.userId, ids, folderId) : [];
     for (const id of moved) publish(ctx.userId, { t: 'thread', id, gid: null });
-    ctx.emit({ title: name ? `Переносит ${titles.length} ${titles.length === 1 ? 'чат' : titles.length < 5 ? 'чата' : 'чатов'} в папку ${q(name)}` : 'Убирает чаты из папки',
-      detail: titles.map((t) => `• ${t}`).join('\n') + (missing.length ? `\nНе найдены: ${missing.join(', ')}` : '') });
+    ctx.emit({ title: name ? step(ctx.userId, 'step.chatsMoveN', { n: titles.length, word: chatsWord(uiLang(ctx.userId), titles.length), q: name }) : step(ctx.userId, 'step.chatsUnfolder'),
+      detail: titles.map((t) => `• ${t}`).join('\n') + (missing.length ? `\n${step(ctx.userId, 'step.notFound', { list: missing.join(', ') })}` : '') });
+    if (L === 'en') {
+      const headEn = name ? `${created ? `Created folder ${q(name, L)}. ` : ''}Chats moved to folder ${q(name, L)}: ${moved.length}` : `Chats taken out of the folder: ${moved.length}`;
+      return { content: `${headEn}${titles.length ? ` (${titles.map((x) => q(x, L)).join(', ')})` : ''}.${missing.length ? ` Not found: ${missing.map((x) => q(x, L)).join(', ')}; check with chat_list.` : ''}`, error: !moved.length };
+    }
     const head = name ? `${created ? `Создана папка ${q(name)}. ` : ''}В папку ${q(name)} перенесено чатов: ${moved.length}` : `Из папки убрано чатов: ${moved.length}`;
-    return { content: `${head}${titles.length ? ` (${titles.map(q).join(', ')})` : ''}.${missing.length ? ` Не найдены: ${missing.map(q).join(', ')} — уточни через chat_list.` : ''}`, error: !moved.length };
+    return { content: `${head}${titles.length ? ` (${titles.map((x) => q(x)).join(', ')})` : ''}.${missing.length ? ` Не найдены: ${missing.map((x) => q(x)).join(', ')} — уточни через chat_list.` : ''}`, error: !moved.length };
   },
 });
 
@@ -318,25 +339,29 @@ const MIME: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg'
   '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation', '.zip': 'application/zip' };
 const mimeOf = (n: string) => MIME[path.extname(n).toLowerCase()] ?? 'application/octet-stream';
 const TEXTY = /\.(txt|md|csv|tsv|json|ya?ml|xml|html?|log|py|js|ts|sql|ini|toml)$/i;
-const kb = (n: number) => (n < 1024 ? `${n} Б` : n < 1024 * 1024 ? `${Math.round(n / 1024)} КБ` : `${(n / 1024 / 1024).toFixed(1)} МБ`);
+const kb = (n: number, l: ML = 'ru') => (l === 'ru' ? (n < 1024 ? `${n} Б` : n < 1024 * 1024 ? `${Math.round(n / 1024)} КБ` : `${(n / 1024 / 1024).toFixed(1)} МБ`)
+  : n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${Math.round(n / 1024)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`);
 const SRC = { upload: 'загрузил пользователь', model: 'сделала модель', tool: 'сделал инструмент' } as const;
+const SRC_EN = { upload: 'uploaded by the user', model: 'made by the model', tool: 'made by a tool' } as const;
 
 registerTool<{ chat?: string; query?: string; limit?: number }>({
   name: 'files_list', kind: 'file',
   description: 'List files of the user\'s chats (uploads and model-made), filter by chat or words. Returns ids.',
   parameters: { type: 'object', properties: { chat: { type: 'string' }, query: { type: 'string' }, limit: { type: 'integer' } } },
   enabled: (c) => !!c.threadId,
-  title: (a, c) => (a.chat ? `Смотрит файлы чата ${q(chatName(c?.userId, a.chat, c?.threadId))}` : a.query ? `Ищет файл ${q(a.query)}` : 'Смотрит файлы чатов'),
+  title: (a, c) => (a.chat ? step(c?.userId, 'step.filesChat', { q: chatName(c?.userId, a.chat, c?.threadId) }) : a.query ? step(c?.userId, 'step.fileSearch', { q: a.query }) : step(c?.userId, 'step.filesAll')),
   run: async (a, ctx) => {
     const db = getDb();
+    const L = mLang(ctx.userId);
     let tid: string | null = null;
     if (a.chat) {
       const f = resolveChat(ctx.userId, a.chat, ctx.threadId);
       if (!f.t) return { content: notFound(ctx.userId, a.chat, f), error: true };
       tid = f.t.id;
     }
+    const here = db.select({ f: schema.threads.folderId }).from(schema.threads).where(eq(schema.threads.id, ctx.threadId)).get()?.f ?? null;
     const up = db.select().from(schema.files).where(tid ? and(eq(schema.files.userId, ctx.userId), eq(schema.files.threadId, tid)) : eq(schema.files.userId, ctx.userId)).all()
-      .filter((f) => f.threadId).map((f): CloudFile => ({ id: f.id, name: f.name, size: f.size, at: f.createdAt, threadId: f.threadId, source: (f.info as { source?: string } | null)?.source === 'tool' ? 'tool' : 'upload', mime: f.mime }));
+      .filter((f) => f.threadId || (!tid && here && f.folderId === here)).map((f): CloudFile => ({ id: f.id, name: f.name, size: f.size, at: f.createdAt, threadId: f.threadId, source: (f.info as { source?: string } | null)?.source === 'tool' ? 'tool' : 'upload', mime: f.mime }));
     let all = [...up, ...listOut(ctx.userId, tid)];
     const titles = new Map(db.select({ id: schema.threads.id, title: schema.threads.title }).from(schema.threads).where(eq(schema.threads.userId, ctx.userId)).all().map((t) => [t.id, t.title]));
     if (a.query?.trim()) { const w = norm(a.query).split(' ').filter(Boolean); all = all.filter((f) => { const hay = `${norm(f.name)} ${norm(f.threadId ? titles.get(f.threadId) ?? '' : '')}`; return w.every((x) => hay.includes(x)); }); }
@@ -344,10 +369,15 @@ registerTool<{ chat?: string; query?: string; limit?: number }>({
     all = all.sort((x, y) => y.at - x.at).filter((f) => { const k = `${f.name}|${f.size}|${f.threadId}`; if (seen.has(k)) return false; seen.add(k); return true; });
     const limit = Math.min(200, Math.max(1, Number(a.limit) || 40));
     const shown = all.slice(0, limit);
-    ctx.emit({ detail: `Файлов: ${all.length}` });
+    ctx.emit({ detail: step(ctx.userId, 'step.filesN', { n: all.length }) });
+    if (L === 'en') {
+      if (!shown.length) return { content: a.chat || a.query ? 'No such files.' : 'The user\'s chats have no files.' };
+      return { content: `Files (${shown.length}${all.length > shown.length ? ` of ${all.length}` : ''}, newest first):\n` + shown.map((f) =>
+        `- ${f.name}: ${kb(f.size, L)}, ${SRC_EN[f.source]}, ${f.threadId ? `chat ${q(titles.get(f.threadId) ?? '?', L)}` : 'organization library'}${f.threadId === ctx.threadId ? ' (this chat)' : ''}, ${fmtDate(f.at, L)} (id ${f.id})`).join('\n') };
+    }
     if (!shown.length) return { content: a.chat || a.query ? 'Таких файлов нет.' : 'В чатах пользователя файлов нет.' };
     return { content: `Файлы (${shown.length}${all.length > shown.length ? ` из ${all.length}` : ''}, новые первыми):\n` + shown.map((f) =>
-      `- ${f.name} — ${kb(f.size)}, ${SRC[f.source]}, чат ${q(f.threadId ? titles.get(f.threadId) ?? '?' : '—')}${f.threadId === ctx.threadId ? ' (этот чат)' : ''}, ${fmtDate(f.at)} (id ${f.id})`).join('\n') };
+      `- ${f.name} — ${kb(f.size)}, ${SRC[f.source]}, ${f.threadId ? `чат ${q(titles.get(f.threadId) ?? '?')}` : 'библиотека организации'}${f.threadId === ctx.threadId ? ' (этот чат)' : ''}, ${fmtDate(f.at)} (id ${f.id})`).join('\n') };
   },
 });
 
@@ -379,27 +409,30 @@ registerTool<{ id: string; part?: number; attach?: boolean }>({
   description: 'Get a file by id: text (part=N if long) and a copy attached here — give its link, do not recreate the file.',
   parameters: { type: 'object', properties: { id: { type: 'string' }, part: { type: 'integer' }, attach: { type: 'boolean' } }, required: ['id'] },
   enabled: (c) => !!c.threadId,
-  title: (a, c) => { const f = c ? cloudFile(c.userId, String(a.id ?? '').trim()) : null; return f ? `Берёт файл ${q(f.name)}` : 'Берёт файл из облака'; },
+  title: (a, c) => { const f = c ? cloudFile(c.userId, String(a.id ?? '').trim()) : null; return f ? step(c?.userId, 'step.fileTake', { q: f.name }) : step(c?.userId, 'step.fileTakeCloud'); },
   run: async (a, ctx) => {
+    const L = mLang(ctx.userId);
     const f = cloudFile(ctx.userId, String(a.id ?? '').trim());
-    if (!f) return { content: `Файла с id ${q(String(a.id))} нет. Посмотри files_list.`, error: true };
-    ctx.emit({ title: `Берёт файл ${q(f.name)}` });
+    if (!f) return { content: m(L, `Файла с id ${q(String(a.id))} нет. Посмотри files_list.`, `There is no file with id ${q(String(a.id), L)}. See files_list.`), error: true };
+    ctx.emit({ title: step(ctx.userId, 'step.fileTake', { q: f.name }) });
     const attach = a.attach ?? f.threadId !== ctx.threadId;
     const atts = [];
     let link = '';
     if (attach) {
       const at = await saveAttachment(ctx.userId, ctx.threadId, { name: f.name, mime: f.mime, data: f.data(), tool: 'files_get', jobId: ctx.jobId, text: f.row?.text });
       atts.push(at);
-      link = `\nКопия в этом чате: [${f.name}](${at.url})`;
+      link = `\n${m(L, 'Копия в этом чате', 'Copy in this chat')}: [${f.name}](${at.url})`;
       ctx.emit({ attachments: [at], ...(at.kind === 'image' ? { thumb: at } : {}) });
     }
-    if (f.mime.startsWith('image/')) return { content: `Картинка ${q(f.name)}, ${kb(f.size)}.${link || ' (текста нет)'}`, attachments: atts };
+    if (f.mime.startsWith('image/')) return { content: m(L, `Картинка ${q(f.name)}, ${kb(f.size)}.${link || ' (текста нет)'}`, `Image ${q(f.name, L)}, ${kb(f.size, L)}.${link || ' (no text)'}`), attachments: atts };
     let text = '';
-    try { text = await f.text(); } catch (e) { text = ''; ctx.emit({ detail: `Текст не прочитан: ${(e as Error).message.slice(0, 200)}` }); }
+    try { text = await f.text(); } catch (e) { text = ''; ctx.emit({ detail: step(ctx.userId, 'step.textUnread', { err: (e as Error).message.slice(0, 200) }) }); }
     const parts = Math.max(1, Math.ceil(text.length / FILE_PART));
     const part = Math.min(parts, Math.max(1, Number(a.part) || 1));
     const chunk = text.slice((part - 1) * FILE_PART, part * FILE_PART);
-    ctx.emit({ detail: text ? `Текст: ${kb(Buffer.byteLength(text))}${parts > 1 ? `, часть ${part} из ${parts}` : ''}` : 'Текста нет' });
+    const ul = uiLang(ctx.userId) === 'ru' ? 'ru' : 'en';
+    ctx.emit({ detail: !text ? step(ctx.userId, 'step.noText') : parts > 1 ? step(ctx.userId, 'step.textPart', { size: kb(Buffer.byteLength(text), ul), p: part, n: parts }) : step(ctx.userId, 'step.textSize', { size: kb(Buffer.byteLength(text), ul) }) });
+    if (L === 'en') return { content: `File ${q(f.name, L)}, ${kb(f.size, L)}.${link}\n${text ? `${parts > 1 ? `Part ${part} of ${parts}:\n` : 'Text:\n'}${chunk}` : 'No text was extracted from the file.'}`, attachments: atts };
     return { content: `Файл ${q(f.name)}, ${kb(f.size)}.${link}\n${text ? `${parts > 1 ? `Часть ${part} из ${parts}:\n` : 'Текст:\n'}${chunk}` : 'Текст из файла не извлечён.'}`, attachments: atts };
   },
 });

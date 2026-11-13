@@ -1,11 +1,12 @@
 'use client';
+import { adm, admCount, admLang, admLocale, admf } from '@/lib/i18n/adm';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { AdminChatData, Mark } from '@/lib/adminTypes';
 import { deferredKeysFor, feedEst, feedKey, feedOf, type FeedItem } from '@/lib/feed';
 import { currentIndex, navMarks, posByIndex, posOf, stepMark, summarize, viewport, type MarkFilter } from '@/lib/ratingNav';
-import { count, W } from '@/lib/plural';
+import { W } from '@/lib/plural';
 import { relTime } from '@/lib/schedule';
 import { modelLabel } from '@/lib/levels';
 import type { MsgView } from '@/lib/types';
@@ -18,7 +19,7 @@ import { Seg, ToastHost } from './Kit';
 import { Topbar, useShell } from './Shell';
 
 const ANCHOR = 72;
-const FILTERS: { value: MarkFilter; label: string }[] = [{ value: 'all', label: 'Все' }, { value: 'down', label: 'Плохие' }, { value: 'up', label: 'Хорошие' }];
+const FILTERS = (): { value: MarkFilter; label: string }[] => ([{ value: 'all', label: adm("Все") }, { value: 'down', label: adm("Плохие") }, { value: 'up', label: adm("Хорошие") }]);
 
 const noop = () => {};
 const idsOf = (it: FeedItem): string[] => (it.kind === 'pair' ? [it.u.id, it.a?.id, it.b?.id].filter((x): x is string => !!x) : [it.m.id]);
@@ -30,8 +31,8 @@ export function RateMark({ mk, no, of, tz }: { mk: Mark; no: number; of: number;
     <div className={`adm-mark adm-mark--${down ? 'down' : 'up'}`} data-testid="admin-mark" data-mark={mk.id} data-value={mk.value}>
       <span className="adm-mark-h">
         <Icon n="thumb" sm className={down ? 'flip' : undefined} />
-        <b>{down ? 'Плохо' : 'Хорошо'}</b>
-        {no > 0 && <span className="adm-mark-n tnum">оценка {no} из {of}</span>}
+        <b>{down ? adm("Плохо") : adm("Хорошо")}</b>
+        {no > 0 && <span className="adm-mark-n tnum">{adm("оценка")} {no} {adm("из")} {of}</span>}
         <span className="adm-mark-t">{when(mk.at, tz)}</span>
       </span>
       <ReasonTags reasons={mk.reasons} comment={mk.comment} />
@@ -49,13 +50,13 @@ export function Rail({ marks, vp, curId, onJump, onSeek }: RailProps) {
     onSeek(horizontal ? (e.clientX - r.left) / r.width : (e.clientY - r.top) / r.height);
   };
   return (
-    <div className="adm-rail" role="group" aria-label="Карта оценок по длине чата" data-testid="rating-rail">
+    <div className="adm-rail" role="group" aria-label={adm("Карта оценок по длине чата")} data-testid="rating-rail">
       <div className="adm-rail-track" ref={track} onClick={seek} data-testid="rail-track">
         <span className="adm-rail-view" style={{ '--t': vp.top, '--h': vp.h } as React.CSSProperties} aria-hidden="true" data-testid="rail-view" />
         {marks.map(({ m, pos, dim, no }) => (
           <button type="button" key={m.id} className={`adm-tick adm-tick--${m.value < 0 ? 'down' : 'up'}`} style={{ '--p': pos } as React.CSSProperties}
             data-testid="rail-tick" data-mark={m.id} data-dim={dim || undefined} data-cur={m.id === curId || undefined}
-            aria-label={`${m.value < 0 ? 'Плохая' : 'Хорошая'} оценка ${no}`} aria-current={m.id === curId || undefined} onClick={() => onJump(m)} />
+            aria-label={admf("{0} оценка {1}", m.value < 0 ? adm("Плохая") : adm("Хорошая"), no)} aria-current={m.id === curId || undefined} onClick={() => onJump(m)} />
         ))}
       </div>
     </div>
@@ -201,7 +202,7 @@ export function AdminChat({ data, tz, focus }: { data: AdminChatData; tz: string
     return mk ? <RateMark mk={mk} no={noOf.get(mk.id) ?? 0} of={onPath.length} tz={tz} /> : null;
   };
 
-  const dayKey = (ts: number) => new Date(ts).toLocaleDateString('ru-RU', { timeZone: tz });
+  const dayKey = (ts: number) => new Date(ts).toLocaleDateString(admLocale(), { timeZone: tz });
   let prevDay = '';
   const item = (it: FeedItem) => {
     if (it.kind === 'user') return <UserTurn key={it.m.id} m={it.m} onSwitch={open} />;
@@ -212,45 +213,45 @@ export function AdminChat({ data, tz, focus }: { data: AdminChatData; tz: string
     return <AssistantMsg key={it.m.id} m={it.m} models={models} fileNames={data.fileNames} readOnly onSwitch={open} markSlot={markOf(it.m)} />;
   };
 
-  const meta = [mName(thread.modelId), count(data.messages.length, W.message), thread.folder ? `папка «${thread.folder}»` : '', thread.temporary ? 'временный чат' : ''].filter(Boolean).join(' · ');
+  const meta = [mName(thread.modelId), admCount(data.messages.length, W.message), thread.folder ? admf("папка «{0}»", thread.folder) : '', thread.temporary ? adm("временный чат") : ''].filter(Boolean).join(' · ');
 
   return (
     <>
-      <Topbar title={thread.title} sub={`${owner.name} · только чтение`}>
-        <Link href={`/admin/users/${owner.id}`} className="icon-btn" aria-label={`К карточке: ${owner.name}`} title="К карточке человека" data-testid="to-user"><Icon n="user" /></Link>
+      <Topbar title={thread.title} sub={admf("{0} · только чтение", owner.name)}>
+        <Link href={`/admin/users/${owner.id}`} className="icon-btn" aria-label={admf("К карточке: {0}", owner.name)} title={adm("К карточке человека")} data-testid="to-user"><Icon n="user" /></Link>
       </Topbar>
       <div className="adm-chat" data-testid="admin-chat" data-thread={thread.id}>
-        <div className="adm-note adm-note--lg" data-testid="admin-note"><Icon n="eye" sm /><span>Чат: <Link href={`/admin/users/${owner.id}`}>{owner.name}</Link> ({owner.email}) · {meta}. Только чтение, просмотр записан в журнал.</span></div>
+        <div className="adm-note adm-note--lg" data-testid="admin-note"><Icon n="eye" sm /><span>{adm("Чат:")} <Link href={`/admin/users/${owner.id}`}>{owner.name}</Link> ({owner.email}) · {meta}{adm(". Только чтение, просмотр записан в журнал.")}</span></div>
         {data.otherBranch && (
-          <div className="adm-note adm-note--warn" data-testid="other-branch"><Icon n="branch" sm /><span>Показана другая версия чата — с оценённым ответом. <Link href={`/admin/chat/${thread.id}`}>Показать активную</Link></span></div>
+          <div className="adm-note adm-note--warn" data-testid="other-branch"><Icon n="branch" sm /><span>{adm("Показана другая версия чата — с оценённым ответом.")} <Link href={`/admin/chat/${thread.id}`}>{adm("Показать активную")}</Link></span></div>
         )}
         <div className="adm-bar" data-testid="rating-bar">
-          <div className="adm-sum" data-testid="rating-sum" aria-label="Оценки в этом чате">
-            <span className="adm-rate adm-rate--down"><Icon n="thumb" sm className="flip" /><b className="tnum" data-testid="sum-down">{sum.down}</b><span className="adm-lab">плохих</span></span>
-            <span className="adm-rate adm-rate--up"><Icon n="thumb" sm /><b className="tnum" data-testid="sum-up">{sum.up}</b><span className="adm-lab">хороших</span></span>
+          <div className="adm-sum" data-testid="rating-sum" aria-label={adm("Оценки в этом чате")}>
+            <span className="adm-rate adm-rate--down"><Icon n="thumb" sm className="flip" /><b className="tnum" data-testid="sum-down">{sum.down}</b><span className="adm-lab">{adm("плохих")}</span></span>
+            <span className="adm-rate adm-rate--up"><Icon n="thumb" sm /><b className="tnum" data-testid="sum-up">{sum.up}</b><span className="adm-lab">{adm("хороших")}</span></span>
           </div>
           {data.marks.length > 0 ? (
             <>
-              <div className="adm-seg"><Seg label="Какие оценки показывать" value={filter} onChange={(v) => { setFilter(v); setCur(null); }} options={FILTERS.map((f) => ({ ...f, testId: `mf-${f.value}` }))} /></div>
-              <div className="adm-step" role="group" aria-label="Переход по оценкам">
-                <button type="button" className="adm-step-b" onClick={() => step(-1)} disabled={!nav.length} data-testid="mark-prev" aria-label="Предыдущая оценка"><Icon n="chev-up" sm /><span>Пред.</span></button>
-                <span className="adm-step-n tnum" data-testid="mark-pos" aria-live="polite">{nav.length ? `${posNo} из ${nav.length}` : 'нет'}</span>
-                <button type="button" className="adm-step-b" onClick={() => step(1)} disabled={!nav.length} data-testid="mark-next" aria-label="Следующая оценка"><span>След.</span><Icon n="chev-down" sm /></button>
+              <div className="adm-seg"><Seg label={adm("Какие оценки показывать")} value={filter} onChange={(v) => { setFilter(v); setCur(null); }} options={FILTERS().map((f) => ({ ...f, testId: `mf-${f.value}` }))} /></div>
+              <div className="adm-step" role="group" aria-label={adm("Переход по оценкам")}>
+                <button type="button" className="adm-step-b" onClick={() => step(-1)} disabled={!nav.length} data-testid="mark-prev" aria-label={adm("Предыдущая оценка")}><Icon n="chev-up" sm /><span>{adm("Пред.")}</span></button>
+                <span className="adm-step-n tnum" data-testid="mark-pos" aria-live="polite">{nav.length ? admf("{0} из {1}", posNo, nav.length) : adm("нет")}</span>
+                <button type="button" className="adm-step-b" onClick={() => step(1)} disabled={!nav.length} data-testid="mark-next" aria-label={adm("Следующая оценка")}><span>{adm("След.")}</span><Icon n="chev-down" sm /></button>
               </div>
             </>
-          ) : <span className="adm-none" data-testid="no-marks">В этом чате оценок нет</span>}
+          ) : <span className="adm-none" data-testid="no-marks">{adm("В этом чате оценок нет")}</span>}
         </div>
         {others.length > 0 && (
           <div className="adm-note" data-testid="other-marks"><Icon n="layers" sm /><span>
-            {count(others.length, W.rating)} на другой версии ответа:{' '}
-            {others.map((m, i) => <span key={m.id}>{i > 0 && ', '}<Link href={`/admin/chat/${thread.id}?m=${m.messageId}`} data-testid="other-mark">{m.value < 0 ? 'плохая' : 'хорошая'}</Link></span>)}
+            {admCount(others.length, W.rating)} {adm("на другой версии ответа:")}{' '}
+            {others.map((m, i) => <span key={m.id}>{i > 0 && ', '}<Link href={`/admin/chat/${thread.id}?m=${m.messageId}`} data-testid="other-mark">{m.value < 0 ? adm("плохая") : adm("хорошая")}</Link></span>)}
           </span></div>
         )}
         <div className="adm-body">
           {onPath.length > 0 && <Rail marks={rail} vp={vp} curId={cur} onJump={(m) => jump(m)} onSeek={seek} />}
           <div className="thread" ref={sc} onScroll={onScroll} data-testid="admin-thread">
             <div className="thread-in">
-              {feed.length === 0 && <p className="t-cap">В чате нет сообщений.</p>}
+              {feed.length === 0 && <p className="t-cap">{adm("В чате нет сообщений.")}</p>}
               {feed.map((it) => {
                 const k = feedKey(it);
                 const ids = idsOf(it);
@@ -261,7 +262,7 @@ export function AdminChat({ data, tz, focus }: { data: AdminChatData; tz: string
                 const body = deferred.has(k) ? <Defer key={k} est={feedEst(it)}>{item(it)}</Defer> : item(it);
                 return (
                   <div key={k} className="adm-item" data-mid={ids.join(' ')} ref={(el) => { for (const id of ids) { if (el) els.current.set(id, el); else els.current.delete(id); } }}>
-                    {sep && <div className="adm-day" data-testid="day-sep">{relTime(t, tz)}</div>}
+                    {sep && <div className="adm-day" data-testid="day-sep">{relTime(t, tz, Date.now(), admLang())}</div>}
                     {body}
                   </div>
                 );

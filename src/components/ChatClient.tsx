@@ -6,6 +6,7 @@ import type { PublicModel } from '@/lib/models';
 import { isImage, type CompareState, type FileChip, type MsgView, type PairView } from '@/lib/types';
 import { fixPair, levelOnSwitch, normalizeSel, pairFor, readPair, readPrefs, rememberLevel, rememberPair, selFromPrefs, type PairSel } from '@/lib/levels';
 import { Composer, type ComposerEdit, type ComposerHandle } from './Composer';
+import { DocsButton } from './OrgDocs';
 import { HeldTurn, heldVariant, type HeldView } from './HeldTurn';
 import { heldMorph } from '@/lib/heldMorph';
 import { AssistantMsg, UserTurn } from './Message';
@@ -338,6 +339,8 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
     putChat({ id: threadId, title: title || tx('shell.newChat'), modelId: sel.modelId, effort: sel.levelId, compare: cmp, messages: msgs, hasMore, fileNames });
   }, [preview, busy, threadId, msgs, hasMore, title, sel, cmp, fileNames]);
   const comp = useRef<ComposerHandle>(null);
+  const docOrg = (thread ? shell.threads.find((x) => x.id === thread.id)?.folderId : null) ?? shell.org ?? null;
+  const docOrgName = docOrg ? shell.folders?.find((f) => f.id === docOrg)?.name ?? null : null;
   const [held, setHeld] = useState<HeldView[]>([]);
   const [heldGone, setHeldGone] = useState<ReadonlySet<string>>(() => new Set());
   useEffect(() => { setHeldGone((g) => { const live = new Set(held.map((h) => h.id)); const n = new Set([...g].filter((id) => live.has(id))); return n.size === g.size ? g : n; }); }, [held]);
@@ -434,7 +437,7 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
     let id = threadId;
     if (!id && codeMode && !pick) { toast(tx('chat.pickRepo'), 'error'); return false; }
     if (!id) {
-      const r = await fetch('/api/threads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...s, ...(c && !codeMode ? { compare: c } : {}), ...(temp ? { temporary: true } : {}) }) }).catch(() => null);
+      const r = await fetch('/api/threads', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...s, ...(c && !codeMode ? { compare: c } : {}), ...(temp ? { temporary: true } : {}), ...(!temp && shell.orgMode && shell.org ? { folderId: shell.org } : {}) }) }).catch(() => null);
       if (!r?.ok) { toast(r ? tx('chat.errNoChat') : tx('chat.errOffline'), 'error'); return false; }
       id = ((await r.json()) as { id: string }).id;
       if (codeMode && pick) {
@@ -650,6 +653,7 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
       {code.st && threadId && <CodePanel threadId={threadId} st={code.st} rev={code.rev} open={panel.open} tab={panel.tab} onClose={() => setPanel({ open: false })} reload={() => void code.reload()} />}
       {}
       <Composer ref={comp} busy={busy} onHolds={setHeld}
+        docsSlot={shell.orgMode && docOrg ? <DocsButton org={docOrg} orgName={docOrgName} onAdd={(c) => comp.current?.addFiles(c)} /> : undefined}
         overlay={!preview && working ? <WorkBar m={working} offscreen={offscreen} onDecide={workJob ? (st, allow) => { void workActions.decide(workJob, st, allow); } : undefined} onShowFeed={showFeed} onLive={(st, all) => workActions.openLive({ step: st, all })} /> : null}
         onSteer={!preview && working && !cmpOn ? onSteer : undefined} placeholder={cmpOn ? (many ? tx('chat.phCmpMany') : tx('chat.phCmpOne')) : codeMode || code.st ? (narrow ? tx('chat.phCodeShort') : tx('chat.phCode')) : empty ? tx('chat.phEmpty') : tx('chat.phNext')} modelSlot={slot} onStop={stop}
         onSend={(t, f, o) => (editRef.current ? sendEdit(t, f) : doSend(t, f, o?.holdId ? { holdId: o.holdId } : undefined))} edit={editView} onEditCancel={cancelEdit}

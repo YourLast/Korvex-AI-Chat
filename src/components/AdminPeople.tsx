@@ -1,18 +1,19 @@
 'use client';
+import { adm, admAny, admCount, admf } from '@/lib/i18n/adm';
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { PersonRow, ViewLogItem } from '@/lib/adminTypes';
 import { AUDIT_LABEL, type AuditAction, type AuditItem, type Source, type SourceRow } from '@/lib/moderationTypes';
 import { VIEW_KIND } from '@/lib/adminTypes';
-import { count, W } from '@/lib/plural';
+import { W } from '@/lib/plural';
 import { Icon } from './Icon';
 import { RateCounts, when } from './AdminBits';
 import { Button, Field, Group, Row, Seg } from './Kit';
 import { roleRu } from '@/lib/roles';
 
-const ROLE: Record<string, string> = { admin: roleRu('admin'), alpha: roleRu('alpha'), user: roleRu('user') };
+const ROLE = (): Record<string, string> => ({ admin: adm(roleRu('admin')), alpha: adm(roleRu('alpha')), user: adm(roleRu('user')) });
 
-export const statsLine = (p: Pick<PersonRow, 'chats' | 'messages' | 'files'>) => [count(p.chats, W.chat), count(p.messages, W.message), p.files ? count(p.files, W.file) : ''].filter(Boolean).join(' · ');
+export const statsLine = (p: Pick<PersonRow, 'chats' | 'messages' | 'files'>) => [admCount(p.chats, W.chat), admCount(p.messages, W.message), p.files ? admCount(p.files, W.file) : ''].filter(Boolean).join(' · ');
 
 export function matchPerson(p: Pick<PersonRow, 'name' | 'email'>, q: string): boolean {
   const s = q.trim().toLocaleLowerCase('ru');
@@ -33,8 +34,8 @@ export function sourcesOf(users: Pick<PersonRow, 'source' | 'disabled'>[]): Sour
 export function PersonBadges({ p }: { p: Pick<PersonRow, 'source' | 'disabled' | 'blockKind'> }) {
   return (
     <span className="adm-badges">
-      <span className={`adm-src adm-src--${p.source.kind}`} title="Откуда пришёл человек" data-testid="user-source">{p.source.label}</span>
-      {p.disabled && <span className={`adm-st adm-st--${p.blockKind === 'ban' ? 'ban' : 'pause'}`} data-testid="user-block">{p.blockKind === 'ban' ? 'заблокирован' : 'доступ забран'}</span>}
+      <span className={`adm-src adm-src--${p.source.kind}`} title={adm("Откуда пришёл человек")} data-testid="user-source">{admAny(p.source.label)}</span>
+      {p.disabled && <span className={`adm-st adm-st--${p.blockKind === 'ban' ? 'ban' : 'pause'}`} data-testid="user-block">{p.blockKind === 'ban' ? adm("заблокирован") : adm("доступ забран")}</span>}
     </span>
   );
 }
@@ -54,40 +55,40 @@ export function AdminPeople({ users, meId, tz, onSettings, initialSource = 'all'
     <div className="adm-urow" key={x.id}>
       <Link href={`/admin/users/${x.id}`} className={`k-row adm-ulink${x.disabled ? ' k-row--muted' : ' k-row--strong'}`} data-testid={`user-${x.email}`}>
         <span className="k-row-m">
-          <span className="k-row-t">{x.name || x.email}{x.id === meId && <span className="k-row-s"> · это вы</span>}</span>
-          <span className="k-row-s">{x.email} · {ROLE[x.role]}</span>
+          <span className="k-row-t">{x.name || x.email}{x.id === meId && <span className="k-row-s"> {adm("· это вы")}</span>}</span>
+          <span className="k-row-s">{x.email} · {ROLE()[x.role]}</span>
           <span className="k-row-s"><PersonBadges p={x} /></span>
           <span className="k-row-s" data-testid="user-stats">{statsLine(x)}</span>
-          <span className="k-row-s">{x.lastAt ? `был(а) ${when(x.lastAt, tz)}` : 'ещё ничего не писал(а)'}</span>
+          <span className="k-row-s">{x.lastAt ? admf("был(а) {0}", when(x.lastAt, tz)) : adm("ещё ничего не писал(а)")}</span>
         </span>
         <RateCounts up={x.up} down={x.down} />
         <Icon n="chev-right" sm className="k-chev" />
       </Link>
-      <button type="button" className="adm-ugear" aria-label={`Роль и доступ: ${x.name || x.email}`} title="Роль и доступ" onClick={() => onSettings(x.id)} data-testid={`user-gear-${x.email}`}><Icon n="sliders" sm /></button>
+      <button type="button" className="adm-ugear" aria-label={admf("Роль и доступ: {0}", x.name || x.email)} title={adm("Роль и доступ")} onClick={() => onSettings(x.id)} data-testid={`user-gear-${x.email}`}><Icon n="sliders" sm /></button>
     </div>
   );
   return (
     <div className="k-stack" data-testid="people">
-      <Group title="Люди" aside={filtered ? `${rows.length} из ${count(users.length, W.user)}` : count(users.length, W.user)} testId="users-table"
-        foot="Откройте человека, чтобы прочитать его чаты, посмотреть файлы и оценки или закрыть доступ. Просмотр — только чтение; каждый просмотр и каждое действие пишутся в журналы ниже.">
-        <Field label="Поиск по имени или почте" value={q} onChange={setQ} placeholder="Анна, ivanov@…" autoComplete="off" testId="people-search" />
+      <Group title={adm("Люди")} aside={filtered ? admf("{0} из {1}", rows.length, admCount(users.length, W.user)) : admCount(users.length, W.user)} testId="users-table"
+        foot={adm("Откройте человека, чтобы прочитать его чаты, посмотреть файлы и оценки или закрыть доступ. Просмотр — только чтение; каждый просмотр и каждое действие пишутся в журналы ниже.")}>
+        <Field label={adm("Поиск по имени или почте")} value={q} onChange={setQ} placeholder={adm("Анна, ivanov@…")} autoComplete="off" testId="people-search" />
         <div className="adm-filter adm-filter--src">
-          <label htmlFor="people-source">Откуда пришли</label>
+          <label htmlFor="people-source">{adm("Откуда пришли")}</label>
           <select id="people-source" value={src} onChange={(e) => setSrc(e.target.value)} data-testid="people-source">
-            <option value="all">Все · {users.length}</option>
-            {sources.map((s) => <option key={s.key} value={s.key}>{s.label} · {s.n}{s.blocked ? ` (заблокировано ${s.blocked})` : ''}</option>)}
+            <option value="all">{adm("Все ·")} {users.length}</option>
+            {sources.map((s) => <option key={s.key} value={s.key}>{admAny(s.label)} · {s.n}{s.blocked ? admf(" (заблокировано {0})", s.blocked) : ''}</option>)}
           </select>
         </div>
-        <div className="adm-filter"><Seg block label="Показать" value={only} onChange={setOnly} testId="people-filter"
-          options={[{ value: 'all', label: 'Все' }, { value: 'down', label: `С плохими оценками · ${withDown}` }, { value: 'blocked', label: `Закрыт доступ · ${blocked}`, testId: 'people-blocked' }]} /></div>
-        <div className="adm-filter"><Seg block label="Вид списка" value={group} onChange={setGroup} testId="people-group"
-          options={[{ value: 'list', label: 'Списком' }, { value: 'src', label: 'По источникам', testId: 'people-by-source' }]} /></div>
-        {rows.length === 0 && <Row title="Никого не нашли" tone="muted" sub="Измените запрос или фильтр" />}
+        <div className="adm-filter"><Seg block label={adm("Показать")} value={only} onChange={setOnly} testId="people-filter"
+          options={[{ value: 'all', label: adm("Все") }, { value: 'down', label: admf("С плохими оценками · {0}", withDown) }, { value: 'blocked', label: admf("Закрыт доступ · {0}", blocked), testId: 'people-blocked' }]} /></div>
+        <div className="adm-filter"><Seg block label={adm("Вид списка")} value={group} onChange={setGroup} testId="people-group"
+          options={[{ value: 'list', label: adm("Списком") }, { value: 'src', label: adm("По источникам"), testId: 'people-by-source' }]} /></div>
+        {rows.length === 0 && <Row title={adm("Никого не нашли")} tone="muted" sub={adm("Измените запрос или фильтр")} />}
         {group === 'src'
           ? sources.map((s) => {
               const part = rows.filter((x) => x.source.key === s.key);
               if (!part.length) return null;
-              return (<div key={s.key} data-testid="people-group-block"><div className="adm-ghead"><b>{s.label}</b><span>{part.length}{s.blocked ? ` · заблокировано ${s.blocked}` : ''}</span></div>{part.map(row)}</div>);
+              return (<div key={s.key} data-testid="people-group-block"><div className="adm-ghead"><b>{admAny(s.label)}</b><span>{part.length}{s.blocked ? admf(" · заблокировано {0}", s.blocked) : ''}</span></div>{part.map(row)}</div>);
             })
           : rows.map(row)}
       </Group>
@@ -109,16 +110,16 @@ export function AuditLog({ tz, userId, inviteId }: { tz: string; userId?: string
     return () => { live = false; };
   }, [limit, userId, inviteId]);
   return (
-    <Group title="Действия администраторов" testId="audit-log" aside={items ? String(items.length) : undefined}
-      foot="Кто из администраторов что сделал с людьми и ссылками и когда; причина — если её указали. Записи не удаляются.">
-      {err && <Row title="Журнал не загрузился" tone="muted" />}
-      {!err && items === null && <Row title="Загружаю…" tone="muted" />}
-      {items?.length === 0 && <Row title="Пока ничего не делали" tone="muted" />}
+    <Group title={adm("Действия администраторов")} testId="audit-log" aside={items ? String(items.length) : undefined}
+      foot={adm("Кто из администраторов что сделал с людьми и ссылками и когда; причина — если её указали. Записи не удаляются.")}>
+      {err && <Row title={adm("Журнал не загрузился")} tone="muted" />}
+      {!err && items === null && <Row title={adm("Загружаю…")} tone="muted" />}
+      {items?.length === 0 && <Row title={adm("Пока ничего не делали")} tone="muted" />}
       {items?.map((a) => (
-        <Row key={a.id} testId="audit-row" title={<><b>{a.adminName || 'Администратор'}</b> — {AUDIT_LABEL[a.action as AuditAction] ?? a.action}{a.targetName || a.targetEmail ? <> · {a.targetName || a.targetEmail}</> : null}</>}
-          sub={`${when(a.at, tz)}${a.reason ? ` · причина: ${a.reason}` : ''}`} sub2={a.detail || undefined} />
+        <Row key={a.id} testId="audit-row" title={<><b>{a.adminName || adm("Администратор")}</b> — {adm(AUDIT_LABEL[a.action as AuditAction] ?? a.action)}{a.targetName || a.targetEmail ? <> · {a.targetName || a.targetEmail}</> : null}</>}
+          sub={`${when(a.at, tz)}${a.reason ? admf(" · причина: {0}", a.reason) : ''}`} sub2={a.detail || undefined} />
       ))}
-      {items && items.length >= limit && limit < 100 && <Row title="Показать больше" tone="muted" onClick={() => setLimit((l) => Math.min(100, l + 20))} testId="audit-more" />}
+      {items && items.length >= limit && limit < 100 && <Row title={adm("Показать больше")} tone="muted" onClick={() => setLimit((l) => Math.min(100, l + 20))} testId="audit-more" />}
     </Group>
   );
 }
@@ -136,17 +137,17 @@ export function ViewLog({ tz, ownerId }: { tz: string; ownerId?: string }) {
     return () => { live = false; };
   }, [limit, ownerId]);
   return (
-    <Group title="Журнал просмотров" testId="view-log" aside={items ? count(items.length, W.view) : undefined}
-      foot="Кто из администраторов открывал чужие чаты, файлы и карточки людей. Одно и то же за 5 минут записывается один раз.">
-      {err && <Row title="Журнал не загрузился" tone="muted" />}
-      {!err && items === null && <Row title="Загружаю…" tone="muted" />}
-      {items?.length === 0 && <Row title="Пока никто ничего не открывал" tone="muted" />}
+    <Group title={adm("Журнал просмотров")} testId="view-log" aside={items ? admCount(items.length, W.view) : undefined}
+      foot={adm("Кто из администраторов открывал чужие чаты, файлы и карточки людей. Одно и то же за 5 минут записывается один раз.")}>
+      {err && <Row title={adm("Журнал не загрузился")} tone="muted" />}
+      {!err && items === null && <Row title={adm("Загружаю…")} tone="muted" />}
+      {items?.length === 0 && <Row title={adm("Пока никто ничего не открывал")} tone="muted" />}
       {items?.map((v) => (
         <Row key={v.id} title={<>{v.adminName} <span className="k-row-s">→</span> {v.ownerName}</>} testId="view-log-row"
-          sub={`${VIEW_KIND[v.kind] ?? v.kind}${v.threadTitle ? ` «${v.threadTitle}»` : ''} · ${when(v.at, tz)}`}
+          sub={`${adm(VIEW_KIND[v.kind] ?? v.kind)}${v.threadTitle ? ` «${v.threadTitle}»` : ''} · ${when(v.at, tz)}`}
           href={v.kind === 'chat' && v.threadId && v.threadTitle ? `/admin/chat/${v.threadId}` : undefined} chevron={v.kind === 'chat' && !!v.threadId && !!v.threadTitle} />
       ))}
-      {items && items.length >= limit && limit < 100 && <div className="adm-more"><Button kind="plain" onClick={() => setLimit(100)}>Показать больше</Button></div>}
+      {items && items.length >= limit && limit < 100 && <div className="adm-more"><Button kind="plain" onClick={() => setLimit(100)}>{adm("Показать больше")}</Button></div>}
     </Group>
   );
 }

@@ -4,6 +4,9 @@ import type { MemoryRow } from '../db/schema';
 import { publish } from '../bus';
 import { addMemory, askedToForget, askedToRemember, deleteMemory, isSection, listMemory, matchForget, memoryAllowed, memoryBlockFor, ruleConflict, SECTIONS, sensitiveTopic, type Section } from '../memory';
 import { registerPromptPart, registerTool } from './registry';
+import { step, uiLang } from './say';
+import { hasKey, tr } from '../i18n/core';
+import type { Key } from '../i18n/dict';
 import type { ToolCtx } from './types';
 
 const short = (id: string) => id.slice(0, 8);
@@ -23,7 +26,7 @@ function userText(ctx: ToolCtx): string {
   return u.content;
 }
 
-const titles = new Map(SECTIONS.map((s) => [s.id, s.title]));
+const titles = { get: (id: Section, userId?: string) => (userId && hasKey(`tools.memset.s.${id}`) ? tr(uiLang(userId), `tools.memset.s.${id}` as Key) : SECTIONS.find((s) => s.id === id)?.title ?? id) };
 function listText(rows: MemoryRow[]): string {
   if (!rows.length) return 'Memory about the user is empty.';
   const out: string[] = [];
@@ -42,13 +45,13 @@ registerTool<Record<string, never>>({
   description: 'Show what Korvex remembers about the user, with ids.',
   parameters: { type: 'object', properties: {} },
   enabled: allowed,
-  title: () => 'Смотрит, что помнит о тебе',
+  title: (_a, c) => step(c?.userId, 'step.memList'),
   run: async (_a, ctx) => {
     const rows = listMemory(ctx.userId);
     const shown = rows.filter((r) => !sensitiveTopic(r.text));
-    ctx.emit({ title: rows.length ? `Смотрит, что помнит о тебе · ${rows.length}` : 'Смотрит, что помнит о тебе · пусто',
-      detail: shown.map((r) => `${titles.get(r.section as Section)}: ${r.text}`).join('\n') + (shown.length < rows.length ? `\n…и ещё ${rows.length - shown.length} личн.` : '') || undefined });
-    return { content: listText(rows) + '\nUser can view and edit memory in Settings → Memory («Настройки → Память»).' };
+    ctx.emit({ title: `${step(ctx.userId, 'step.memList')} · ${rows.length ? rows.length : step(ctx.userId, 'step.memEmpty')}`,
+      detail: shown.map((r) => `${titles.get(r.section as Section, ctx.userId)}: ${r.text}`).join('\n') + (shown.length < rows.length ? `\n${step(ctx.userId, 'step.memMorePriv', { n: rows.length - shown.length })}` : '') || undefined });
+    return { content: listText(rows) + '\nUser can view and edit memory in Settings → Memory.' };
   },
 });
 
@@ -58,7 +61,7 @@ registerTool<{ text: string; section?: string }>({
   description: 'Save a short note about the user themself for all future chats — only when they ask to remember something about themselves. Not for work data (numbers, stock, sums). One sentence; no secrets.',
   parameters: { type: 'object', properties: { text: { type: 'string' }, section: { type: 'string', enum: SECTIONS.map((s) => s.id) } }, required: ['text'] },
   enabled: allowed,
-  title: (a) => (sensitiveTopic(String(a.text ?? '')) ? 'Запоминает личное' : `Запоминает: ${clip(String(a.text ?? ''), 60)}`),
+  title: (a, c) => (sensitiveTopic(String(a.text ?? '')) ? step(c?.userId, 'step.memSavePriv') : step(c?.userId, 'step.memSave', { text: clip(String(a.text ?? ''), 60) })),
   confirm: (a, ctx) => (askedToRemember(userText(ctx)) ? null : `Запомнить о вас для всех будущих чатов: «${clip(String(a.text ?? ''), 200)}»?`),
   run: async (a, ctx) => {
     const text = String(a.text ?? '');
@@ -66,12 +69,12 @@ registerTool<{ text: string; section?: string }>({
     const asked = askedToRemember(userText(ctx));
     const topic = sensitiveTopic(text);
     if (topic && !asked) {
-      ctx.emit({ title: 'Не запоминает личное без прямой просьбы' });
+      ctx.emit({ title: step(ctx.userId, 'step.memNoPriv') });
       return { content: `Not saved: this is sensitive (${topic}); save such things only when the user explicitly asks to remember them.`, error: true };
     }
     const r = addMemory(ctx.userId, { section, text, origin: 'asked', threadId: ctx.threadId, messageId: ctx.messageId }, { allowSensitive: true });
     if (!r.ok) {
-      ctx.emit({ title: r.error === 'workdata' ? 'Не запоминает рабочие данные — они в чате' : r.error === 'rules' ? 'Не запоминает: правила системы не меняются' : r.error === 'secret' ? 'Не запоминает пароли и ключи' : `Не запоминает: ${r.message.toLowerCase()}` });
+      ctx.emit({ title: r.error === 'workdata' ? step(ctx.userId, 'step.memNoWork') : r.error === 'rules' ? step(ctx.userId, 'step.memNoRules') : r.error === 'secret' ? step(ctx.userId, 'step.memNoSecret') : step(ctx.userId, 'step.memNo', { why: r.message.toLowerCase() }) });
       const why = r.error === 'workdata' ? 'this is work data (numbers, stock, sums, item lists) — it is already in the chat; memory is only about the user themself. Tell the user it stays in the chat; do not say «запомнил»'
         : r.error === 'rules' ? 'it contradicts the system rules (memory cannot change rules or the reply language); tell the user it will not be applied'
         : r.error === 'secret' ? 'passwords, keys and card numbers are never stored; tell the user' : r.message;
@@ -79,8 +82,8 @@ registerTool<{ text: string; section?: string }>({
     }
     publish(ctx.userId, { t: 'memory', action: r.action });
     const priv = !!sensitiveTopic(r.row.text);
-    ctx.emit(priv ? { title: 'Запоминает личное' }
-      : { title: `${r.action === 'updated' ? 'Обновляет память' : 'Запоминает'}: ${clip(r.row.text, 60)}`, detail: `${titles.get(r.row.section as Section)}: ${r.row.text}` });
+    ctx.emit(priv ? { title: step(ctx.userId, 'step.memSavePriv') }
+      : { title: step(ctx.userId, r.action === 'updated' ? 'step.memUpdate' : 'step.memSave', { text: clip(r.row.text, 60) }), detail: `${titles.get(r.row.section as Section, ctx.userId)}: ${r.row.text}` });
     return { content: `${r.action === 'same' ? 'Already in memory' : r.action === 'updated' ? 'Updated memory record' : 'Saved'} [${short(r.row.id)}] (${r.row.section}): ${r.row.text}` };
   },
 });
@@ -91,7 +94,7 @@ registerTool<{ ids?: string[]; about?: string }>({
   description: 'Delete notes about the user: ids from memory_list or about (what to forget).',
   parameters: { type: 'object', properties: { ids: { type: 'array', items: { type: 'string' } }, about: { type: 'string' } } },
   enabled: allowed,
-  title: (a) => (a.about && !sensitiveTopic(String(a.about)) ? `Забывает: ${clip(String(a.about), 60)}` : 'Забывает записи памяти'),
+  title: (a, c) => (a.about && !sensitiveTopic(String(a.about)) ? step(c?.userId, 'step.memForget', { text: clip(String(a.about), 60) }) : step(c?.userId, 'step.memForgetAll')),
   confirm: (a, ctx) => (askedToForget(userText(ctx)) ? null : `Удалить из памяти${a.about ? ` «${clip(String(a.about), 80)}»` : ' выбранные записи'}?`),
   run: async (a, ctx) => {
     const rows = listMemory(ctx.userId);
@@ -99,13 +102,13 @@ registerTool<{ ids?: string[]; about?: string }>({
     let hit = want.length ? rows.filter((r) => want.some((w) => r.id.toLowerCase().startsWith(w))) : [];
     if (!hit.length && a.about) hit = matchForget(rows, String(a.about));
     if (!hit.length) {
-      ctx.emit({ title: 'Ищет, что забыть, — не находит' });
+      ctx.emit({ title: step(ctx.userId, 'step.memForgetNone') });
       return { content: `Nothing matched. Current memory:\n${listText(rows)}\nCall memory_forget again with ids.`, error: true };
     }
     deleteMemory(ctx.userId, hit.map((r) => r.id));
     publish(ctx.userId, { t: 'memory', action: 'deleted' });
     const pub = hit.filter((r) => !sensitiveTopic(r.text));
-    ctx.emit({ title: pub.length ? `Забывает: ${clip(pub.map((r) => r.text).join('; '), 70)}` : 'Забывает личное', detail: pub.map((r) => r.text).join('\n') || undefined });
+    ctx.emit({ title: pub.length ? step(ctx.userId, 'step.memForget', { text: clip(pub.map((r) => r.text).join('; '), 70) }) : step(ctx.userId, 'step.memForgetPriv'), detail: pub.map((r) => r.text).join('\n') || undefined });
     return { content: `Deleted ${hit.length}: ${hit.map((r) => `[${short(r.id)}] ${r.text}`).join('; ')}` };
   },
 });

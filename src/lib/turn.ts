@@ -65,10 +65,10 @@ export function prepare(inp: TurnInput): Prepared {
     const at = new Map(ids.map((id, i) => [id, i] as const));
     own.sort((x, y) => (at.get(x.id) ?? 0) - (at.get(y.id) ?? 0));
     return own.map((f) => {
-      if (!f.threadId) { db.update(schema.files).set({ threadId: thread.id }).where(eq(schema.files.id, f.id)).run(); return f.id; }
+      if (!f.threadId && !f.folderId) { db.update(schema.files).set({ threadId: thread.id }).where(eq(schema.files.id, f.id)).run(); return f.id; }
       if (f.threadId === thread.id) return f.id;
       const id = randomUUID();
-      db.insert(schema.files).values({ ...f, id, threadId: thread.id }).run();
+      db.insert(schema.files).values({ ...f, id, threadId: thread.id, folderId: null }).run();
       try { fs.cpSync(path.join(dataDir(), 'files', f.id), path.join(dataDir(), 'files', id), { recursive: true }); } catch {  }
       return id;
     });

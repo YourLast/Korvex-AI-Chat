@@ -6,11 +6,13 @@ import { agentRules } from './agentLoop';
 import { promptPartsScoped } from './tools/registry';
 import type { ToolCtx } from './tools/types';
 
+const rulesLang = (userId: string | null | undefined): 'ru' | 'en' => (userLang(userId) === 'ru' ? 'ru' : 'en');
 type PCtx = Pick<ToolCtx, 'userId' | 'threadId' | 'folderId' | 'kind' | 'modelId' | 'depth'>;
 import { MARKER } from './turn';
 import type { ChatMsg, OaiMsg } from './upstream';
 import { ext } from '@/ext';
 import { PLAIN_DIALECT } from './dialect';
+import { userLang } from './userLang';
 
 const REPLAY_TURNS = 2;
 const META_TOOL_MAX = 4000;
@@ -38,7 +40,7 @@ export function agentHistory(hist: Message[], model: ModelCfg, userId: string, t
   const rows = fileIds.length ? getDb().select({ id: schema.files.id, name: schema.files.name, mime: schema.files.mime }).from(schema.files)
     .where(and(inArray(schema.files.id, fileIds), eq(schema.files.userId, userId))).all() : [];
   const byId = new Map(rows.map((f) => [f.id, f]));
-  const sys = composeSystem({ model, tz, rules: agentRules(work), folderSys, pctx });
+  const sys = composeSystem({ model, tz, rules: agentRules(work, rulesLang(userId)), folderSys, pctx });
   const out: OaiMsg[] = sys ? [{ role: 'system', content: sys }] : [];
   const assistants = hist.filter((m) => m.role === 'assistant' && m.content.trim()).map((m) => m.id);
   const replay = new Set(assistants.slice(-REPLAY_TURNS));
@@ -49,8 +51,10 @@ export function agentHistory(hist: Message[], model: ModelCfg, userId: string, t
       const fs = ids.map((id) => byId.get(id)).filter((f): f is NonNullable<typeof f> => !!f);
       const docs = fs.filter((f) => !f.mime.startsWith('image/')).map((f) => f.name);
       const imgs = fs.filter((f) => f.mime.startsWith('image/')).map((f) => f.name);
-      const note = [docs.length ? `файлы: ${docs.join(', ')}` : '', imgs.length ? `картинки: ${imgs.join(', ')}` : ''].filter(Boolean).join('; ');
-      if (note) c = `${c.trim() || 'Посмотри приложенное.'}\n\n[К сообщению приложены ${note}.${work && (ext.dialect ?? PLAIN_DIALECT).workTool ? ` Их содержимое читает ${(ext.dialect ?? PLAIN_DIALECT).workTool!.name}.` : ''}]`;
+      const en = rulesLang(userId) === 'en';
+      const note = [docs.length ? `${en ? 'files' : 'файлы'}: ${docs.join(', ')}` : '', imgs.length ? `${en ? 'images' : 'картинки'}: ${imgs.join(', ')}` : ''].filter(Boolean).join('; ');
+      if (note && en) c = `${c.trim() || 'Look at the attachment.'}\n\n[Attached to the message: ${note}.${work && (ext.dialect ?? PLAIN_DIALECT).workTool ? ` ${(ext.dialect ?? PLAIN_DIALECT).workTool!.name} reads their contents.` : ''}]`;
+      else if (note) c = `${c.trim() || 'Посмотри приложенное.'}\n\n[К сообщению приложены ${note}.${work && (ext.dialect ?? PLAIN_DIALECT).workTool ? ` Их содержимое читает ${(ext.dialect ?? PLAIN_DIALECT).workTool!.name}.` : ''}]`;
       out.push({ role: 'user', content: c });
       continue;
     }
@@ -75,11 +79,11 @@ export function chatToOai(msgs: ChatMsg[], pctx?: PCtx, sys?: { model: ModelCfg;
     return { role: m.role, content: m.content.map((p) => (p.type === 'text' ? { type: 'text', text: p.text } : { type: 'image_url', image_url: { url: `data:${p.mediaType};base64,${p.image.toString('base64')}` } })) };
   });
   if (sys && sys0) {
-    out[0] = { role: 'system', content: composeSystem({ model: sys.model, tz: sys.tz, rules: agentRules(false), folderSys: sys.folderSys, pctx }) };
+    out[0] = { role: 'system', content: composeSystem({ model: sys.model, tz: sys.tz, rules: agentRules(false, rulesLang(pctx?.userId)), folderSys: sys.folderSys, pctx }) };
     return out;
   }
   const sc = pctx ? promptPartsScoped(pctx) : null;
-  const rules = [agentRules(false), ...(sc ? [...sc.shared, ...sc.chat, ...sc.user].filter((p) => !sys0.includes(p)) : [])].join('\n\n');
+  const rules = [agentRules(false, rulesLang(pctx?.userId)), ...(sc ? [...sc.shared, ...sc.chat, ...sc.user].filter((p) => !sys0.includes(p)) : [])].join('\n\n');
   if (out[0]?.role === 'system' && typeof out[0].content === 'string') out[0] = { role: 'system', content: `${out[0].content}\n\n${rules}` };
   else out.unshift({ role: 'system', content: rules });
   return out;

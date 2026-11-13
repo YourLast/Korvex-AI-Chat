@@ -1,5 +1,8 @@
-# docker compose up -d  →  http://localhost:3000 (the first account becomes the admin; add models in Admin → Models).
-# Voice input works out of the box: the speech-to-text server (speaches, faster-whisper) runs next to the app.
+# docker compose up -d  →  http://localhost:3000 (the first account becomes the admin).
+# Works without API keys: a small local model (Ollama, on the CPU) downloads on the first start, the chat shows the progress.
+# Voice input (speaches) and web search (SearXNG) run next to the app. Add your own models and API keys in Admin → Models.
+# Local model on an NVIDIA GPU: docker compose -f compose.yaml -f compose.gpu.yaml up -d
+# Another local model: KX_LOCAL_MODEL=<name from ollama.com/library> in .env; KX_LOCAL_MODEL= (empty) — no local model.
 services:
   app:
     image: ghcr.io/yourlast/korvex-ai-chat:latest
@@ -9,6 +12,11 @@ services:
     environment:
       STT_URL: http://stt:8000/v1
       STT_MODEL: Systran/faster-whisper-small
+      KX_OLLAMA_URL: http://ollama:11434
+      KX_LOCAL_MODEL: ${KX_LOCAL_MODEL-granite4:micro}
+      KX_TITLE_ENGINE_URL: ${KX_TITLE_ENGINE_URL-http://ollama:11434/v1}   # chat titles and user memory: the local model too
+      KX_TITLE_ENGINE_MODEL: ${KX_TITLE_ENGINE_MODEL-granite4:micro}
+      KX_SEARX_URL: http://search:8080
       COOKIE_SECURE: "0"   # set to "1" behind HTTPS
     env_file:
       - path: .env.local
@@ -17,6 +25,25 @@ services:
       - korvex-data:/data
     depends_on:
       - stt
+      - ollama
+      - search
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:0.40.16
+    environment:
+      OLLAMA_CONTEXT_LENGTH: "8192"
+      OLLAMA_KEEP_ALIVE: 24h   # keep the model loaded: no wait on the first message after a pause
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+
+  search:
+    image: searxng/searxng:2026.9.25-12f8b6515
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-korvex-local-search}   # the search server is reachable only from the app
+    volumes:
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
     restart: unless-stopped
 
   stt:
@@ -27,4 +54,5 @@ services:
 
 volumes:
   korvex-data:
+  ollama:
   stt-models:

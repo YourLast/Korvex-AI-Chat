@@ -1,5 +1,6 @@
 import { deleteSetting, getSetting, setSetting } from './settings';
 import { cfg } from './cfg';
+import { searchConf } from './webSearch';
 import { allowedBy, ruleOf, whoOf } from './access';
 
 export const FEATURE_OFF = 'Выключено администратором';
@@ -13,7 +14,7 @@ const DEFS: Record<FeatureId, Def> = {
   files: { id: 'files', def: () => true },
   memory: { id: 'memory', def: () => true },
   automations: { id: 'automations', def: () => process.env.KX_SCHEDULER !== '0' },
-  webSearch: { id: 'webSearch', def: () => !!cfg('KX_SEARX_URL') },
+  webSearch: { id: 'webSearch', def: () => !!searchConf() },
   compare: { id: 'compare', def: () => true },
   push: { id: 'push', def: () => true },
   code: { id: 'code', def: () => cfg('KX_FEATURE_CODE') === '1', warn: 'code' },

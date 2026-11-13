@@ -1,4 +1,5 @@
 'use client';
+import { adm, admf } from '@/lib/i18n/adm';
 import { useEffect, useState } from 'react';
 import { Notice } from './Kit';
 
@@ -10,8 +11,9 @@ export function AdminUpdate() {
   if (!u?.newer || !u.latest) return null;
   return (
     <Notice tone="info" testId="admin-update">
-      Доступна версия {u.latest} (сейчас {u.current}). Обновить: <code>docker compose pull &amp;&amp; docker compose up -d</code>
-      {u.url && <> · <a href={u.url} target="_blank" rel="noreferrer">что нового</a></>}
+      
+      {adm("Доступна версия")} {u.latest} {adm("(сейчас")} {u.current}{adm("). Обновить:")} <code>docker compose pull &amp;&amp; docker compose up -d</code>
+      {u.url && <> · <a href={u.url} target="_blank" rel="noreferrer">{adm("что нового")}</a></>}
     </Notice>
   );
 }

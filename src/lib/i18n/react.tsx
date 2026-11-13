@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useMemo, type ReactNode } from 'react';
 import { bind, LANG_ASKED, LANG_COOKIE, LANG_STORE, type Lang, type TFn } from './core';
+import { setAdmLang } from './adm';
 
 type Ctx = { lang: Lang; signedIn: boolean };
 const LangCtx = createContext<Ctx>({ lang: 'ru', signedIn: false });
@@ -11,6 +12,7 @@ export function rememberLang(lang: Lang) {
 }
 
 export function I18nProvider({ lang, signedIn = false, children }: { lang: Lang; signedIn?: boolean; children: ReactNode }) {
+  setAdmLang(lang);
   const value = useMemo(() => ({ lang, signedIn }), [lang, signedIn]);
   useEffect(() => { if (signedIn) rememberLang(lang); document.documentElement.lang = lang === 'sr' ? 'sr-Latn' : lang; }, [lang, signedIn]);
   return <LangCtx.Provider value={value}>{children}</LangCtx.Provider>;

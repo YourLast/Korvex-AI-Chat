@@ -7,5 +7,6 @@ export const MODEL_PREFIX = '';
 export const BRAND_WORDS = /Korvex/g;
 export const INTRO_DRAFT = { modelId: '', levelId: '' };
 export const API_MEMORY_KEY = '';
-export const FOOTER_TEXT = '© 2026 Korvex · Apache-2.0';
+export const FOOTER_TEXT = '© 2026 Korvex';
 export const FOOTER_LINK: { word: string; href: string } | null = { word: 'Korvex', href: 'https://korvexai.site' };
+export const POWERED_BY: { text: string; long: string; href: string; mail: string } | null = { text: 'Powered by Korvex', long: 'Powered by Korvex AI Chat', href: 'https://github.com/YourLast/Korvex-AI-Chat', mail: 'hello@korvexai.site' };

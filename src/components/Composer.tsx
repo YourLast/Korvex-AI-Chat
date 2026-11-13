@@ -18,8 +18,10 @@ import { UploadCard } from './UploadCard';
 import { holdState, heldFiles, failedNote, fileErrKind, type FileErrKind, type Hold } from '@/lib/sendHold';
 import type { HeldView } from './HeldTurn';
 import { useFeatures } from './FeaturesCtx';
+import { FootNote } from './FootNote';
 
-export type ComposerHandle = { focus: () => void; setText: (t: string) => void;  cancelHold: (id: string) => void };
+export type ComposerHandle = { focus: () => void; setText: (t: string) => void;  cancelHold: (id: string) => void;
+   addFiles: (chips: FileChip[]) => void };
 export type ComposerEdit = { id: string; text: string; files: FileChip[] };
 
 export function editLine(e: ComposerEdit): string {
@@ -33,6 +35,7 @@ const LINE = 24;
 
 export const Composer = forwardRef<ComposerHandle, {
   busy: boolean; placeholder: string; modelSlot: ReactNode; onStop: () => void;
+  docsSlot?: ReactNode;
   onSend: (text: string, files: FileChip[], opts?: { holdId?: string }) => void | boolean | Promise<boolean | void>; footNote?: string; acceptImages?: boolean;
   modelId?: string;
   overlay?: ReactNode;
@@ -42,7 +45,7 @@ export const Composer = forwardRef<ComposerHandle, {
   attach?: boolean;
   label?: string;
   onHolds?: (h: HeldView[]) => void;
-}>(function Composer({ busy, placeholder, modelSlot, onStop, onSend, footNote, acceptImages = true, modelId, overlay, onSteer, edit = null, onEditCancel, attach = true, label, onHolds }, ref) {
+}>(function Composer({ busy, placeholder, modelSlot, docsSlot, onStop, onSend, footNote, acceptImages = true, modelId, overlay, onSteer, edit = null, onEditCancel, attach = true, label, onHolds }, ref) {
   const feat = useFeatures();
   const canAttach = attach && feat.files;
   const tx = useT();
@@ -60,7 +63,8 @@ export const Composer = forwardRef<ComposerHandle, {
   const editing = !!edit;
   const editR = useRef(editing); editR.current = editing;
 
-  useImperativeHandle(ref, () => ({ focus: () => ta.current?.focus(), setText, cancelHold: (id) => cancelHoldR.current(id) }), []);
+  useImperativeHandle(ref, () => ({ focus: () => ta.current?.focus(), setText, cancelHold: (id) => cancelHoldR.current(id),
+    addFiles: (chips) => setUps((u) => [...u, ...chips.filter((c) => !u.some((x) => x.chip?.id === c.id)).map((c): Up => ({ tmp: `doc-${c.id}`, name: c.name, size: c.size, status: 'ready', chip: c, img: isImage(c) }))]) }), []);
 
   const saved = useRef<string | null>(null);
   const [caret, setCaret] = useState(0);
@@ -372,6 +376,7 @@ export const Composer = forwardRef<ComposerHandle, {
           {canAttach && <input key="folder" ref={folderIn} type="file" hidden multiple {...({ webkitdirectory: '', directory: '' } as object)} data-testid="folder-input" onChange={(e) => { if (e.target.files?.length) void upload(e.target.files); e.target.value = ''; }} />}
           {canAttach && !voice && <button key="clip" type="button" className="icon-btn" aria-label={tx('comp.attach')} onClick={() => fileIn.current?.click()}><Icon n="clip" /></button>}
           {canAttach && !voice && <button key="folder-btn" type="button" className="icon-btn up-folder-btn" aria-label={tx('files.pickFolder')} title={tx('files.pickFolder')} data-testid="pick-folder" onClick={() => folderIn.current?.click()}><Icon n="folder" /></button>}
+          {canAttach && !voice && docsSlot && <Fragment key="docs">{docsSlot}</Fragment>}
           {!voice && <Fragment key="chip">{modelSlot}</Fragment>}
           {(tap || v.phase === 'stt') && (
             <button key="cancel" type="button" className="btn btn--ghost vx-btn vx-cancel" data-testid="rec-cancel" onClick={() => v.cancel()}><Icon n="x" sm />{tx('common.cancel')}</button>
@@ -398,7 +403,7 @@ export const Composer = forwardRef<ComposerHandle, {
           )}
         </div>
       </div>
-      {footNote && <div className="foot-note">{footNote}</div>}
+      {footNote && <FootNote text={footNote} />}
     </div>
   );
 });

@@ -1,3 +1,4 @@
+import { effectiveWeekMult } from './inviteFlags';
 import { sql } from 'drizzle-orm';
 import { getDb } from './db';
 import type { User } from './db/schema';
@@ -74,7 +75,7 @@ export function weekState(u: Pick<User, 'id' | 'role' | 'timezone' | 'weekMult' 
   const mode = weekMode();
   const tz = tzOf(u);
   const w = weekRange(now, tz);
-  const mult = Number.isFinite(u.weekMult) && u.weekMult >= 0 ? u.weekMult : 1;
+  const mult = effectiveWeekMult(u);
   const limited = mode !== 'off' && u.role !== 'admin' && mult > 0;
   const limit = Math.max(1, Math.round(weekLimit() * (mult || 1))), hard = Math.max(limit, Math.round(weekHard() * (mult || 1)));
   if (!limited) return { mode, limited, used: 0, limit, hard, pct: 0, phase: 'ok', resetAt: w.end, key: w.key };

@@ -14,6 +14,19 @@ function looksText(b: Buffer): boolean {
   try { new TextDecoder('utf-8', { fatal: true }).decode(head.subarray(0, head.length - 4 > 0 ? head.length - 4 : head.length)); return true; } catch { return false; }
 }
 
+export function decodeText(b: Buffer): string {
+  const body = b[0] === 0xef && b[1] === 0xbb && b[2] === 0xbf ? b.subarray(3) : b;
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(body); } catch {  }
+  try { return new TextDecoder('windows-1251').decode(body); } catch { return body.toString('utf8'); }
+}
+function looksCp1251(b: Buffer): boolean {
+  const head = b.subarray(0, 8192);
+  if (head.includes(0)) return false;
+  let t = '';
+  try { t = new TextDecoder('windows-1251').decode(head); } catch { return false; }
+  return (t.match(/[А-Яа-яЁё]/g)?.length ?? 0) > 8;
+}
+
 function zipEntries(data: Buffer, want: (name: string) => boolean): Promise<Map<string, string>> {
   return new Promise((resolve, reject) => {
     yauzl.fromBuffer(data, { lazyEntries: true }, (err, zip) => {
@@ -84,6 +97,6 @@ export async function extractNode(data: Buffer, name: string): Promise<Extracted
     const text = wb.SheetNames.map((n) => `[sheet ${n}]\n${XLSX.utils.sheet_to_csv(wb.Sheets[n], { blankrows: false })}`).join('\n\n');
     return { text, info: { format: ext.slice(1), sheets: wb.SheetNames.length } };
   }
-  if (TEXT.has(ext) || looksText(data)) return { text: data.toString('utf8'), info: { format: 'text' } };
+  if (TEXT.has(ext) || looksText(data) || looksCp1251(data)) return { text: decodeText(data), info: { format: 'text' } };
   throw new Error('этот формат пока не читается');
 }

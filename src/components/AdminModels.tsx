@@ -1,4 +1,5 @@
 'use client';
+import { adm, admErr, admf } from '@/lib/i18n/adm';
 import { useEffect, useState } from 'react';
 import { Button, Field, Group, Notice, PickerRow, Row, Sheet, SwitchRow, useConfirm } from './Kit';
 
@@ -23,7 +24,7 @@ export function AdminModels() {
   const [mod, setMod] = useState<{ id: string; providerId: string; upstreamModel: string; name: string; levels: 'plain' | 'reasoning'; images: boolean; tools: boolean; contextTokens: string; isNew: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmUi, ask] = useConfirm();
-  const load = () => fetch('/api/admin/providers').then((r) => r.json()).then(setV).catch(() => setErr('Нет связи с сервером'));
+  const load = () => fetch('/api/admin/providers').then((r) => r.json()).then(setV).catch(() => setErr(adm("Нет связи с сервером")));
   useEffect(() => { void load(); }, []);
 
   const call = async (url: string, method: string, body?: unknown) => {
@@ -31,7 +32,7 @@ export function AdminModels() {
     try {
       const r = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body === undefined ? undefined : JSON.stringify(body) });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) { setErr(j.error || 'Не сохранилось'); return null; }
+      if (!r.ok) { setErr(admErr(j.error) || adm("Не сохранилось")); return null; }
       setErr(''); return j;
     } finally { setBusy(false); }
   };
@@ -47,7 +48,7 @@ export function AdminModels() {
     if (r) setTest(r);
   };
   const delProv = async (p: Prov) => {
-    if (!(await ask({ title: `Удалить «${p.name}»?`, message: p.models ? `Вместе с ним уйдут его модели (${p.models}). Старые чаты с ними откроются, новых ответов не будет.` : undefined, action: 'Удалить' }))) return;
+    if (!(await ask({ title: admf("Удалить «{0}»?", p.name), message: p.models ? admf("Вместе с ним уйдут его модели ({0}). Старые чаты с ними откроются, новых ответов не будет.", p.models) : undefined, action: adm("Удалить") }))) return;
     if (await call(`/api/admin/providers?id=${encodeURIComponent(p.id)}`, 'DELETE')) void load();
   };
   const saveMod = async () => {
@@ -57,7 +58,7 @@ export function AdminModels() {
     if (r) { setMod(null); void load(); }
   };
   const delMod = async (m: AM) => {
-    if (!(await ask({ title: `Удалить модель «${m.name}»?`, action: 'Удалить' }))) return;
+    if (!(await ask({ title: admf("Удалить модель «{0}»?", m.name), action: adm("Удалить") }))) return;
     if (await call(`/api/admin/models?id=${encodeURIComponent(m.id)}`, 'DELETE')) void load();
   };
   const provName = (id: string) => v?.providers.find((p) => p.id === id)?.name ?? '—';
@@ -66,53 +67,53 @@ export function AdminModels() {
     <>
       {confirmUi}
       {err && <Notice>{err}</Notice>}
-      <Group title="Провайдеры" aside={<Button onClick={() => { setTest(null); setProv({ name: '', kind: 'openai-compatible', baseUrl: '', key: '', hasKey: false }); }} testId="prov-add">Добавить</Button>}
-        foot="Ключ хранится зашифрованным и после сохранения не показывается." testId="admin-providers">
-        {(v?.providers ?? []).length === 0 && <Row title="Провайдеров пока нет" tone="muted" />}
+      <Group title={adm("Провайдеры")} aside={<Button onClick={() => { setTest(null); setProv({ name: '', kind: 'openai-compatible', baseUrl: '', key: '', hasKey: false }); }} testId="prov-add">{adm("Добавить")}</Button>}
+        foot={adm("Ключ хранится зашифрованным и после сохранения не показывается.")} testId="admin-providers">
+        {(v?.providers ?? []).length === 0 && <Row title={adm("Провайдеров пока нет")} tone="muted" />}
         {(v?.providers ?? []).map((p) => (
-          <Row key={p.id} title={p.name} sub={`${v?.presets[p.kind]?.label ?? p.kind} · ${p.baseUrl || 'адрес по умолчанию'} · ${p.hasKey ? 'ключ задан' : 'без ключа'} · моделей: ${p.models}`}
+          <Row key={p.id} title={p.name} sub={admf("{0} · {1} · {2} · моделей: {3}", v?.presets[p.kind]?.label ?? p.kind, p.baseUrl || adm("адрес по умолчанию"), p.hasKey ? adm("ключ задан") : adm("без ключа"), p.models)}
             chevron onClick={() => { setTest(null); setProv({ id: p.id, name: p.name, kind: p.kind, baseUrl: p.baseUrl, key: '', hasKey: p.hasKey }); }} testId={`prov-${p.id}`} />
         ))}
       </Group>
-      <Group title="Модели" aside={v?.providers.length ? <Button onClick={() => setMod({ id: '', providerId: v.providers[0].id, upstreamModel: '', name: '', levels: 'plain', images: false, tools: true, contextTokens: '32768', isNew: true })} testId="model-add">Добавить</Button> : undefined}
-        foot={v?.configModels.length ? `Из файла конфигурации: ${v.configModels.map((m) => m.name).join(', ')}.` : undefined} testId="admin-models">
-        {(v?.models ?? []).length === 0 && <Row title="Моделей из админки пока нет" tone="muted" />}
+      <Group title={adm("Модели")} aside={v?.providers.length ? <Button onClick={() => setMod({ id: '', providerId: v.providers[0].id, upstreamModel: '', name: '', levels: 'plain', images: false, tools: true, contextTokens: '32768', isNew: true })} testId="model-add">{adm("Добавить")}</Button> : undefined}
+        foot={v?.configModels.length ? admf("Из файла конфигурации: {0}.", v.configModels.map((m) => m.name).join(', ')) : undefined} testId="admin-models">
+        {(v?.models ?? []).length === 0 && <Row title={adm("Моделей из админки пока нет")} tone="muted" />}
         {(v?.models ?? []).map((m) => (
-          <Row key={m.id} title={m.name} sub={`${provName(m.providerId)} · ${m.upstreamModel}${m.hidden ? ' · скрыта' : ''}`} chevron
+          <Row key={m.id} title={m.name} sub={`${provName(m.providerId)} · ${m.upstreamModel}${m.hidden ? adm(" · скрыта") : ''}`} chevron
             onClick={() => setMod({ id: m.id, providerId: m.providerId, upstreamModel: m.upstreamModel, name: m.name, levels: m.levels.some((l) => l.effort) ? 'reasoning' : 'plain', images: !!m.images, tools: !!m.tools, contextTokens: String(m.contextTokens), isNew: false })} testId={`model-${m.id}`} />
         ))}
       </Group>
 
-      <Sheet open={!!prov} onClose={() => setProv(null)} title={prov?.id ? 'Провайдер' : 'Новый провайдер'} testId="prov-sheet"
+      <Sheet open={!!prov} onClose={() => setProv(null)} title={prov?.id ? adm("Провайдер") : adm("Новый провайдер")} testId="prov-sheet"
         foot={<>
-          {prov?.id && <Button kind="danger" onClick={() => { const p = v?.providers.find((x) => x.id === prov.id); if (p) { setProv(null); void delProv(p); } }}>Удалить</Button>}
-          <Button onClick={() => void testProv()} busy={busy} testId="prov-test">Проверить связь</Button>
-          <Button kind="primary" onClick={() => void saveProv()} busy={busy} disabled={!prov?.name.trim()} testId="prov-save">Сохранить</Button>
+          {prov?.id && <Button kind="danger" onClick={() => { const p = v?.providers.find((x) => x.id === prov.id); if (p) { setProv(null); void delProv(p); } }}>{adm("Удалить")}</Button>}
+          <Button onClick={() => void testProv()} busy={busy} testId="prov-test">{adm("Проверить связь")}</Button>
+          <Button kind="primary" onClick={() => void saveProv()} busy={busy} disabled={!prov?.name.trim()} testId="prov-save">{adm("Сохранить")}</Button>
         </>}>
         {prov && <Group>
-          <PickerRow title="Вид" value={prov.kind} options={KINDS.map((k) => ({ value: k, label: v?.presets[k]?.label ?? k }))} onChange={(k) => setProv({ ...prov, kind: k })} testId="prov-kind" />
-          <Field label="Название" value={prov.name} onChange={(x) => setProv({ ...prov, name: x })} placeholder={v?.presets[prov.kind]?.label} testId="prov-name" />
-          <Field label="Адрес API" value={prov.baseUrl} onChange={(x) => setProv({ ...prov, baseUrl: x })} placeholder={v?.presets[prov.kind]?.baseUrl || 'https://…/v1'} mono testId="prov-url" />
-          <Field label="Ключ API" type="password" value={prov.key} onChange={(x) => setProv({ ...prov, key: x })} placeholder={prov.hasKey ? 'задан — оставьте пустым, чтобы не менять' : v?.presets[prov.kind]?.needsKey ? 'нужен' : 'не нужен'} autoComplete="off" testId="prov-key" />
+          <PickerRow title={adm("Вид")} value={prov.kind} options={KINDS.map((k) => ({ value: k, label: v?.presets[k]?.label ?? k }))} onChange={(k) => setProv({ ...prov, kind: k })} testId="prov-kind" />
+          <Field label={adm("Название")} value={prov.name} onChange={(x) => setProv({ ...prov, name: x })} placeholder={v?.presets[prov.kind]?.label} testId="prov-name" />
+          <Field label={adm("Адрес API")} value={prov.baseUrl} onChange={(x) => setProv({ ...prov, baseUrl: x })} placeholder={v?.presets[prov.kind]?.baseUrl || 'https://…/v1'} mono testId="prov-url" />
+          <Field label={adm("Ключ API")} type="password" value={prov.key} onChange={(x) => setProv({ ...prov, key: x })} placeholder={prov.hasKey ? adm("задан — оставьте пустым, чтобы не менять") : v?.presets[prov.kind]?.needsKey ? adm("нужен") : adm("не нужен")} autoComplete="off" testId="prov-key" />
         </Group>}
-        {test && (test.ok ? <Notice tone="ok">Связь есть. Моделей на сервере: {test.models?.length ?? 0}{test.models?.length ? ` — ${test.models.slice(0, 6).join(', ')}${test.models.length > 6 ? '…' : ''}` : ''}</Notice>
-          : <Notice>Связи нет: {test.error}</Notice>)}
+        {test && (test.ok ? <Notice tone="ok">{adm("Связь есть. Моделей на сервере:")} {test.models?.length ?? 0}{test.models?.length ? ` — ${test.models.slice(0, 6).join(', ')}${test.models.length > 6 ? '…' : ''}` : ''}</Notice>
+          : <Notice>{adm("Связи нет:")} {admErr(test.error)}</Notice>)}
       </Sheet>
 
-      <Sheet open={!!mod} onClose={() => setMod(null)} title={mod?.isNew ? 'Новая модель' : 'Модель'} testId="model-sheet"
+      <Sheet open={!!mod} onClose={() => setMod(null)} title={mod?.isNew ? adm("Новая модель") : adm("Модель")} testId="model-sheet"
         foot={<>
-          {mod && !mod.isNew && <Button kind="danger" onClick={() => { const m = v?.models.find((x) => x.id === mod.id); if (m) { setMod(null); void delMod(m); } }}>Удалить</Button>}
-          <Button kind="primary" onClick={() => void saveMod()} busy={busy} disabled={!mod?.id || !mod?.name.trim() || !mod?.upstreamModel.trim()} testId="model-save">Сохранить</Button>
+          {mod && !mod.isNew && <Button kind="danger" onClick={() => { const m = v?.models.find((x) => x.id === mod.id); if (m) { setMod(null); void delMod(m); } }}>{adm("Удалить")}</Button>}
+          <Button kind="primary" onClick={() => void saveMod()} busy={busy} disabled={!mod?.id || !mod?.name.trim() || !mod?.upstreamModel.trim()} testId="model-save">{adm("Сохранить")}</Button>
         </>}>
         {mod && v && <Group>
-          <PickerRow title="Провайдер" value={mod.providerId} options={v.providers.map((p) => ({ value: p.id, label: p.name }))} onChange={(x) => setMod({ ...mod, providerId: x })} testId="model-prov" />
-          <Field label="Модель на сервере" value={mod.upstreamModel} onChange={(x) => setMod({ ...mod, upstreamModel: x, ...(mod.isNew && (!mod.id || mod.id === slug(mod.upstreamModel)) ? { id: slug(x) } : {}), ...(mod.isNew && (!mod.name || mod.name === mod.upstreamModel) ? { name: x } : {}) })} placeholder="gpt-4.1-mini, llama3.1:8b…" mono testId="model-upstream" />
-          <Field label="Название в чате" value={mod.name} onChange={(x) => setMod({ ...mod, name: x })} testId="model-name" />
-          {mod.isNew && <Field label="Код модели (в адресах и API)" value={mod.id} onChange={(x) => setMod({ ...mod, id: slug(x) })} mono testId="model-id" />}
-          <PickerRow title="Размышление" value={mod.levels} options={[{ value: 'plain', label: 'Нет' }, { value: 'reasoning', label: 'Уровни low · medium · high' }]} onChange={(x) => setMod({ ...mod, levels: x })} testId="model-levels" />
-          <Field label="Окно, токенов" value={mod.contextTokens} onChange={(x) => setMod({ ...mod, contextTokens: x.replace(/\D/g, '') })} inputMode="numeric" testId="model-ctx" />
-          <SwitchRow title="Видит картинки" checked={mod.images} onChange={(x) => setMod({ ...mod, images: x })} testId="model-images" />
-          <SwitchRow title="Инструменты (поиск, файлы, память)" checked={mod.tools} onChange={(x) => setMod({ ...mod, tools: x })} testId="model-tools" />
+          <PickerRow title={adm("Провайдер")} value={mod.providerId} options={v.providers.map((p) => ({ value: p.id, label: p.name }))} onChange={(x) => setMod({ ...mod, providerId: x })} testId="model-prov" />
+          <Field label={adm("Модель на сервере")} value={mod.upstreamModel} onChange={(x) => setMod({ ...mod, upstreamModel: x, ...(mod.isNew && (!mod.id || mod.id === slug(mod.upstreamModel)) ? { id: slug(x) } : {}), ...(mod.isNew && (!mod.name || mod.name === mod.upstreamModel) ? { name: x } : {}) })} placeholder="gpt-4.1-mini, llama3.1:8b…" mono testId="model-upstream" />
+          <Field label={adm("Название в чате")} value={mod.name} onChange={(x) => setMod({ ...mod, name: x })} testId="model-name" />
+          {mod.isNew && <Field label={adm("Код модели (в адресах и API)")} value={mod.id} onChange={(x) => setMod({ ...mod, id: slug(x) })} mono testId="model-id" />}
+          <PickerRow title={adm("Размышление")} value={mod.levels} options={[{ value: 'plain', label: adm("Нет") }, { value: 'reasoning', label: adm("Уровни low · medium · high") }]} onChange={(x) => setMod({ ...mod, levels: x })} testId="model-levels" />
+          <Field label={adm("Окно, токенов")} value={mod.contextTokens} onChange={(x) => setMod({ ...mod, contextTokens: x.replace(/\D/g, '') })} inputMode="numeric" testId="model-ctx" />
+          <SwitchRow title={adm("Видит картинки")} checked={mod.images} onChange={(x) => setMod({ ...mod, images: x })} testId="model-images" />
+          <SwitchRow title={adm("Инструменты (поиск, файлы, память)")} checked={mod.tools} onChange={(x) => setMod({ ...mod, tools: x })} testId="model-tools" />
         </Group>}
       </Sheet>
     </>

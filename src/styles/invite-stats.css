@@ -39,3 +39,7 @@
 .ist-tlink { color: inherit; text-decoration: none; }
 @media (hover: hover) { .ist-tlink:hover { text-decoration: underline; text-underline-offset: 3px; } }
 .ist-open { color: var(--text-2); }
+.ist-week { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.ist-week button { height: var(--ctl-sm); padding: 0 var(--s-2); border: 0; border-radius: var(--r-full); background: var(--surface-3); box-shadow: inset 0 0 0 1px var(--line-2);
+  color: var(--text-2); font: inherit; font-size: var(--fs-cap); cursor: pointer; }
+.ist-week button.is-on { background: var(--text-1); color: #000; box-shadow: none; }

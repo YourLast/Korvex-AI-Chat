@@ -1,4 +1,6 @@
 'use client';
+import { adm as admText } from '@/lib/i18n/adm';
+import { OrgModeCtx } from './orgMode';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -17,6 +19,8 @@ import { Icon } from './Icon';
 import { Confirm } from './Kit';
 import { GhMark } from './code/GhMark';
 import { canAgents } from '@/lib/roles';
+import { POWERED_BY } from '@/ext/client';
+import { OrgSwitch, useOrg } from './OrgDocs';
 import { MainCtx, useIsMobile } from './Popover';
 import { initSidebar, toggleSidebar, useSidebarCollapsed } from '@/lib/sidebar';
 import { attachSheetDrag } from '@/lib/sheetDrag';
@@ -32,7 +36,7 @@ import type { StatusView } from '@/lib/announce';
 import { Announce, StatusCtx, useStatusPoll } from './Announce';
 import { FadeText, SearchPalette, SidebarSearch, dropSearchCache, type Hit } from './ChatSearch';
 import { jumpTo, setPendingFind, takePendingFind } from '@/lib/findMark';
-import { FolderSection, MoveButton, dragThread } from './Folders';
+import { FolderSection, MoveButton, ProjectDialog, dragThread } from './Folders';
 import { ChatSheet, type ChatRef, type ChatView } from './ChatSheet';
 import { haptic } from '@/lib/haptic';
 import { FeaturesProvider, type Features } from './FeaturesCtx';
@@ -41,7 +45,8 @@ import { prepareModel as warmServe, prepareOnReturn as warmOnReturn } from '@/ex
 
 const FIRST_ROWS = 40;
 
-type Ctx = { models: PublicModel[]; refresh: () => Promise<void>; openDrawer: () => void; threads: ThreadLite[]; role: string; chatMenu?: (c: ChatRef, view?: ChatView) => void; locked?: LockedModel[] };
+type Ctx = { models: PublicModel[]; refresh: () => Promise<void>; openDrawer: () => void; threads: ThreadLite[]; role: string; chatMenu?: (c: ChatRef, view?: ChatView) => void; locked?: LockedModel[];
+  org?: string | null; folders?: FolderView[]; orgMode?: boolean };
 export const ShellCtx = createContext<Ctx | null>(null);
 export const useShell = () => useContext(ShellCtx)!;
 export const useIsAdmin = () => useContext(ShellCtx)?.role === 'admin';
@@ -60,12 +65,16 @@ async function takePending(): Promise<string | null> {
   } catch { return null; }
 }
 
-export function Shell({ user, models, retired, locked, initialThreads, initialFolders = [], initialStatus = null, apiOn = true, features = null, children }: { user: { name: string; email?: string; role?: string }; models: PublicModel[]; retired?: RetiredModel[]; locked?: LockedModel[]; initialThreads: ThreadLite[]; initialFolders?: FolderView[]; initialStatus?: StatusView | null; apiOn?: boolean; features?: Features | null; children: ReactNode }) {
+export function Shell({ user, models, retired, locked, initialThreads, initialFolders = [], initialStatus = null, apiOn = true, features = null, children }: { user: { name: string; email?: string; role?: string; orgs?: boolean }; models: PublicModel[]; retired?: RetiredModel[]; locked?: LockedModel[]; initialThreads: ThreadLite[]; initialFolders?: FolderView[]; initialStatus?: StatusView | null; apiOn?: boolean; features?: Features | null; children: ReactNode }) {
   const brandName = useBrand().name;
   setRetired(retired);
   const tx = useT();
   const [threads, setThreads] = useState(initialThreads);
   const [folders, setFolders] = useState<FolderView[]>(initialFolders);
+  const orgMode = !!user.orgs;
+  const [orgPick, setOrg] = useOrg(folders, true);
+  const org = orgMode ? orgPick : null;
+  const [newOrg, setNewOrg] = useState(false);
   const status = useStatusPoll(initialStatus);
   const [palette, setPalette] = useState(false);
   const [pq, setPq] = useState('');
@@ -279,7 +288,7 @@ export function Shell({ user, models, retired, locked, initialThreads, initialFo
     const out: { name: string; items: ThreadLite[] }[] = [];
     let n = 0;
     for (const t of threads) {
-      if (inFolder(t)) continue;
+      if (org ? t.folderId !== org : inFolder(t)) continue;
       if (!allRows && ++n > FIRST_ROWS) break;
       const g = dayGroup(t.updatedAt, Date.now(), tx.lang);
       let grp = out.find((x) => x.name === g);
@@ -287,7 +296,7 @@ export function Shell({ user, models, retired, locked, initialThreads, initialFo
       grp.items.push(t);
     }
     return out;
-  }, [threads, inFolder, allRows, tx.lang]);
+  }, [threads, inFolder, allRows, tx.lang, org]);
 
   const logout = async () => {
     await Promise.race([disablePush(), new Promise((r) => setTimeout(r, 1500))]);
@@ -316,7 +325,8 @@ export function Shell({ user, models, retired, locked, initialThreads, initialFo
   const initials = user.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?';
 
   return (
-    <ShellCtx.Provider value={{ models, refresh, openDrawer, threads, role: user.role ?? 'user', chatMenu, locked }}>
+    <ShellCtx.Provider value={{ models, refresh, openDrawer, threads, role: user.role ?? 'user', chatMenu, locked, org, folders, orgMode }}>
+     <OrgModeCtx.Provider value={orgMode}>
      <StatusCtx.Provider value={status}>
       <div className="app">
         {}
@@ -330,6 +340,7 @@ export function Shell({ user, models, retired, locked, initialThreads, initialFo
           <div className="sb-actions">
             <button type="button" className="btn btn--block" onClick={() => router.push('/?new=' + Date.now())} data-testid="new-chat"><Icon n="compose" />{tx('shell.newChat')}</button>
             <SidebarSearch onOpenPalette={openPalette} />
+            {orgMode && <OrgSwitch folders={folders} org={org} setOrg={setOrg} onNew={() => setNewOrg(true)} />}
             {
 }
             {canAgents(user.role) && features?.automations !== false && <Link href="/automations" className={`nav sb-quiet${path.startsWith('/automations') ? ' is-on' : ''}`} aria-current={path.startsWith('/automations') ? 'page' : undefined} data-testid="automations-link"><Icon n="repeat" sm /><span className="nav-t">{tx('shell.automations')}</span></Link>}
@@ -337,7 +348,9 @@ export function Shell({ user, models, retired, locked, initialThreads, initialFo
           {}
           <MainCtx.Provider value={main}>
           <nav className="sb-scroll" data-testid="thread-list" ref={listRef}>
-            <FolderSection folders={folders} setFolders={setFolders} threads={threads.filter(inFolder)} row={row} onChanged={() => { void refresh(); void loadFolders(); }} />
+            {!org && <FolderSection folders={folders} setFolders={setFolders} threads={threads.filter(inFolder)} row={row} onChanged={() => { void refresh(); void loadFolders(); }} />}
+            {org && groups.length === 0 && <p className="t-cap" style={{ padding: 'var(--s-5) var(--s-3)' }} data-testid="org-no-chats">{tx('org.noChats')}</p>}
+            <ProjectDialog edit={newOrg ? 'new' : null} onClose={() => setNewOrg(false)} onSaved={() => { setNewOrg(false); void loadFolders(); }} onCreated={(f) => setOrg(f.id)} />
             {groups.length === 0 && !folders.length && <p className="t-cap" style={{ padding: 'var(--s-5) var(--s-3)' }}>{tx('shell.noChats')}</p>}
             {groups.map((g) => (
               <div key={g.name}>
@@ -347,6 +360,8 @@ export function Shell({ user, models, retired, locked, initialThreads, initialFo
             ))}
           </nav>
           </MainCtx.Provider>
+          {}
+          {POWERED_BY && <a className="sb-powered only-m" href={POWERED_BY.href} target="_blank" rel="noopener" data-testid="sb-powered">{POWERED_BY.long}</a>}
           <AccountMenu name={user.name} email={user.email} admin={user.role === 'admin'} agents={canAgents(user.role)} api={apiOn} memory={features?.memory !== false} code={features?.code !== false} initials={initials} onLogout={logout} />
         </aside>
         <SearchPalette open={palette} onClose={closePalette} q={pq} setQ={setPq} onPick={openHit} threads={threads} models={models} />
@@ -362,6 +377,7 @@ export function Shell({ user, models, retired, locked, initialThreads, initialFo
         </div>
       </div>
      </StatusCtx.Provider>
+     </OrgModeCtx.Provider>
     </ShellCtx.Provider>
   );
 }
@@ -420,7 +436,7 @@ export function AccountMenu({ name, email, admin, agents = admin, api = true, me
     ...(api ? [{ href: '/api-keys', icon: 'key', label: 'API', testId: 'api-link', on: (p: string) => p.startsWith('/api-keys') }] : []),
   ];
   const adm: AcctItem[] = admin ? [
-    { href: '/admin', icon: 'user', label: 'Администрирование', testId: 'admin-link', on: (p) => p.startsWith('/admin') },
+    { href: '/admin', icon: 'user', label: admText('Администрирование'), testId: 'admin-link', on: (p) => p.startsWith('/admin') },
     { href: '/vp', icon: 'eye', label: 'Диагностика экрана', testId: 'vp-link', on: (p) => p.startsWith('/vp') },
   ] : [];
   useEffect(() => {

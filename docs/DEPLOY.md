@@ -9,8 +9,25 @@ Any host that runs a Docker image with a disk works.
 docker compose up -d
 ```
 
-`compose.yaml` also starts the speech-to-text server, so voice input works out of the box. Put the app behind HTTPS
-(Caddy, nginx, Traefik) and set `COOKIE_SECURE=1`.
+`compose.yaml` starts four containers:
+
+- **app** — the chat itself;
+- **ollama** — the built-in local model (IBM Granite 4 Micro, Apache 2.0). It downloads on the first start (2.1 GB) and appears in
+  **Admin → Models** by itself; titles of chats and user memory use it too;
+- **search** — SearXNG for the web search tool;
+- **stt** — speaches (faster-whisper) for voice input.
+
+Put the app behind HTTPS (Caddy, nginx, Traefik) and set `COOKIE_SECURE=1`.
+
+**GPU.** With an NVIDIA GPU and the NVIDIA Container Toolkit the local model runs on the GPU:
+
+```bash
+docker compose -f compose.yaml -f compose.gpu.yaml up -d
+```
+
+**Another local model.** Put `KX_LOCAL_MODEL=<name from ollama.com/library>` into `.env` next to `compose.yaml` before the
+first start (later: add the model in **Admin → Models** under the Ollama provider). `KX_LOCAL_MODEL=` (empty) — no local
+model: add models by API in **Admin → Models** instead.
 
 ## Render
 
@@ -38,10 +55,16 @@ fly deploy
 
 `fly.toml` keeps one machine running: answers are generated in the background, and an auto-stopped machine would cut them.
 
-## Voice input on cloud hosts
+## Models on cloud hosts
+
+The cloud configs run only the app, without the local model: add a model by API in **Admin → Models**
+(OpenAI, Anthropic, OpenRouter, or any OpenAI-compatible server).
+
+## Voice input and web search on cloud hosts
 
 The cloud configs run only the app. For voice input, point `STT_URL` at any server with an OpenAI-compatible
 `/v1/audio/transcriptions` (for example, speaches on the same host, or a hosted speech-to-text API) and set `STT_MODEL`.
+For web search, choose Brave Search or Tavily with an API key (both have a free tier) in **Admin → Features**.
 
 ## Why not Vercel (yet)
 

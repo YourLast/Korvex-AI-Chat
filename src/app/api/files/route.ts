@@ -1,4 +1,6 @@
 import { estTokens } from '@/lib/tokest';
+import { docFields, ownFolder } from '@/lib/orgDocs';
+import { decodeText } from '@/lib/extractNode';
 import { createHash, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -50,6 +52,9 @@ export async function POST(req: Request) {
     mime = f.type || mime;
     buf = Buffer.from(await f.arrayBuffer());
   }
+  const folderRaw = form.get('folder');
+  const folderId = typeof folderRaw === 'string' && folderRaw ? (ownFolder(a.user.id, folderRaw)?.id ?? null) : null;
+  if (typeof folderRaw === 'string' && folderRaw && !folderId) return fail(404, 'Нет такой организации');
   if (buf.length > MAX_BYTES) return fail(413, 'Файл больше 100 МБ');
   if (buf.length === 0) return fail(422, `Файл «${name}» пустой`);
   const sha256 = createHash('sha256').update(buf).digest('hex');
@@ -61,8 +66,9 @@ export async function POST(req: Request) {
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     fs.writeFileSync(path.join(dir, 'original'), buf, { mode: 0o600 });
     const w = Number(form.get('w')) || undefined, h = Number(form.get('h')) || undefined;
-    const info = { format: 'image', w, h, ...(origin ? { origin } : {}) };
-    getDb().insert(schema.files).values({ id, userId: a.user.id, threadId: null, name, mime: imageMime, size: buf.length, sha256, text: '', info, createdAt: Date.now() }).run();
+    const d = docFields(name, '', { format: 'image', w, h, ...(origin ? { origin } : {}) });
+    const info = d.info;
+    getDb().insert(schema.files).values({ id, userId: a.user.id, threadId: null, name, mime: imageMime, size: buf.length, sha256, text: '', info, createdAt: Date.now(), folderId, docType: d.docType, docDate: d.docDate, docFrom: d.docFrom, docTo: d.docTo }).run();
     if (staged) consumeStaged(staged.sid, staged.n);
     return json({ id, name, size: buf.length, mime: imageMime, chars: 0, tokens: 0, info });
   }
@@ -79,13 +85,15 @@ export async function POST(req: Request) {
       info = { format: 'unknown', unparsed: true, extractor: 'none' };
     } else return { status: ex.status, body: { error: ex.message } };
     if (origin) info = { ...info, origin };
+    const d = docFields(name, /\.(txt|csv|xml|tsv|1c)$/i.test(name) ? decodeText(buf) : text, info);
+    info = d.info;
     const id = randomUUID();
     const dir = path.join(dataDir(), 'files', id);
     fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     fs.writeFileSync(path.join(dir, 'original' + safeExt), buf, { mode: 0o600 });
     getDb().insert(schema.files).values({
       id, userId: a.user.id, threadId: null, name, mime, size: buf.length,
-      sha256, text, info, createdAt: Date.now(),
+      sha256, text, info, createdAt: Date.now(), folderId, docType: d.docType, docDate: d.docDate, docFrom: d.docFrom, docTo: d.docTo,
     }).run();
     if (staged) consumeStaged(staged.sid, staged.n);
     return { status: 200, body: { id, name, size: buf.length, chars: text.length, tokens: estTokens(text), info } };

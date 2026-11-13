@@ -52,6 +52,8 @@ export default {
   'chat.phEmpty': ['Спросите что угодно или приложите файл', 'Ask anything or attach a file', 'Pitajte bilo šta ili priložite fajl'],
   'chat.phNext': ['Напишите сообщение', 'Write a message', 'Napišite poruku'],
   'chat.footNote': ['Korvex AI может ошибаться. Проверяйте важные цифры.', 'Korvex AI can make mistakes. Please double-check important figures.', 'Korvex AI može da pogreši. Proverite važne brojeve.'],
+  'chat.footAssistant': ['Ассистент может ошибаться', 'The assistant can make mistakes', 'Asistent može da pogreši'],
+  'chat.footBrand': ['{name} может ошибаться', '{name} can make mistakes', '{name} može da pogreši'],
 
   'comp.noImages': ['Выбранная модель не принимает картинки', 'The selected model doesn’t accept images', 'Izabrani model ne prihvata slike'],
   'comp.drop': ['Отпустите, чтобы прикрепить файл или картинку', 'Release to attach a file or an image', 'Otpustite da priložite fajl ili sliku'],

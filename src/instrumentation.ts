@@ -15,6 +15,7 @@ export async function register() {
     process.prependListener('SIGTERM', stop);
     process.prependListener('SIGINT', stop);
     try { (await import('./lib/status')).startProbe(); } catch (e) { console.error('[status] probe', (e as Error).message); }
+    try { (await import('./lib/localModel')).startLocalModel(); } catch (e) { console.error('[local]', (e as Error).message); }
     try { (await import('./lib/busy')).startBusyWatch(); } catch (e) { console.error('[busy]', (e as Error).message); }
     try { (await import('./lib/search')).startIndexer(); } catch (e) { console.error('[search] indexer', (e as Error).message); }
     try { (await import('./lib/tempChat')).startTempSweeper(); } catch (e) { console.error('[temp]', (e as Error).message); }
