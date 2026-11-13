@@ -1,6 +1,7 @@
 import { json } from '@/lib/api';
 import { ingestOn, inboxByTag, collectorOk, viaProxy, senderAllowed, mailDuplicate, ingestToOrg, acceptedToday, ORG_DAY_LIMIT } from '@/lib/orgIngest';
 import { MAX_BYTES } from '@/lib/storeUpload';
+import { formDataOf } from '@/lib/formData';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,7 +12,7 @@ export async function POST(req: Request) {
   if (!ingestOn()) return no(503, 'off', 'Приём документов выключен');
   if (viaProxy(req.headers)) return no(401, 'proxy', 'Запрос через прокси');
   if (!collectorOk(req.headers.get('x-collector-key'))) return no(401, 'key', 'Неверный ключ сборщика');
-  const form = await req.formData().catch(() => null);
+  const form = await formDataOf(req);
   const s = (k: string) => { const v = form?.get(k); return typeof v === 'string' ? v.trim() : ''; };
   const file = form?.get('file');
   const tag = s('tag'), sender = s('sender'), auth = s('auth').toLowerCase(), messageId = s('message_id');

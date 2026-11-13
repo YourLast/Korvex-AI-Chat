@@ -2,6 +2,12 @@
 
 Notable changes. Every release also has automatic notes on the [Releases](https://github.com/YourLast/Korvex-AI-Chat/releases) page.
 
+## v0.1.4
+
+- **Fix: uploads with an RFC 5987 file name.** A form whose file part says `filename*=UTF-8''…` (Python `requests`, some 1C
+  versions) was rejected as a whole; now the name is read as UTF-8 and the upload goes through — for the organization upload
+  address, chat uploads and voice input.
+
 ## v0.1.3
 
 - **Fix: tools work with every model.** In v0.1.2 web search, user memory and chat tools ran only for Claude models: the image

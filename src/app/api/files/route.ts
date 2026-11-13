@@ -7,6 +7,7 @@ import { sniffImage } from '@/lib/images';
 import { cleanRelPath, isJunkPath, rootOf, type Origin } from '@/lib/upload/paths';
 import { consumeStaged, stagedFile, sweepStaging } from '@/lib/upload/staging';
 import { FEATURE_OFF, featureFor } from '@/lib/features';
+import { formDataOf } from '@/lib/formData';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,7 @@ export async function POST(req: Request) {
   const a = await authed(req, true);
   if ('res' in a) return a.res;
   if (!featureFor('files', a.user.id)) return fail(403, FEATURE_OFF);
-  const form = await req.formData().catch(() => null);
+  const form = await formDataOf(req);
   if (!form) return fail(400, 'Нет файла');
   const stagedSid = form.get('staged');
   const stagedN = Number(form.get('n'));

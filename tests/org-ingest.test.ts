@@ -57,6 +57,21 @@ describe('приём по ключу организации', () => {
   });
 });
 
+describe('приём по ключу: имя файла по RFC 5987', () => {
+  it('filename*=UTF-8\'\'… (так шлют requests и часть программ 1С) — принят, имя в UTF-8', async () => {
+    const key = I.issueKey('u', 'org1');
+    const B = '----kx5987';
+    const body = [`--${B}`, `Content-Disposition: form-data; name="file"; filename*=UTF-8''${encodeURIComponent('Выписка_октябрь.txt')}`, 'Content-Type: text/plain', '', KL, `--${B}--`, ''].join('\r\n');
+    const { POST } = await import('@/app/api/orgs/[id]/ingest/route');
+    const r = await POST(new Request('http://x', { method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': `multipart/form-data; boundary=${B}` }, body }), { params: Promise.resolve({ id: 'org1' }) });
+    expect(r.status).toBe(200);
+    const j = await r.json() as { files: { file_id: string; doc_type: string }[] };
+    expect(j.files[0].doc_type).toBe('statement');
+    expect(db.select().from(schema.files).all().find((f) => f.id === j.files[0].file_id)?.name).toBe('Выписка_октябрь.txt');
+    I.revokeKey('u', 'org1');
+  });
+});
+
 describe('приём от сборщика почты', () => {
   const collector = 'test-collector';
   const send = async (fields: Record<string, string>, headers: Record<string, string> = {}, file: [string, string] = ['kl_to_1c.txt', KL]) => {
