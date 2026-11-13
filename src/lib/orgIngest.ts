@@ -33,18 +33,30 @@ export function inboxView(userId: string, folderId: string) {
   return { address: mailAddress(r.tag), tag: r.tag, senders: r.senders, hasKey: !!r.keyHash, keyHint: r.keyHint, on: ingestOn() };
 }
 
+const LOCAL_RE = /^[a-z0-9_%+=-]+(?:\.[a-z0-9_%+=-]+)*$/;
+const DOMAIN_RE = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])$/;
+export const domainOk = (d: string): boolean => d.length <= 253 && DOMAIN_RE.test(d);
+export function bareAddress(v: string): { addr: string; local: string; domain: string } | null {
+  const s = v.trim().toLowerCase();
+  const at = s.indexOf('@');
+  if (at <= 0 || at !== s.lastIndexOf('@') || s.length > 254) return null;
+  const local = s.slice(0, at), domain = s.slice(at + 1);
+  if (local.length > 64 || !LOCAL_RE.test(local) || !domainOk(domain)) return null;
+  return { addr: `${local}@${domain}`, local, domain };
+}
+
 export function cleanSenders(list: string[]): string[] {
   const out = new Set<string>();
   for (const x of list) {
     const s = x.trim().toLowerCase();
-    if (/^[^@\s]+@[^@\s]+\.[a-z0-9-]{2,}$/.test(s) || /^@[^@\s]+\.[a-z0-9-]{2,}$/.test(s)) out.add(s);
+    if (s.startsWith('@') ? domainOk(s.slice(1)) : !!bareAddress(s)) out.add(s);
   }
   return [...out].slice(0, 50);
 }
 export function senderAllowed(senders: string[], sender: string): boolean {
-  const s = sender.trim().toLowerCase().replace(/^.*<([^>]+)>.*$/, '$1');
-  const dom = s.slice(s.lastIndexOf('@'));
-  return senders.some((x) => x === s || (x.startsWith('@') && x === dom));
+  const a = bareAddress(sender);
+  if (!a) return false;
+  return senders.some((x) => x === a.addr || x === `@${a.domain}`);
 }
 
 export function setSenders(userId: string, folderId: string, list: string[]) {

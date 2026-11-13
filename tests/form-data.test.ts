@@ -28,3 +28,14 @@ describe('форма с filename*', () => {
     expect(fixFilenameStar(form(part('form-data; name="file"; filename="a.txt"', 'x')), B)).toBeNull();
   });
 });
+
+describe('предел тела формы (ревью безопасности 13.11, п.8)', () => {
+  it('тело больше предела — tooBig, ничего не разбирается; в пределе — форма', async () => {
+    const { readForm } = await import('@/lib/formData');
+    const big = form(part('form-data; name="file"; filename="a.txt"', 'x'.repeat(5000)));
+    expect(await readForm(req(big), 1000)).toEqual({ form: null, tooBig: true });
+    const r = await readForm(req(big), 10_000);
+    expect(r.tooBig).toBe(false);
+    expect(((r.form?.get('file')) as File).size).toBe(5000);
+  });
+});

@@ -1,7 +1,7 @@
 import { fail, json } from '@/lib/api';
 import { adminOrKey } from '@/lib/adminAuth';
 import { brand, logoUrl, setLogo } from '@/lib/brand';
-import { formDataOf } from '@/lib/formData';
+import { readForm } from '@/lib/formData';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -19,7 +19,8 @@ function kindOf(b: Buffer): 'png' | 'webp' | 'svg' | null {
 export async function POST(req: Request) {
   const a = await adminOrKey(req, true);
   if ('res' in a) return a.res;
-  const form = await formDataOf(req);
+  const { form, tooBig } = await readForm(req, MAX + (64 << 10));
+  if (tooBig) return fail(413, 'Логотип больше 512 КБ');
   const f = form?.get('file');
   if (!(f instanceof Blob) || !f.size) return fail(400, 'Нет файла');
   if (f.size > MAX) return fail(413, 'Логотип больше 512 КБ');

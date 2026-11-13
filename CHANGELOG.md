@@ -2,6 +2,15 @@
 
 Notable changes. Every release also has automatic notes on the [Releases](https://github.com/YourLast/Korvex-AI-Chat/releases) page.
 
+## v0.1.7
+
+- **Security fix: organization mail intake.** A sender written as `"<owner@example.com>"@attacker.example` could pass as an allowed
+  sender of another organization. Now the sender must be a bare `local@domain` address and is compared exactly (an address or
+  a whole `@domain`, not subdomains). The mail collector must also send `aligned_domain`, the From domain it verified by DMARC
+  alignment. A different domain, or no field at all, is rejected.
+- Upload forms are read with a size limit: 101 MB per request, 200 MB for the organization key address. A larger body gets 413
+  before it is read into memory.
+
 ## v0.1.6
 
 - A long wait that is not the answer's own work — a model server's queue of heavy requests or its maintenance — now extends

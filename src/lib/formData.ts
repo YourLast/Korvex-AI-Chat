@@ -1,15 +1,43 @@
 
-export async function formDataOf(req: Request): Promise<FormData | null> {
+import { MAX_BYTES } from './storeUpload';
+
+export const MAX_FORM_BYTES = MAX_BYTES + (1 << 20);
+
+async function readCapped(req: Request, max: number): Promise<Buffer | 'too-big' | null> {
+  const declared = Number(req.headers.get('content-length'));
+  if (Number.isFinite(declared) && declared > max) return 'too-big';
+  if (!req.body) return Buffer.alloc(0);
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let n = 0;
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      n += value.byteLength;
+      if (n > max) { reader.cancel().catch(() => undefined); return 'too-big'; }
+      chunks.push(value);
+    }
+  } catch { return null; }
+  return Buffer.concat(chunks);
+}
+
+export async function readForm(req: Request, maxBytes = MAX_FORM_BYTES): Promise<{ form: FormData | null; tooBig: boolean }> {
   const ct = req.headers.get('content-type') ?? '';
-  let buf: Buffer;
-  try { buf = Buffer.from(await req.arrayBuffer()); } catch { return null; }
+  const buf = await readCapped(req, maxBytes);
+  if (buf === 'too-big') return { form: null, tooBig: true };
+  if (!buf) return { form: null, tooBig: false };
   const parse = (b: Buffer) => new Response(new Uint8Array(b), { headers: { 'content-type': ct } }).formData();
-  try { return await parse(buf); } catch {  }
-  if (!/multipart\/form-data/i.test(ct)) return null;
+  try { return { form: await parse(buf), tooBig: false }; } catch {  }
+  if (!/multipart\/form-data/i.test(ct)) return { form: null, tooBig: false };
   const bnd = /boundary=(?:"([^"]+)"|([^;\s]+))/i.exec(ct);
   const fixed = fixFilenameStar(buf, bnd?.[1] ?? bnd?.[2] ?? '');
-  if (!fixed) return null;
-  try { return await parse(fixed); } catch { return null; }
+  if (!fixed) return { form: null, tooBig: false };
+  try { return { form: await parse(fixed), tooBig: false }; } catch { return { form: null, tooBig: false }; }
+}
+
+export async function formDataOf(req: Request, maxBytes = MAX_FORM_BYTES): Promise<FormData | null> {
+  return (await readForm(req, maxBytes)).form;
 }
 
 export function fixFilenameStar(buf: Buffer, boundary: string): Buffer | null {

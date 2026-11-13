@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { authed, fail, json } from '@/lib/api';
 import { cfg } from '@/lib/cfg';
 import { FEATURE_OFF, featureFor } from '@/lib/features';
-import { formDataOf } from '@/lib/formData';
+import { readForm } from '@/lib/formData';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,7 +17,8 @@ export async function POST(req: Request) {
   const a = await authed(req, true);
   if ('res' in a) return a.res;
   if (!featureFor('voice', a.user.id)) return fail(403, FEATURE_OFF);
-  const form = await formDataOf(req);
+  const { form, tooBig } = await readForm(req);
+  if (tooBig) return fail(413, 'Запись слишком большая');
   const f = form?.get('audio');
   if (!(f instanceof Blob) || f.size === 0) return fail(400, 'Нет записи');
   if (f.size > MAX_BYTES) return fail(413, 'Запись слишком большая');
