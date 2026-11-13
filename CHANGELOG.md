@@ -2,6 +2,13 @@
 
 Notable changes. Every release also has automatic notes on the [Releases](https://github.com/YourLast/Korvex-AI-Chat/releases) page.
 
+## v0.1.5
+
+- **MCP tools.** Remote MCP servers (Streamable HTTP) in **Admin → MCP**: the address and an optional key header (stored
+  encrypted), **Check** reads the tools, single tools can be turned off. Models with tools get them next to web search and
+  memory; who — **Admin → Access** (without a setting, admins only); the chat asks the person before tools that are not
+  read only. See [MCP tools](README.md#mcp-tools).
+
 ## v0.1.4
 
 - **Fix: uploads with an RFC 5987 file name.** A form whose file part says `filename*=UTF-8''…` (Python `requests`, some 1C

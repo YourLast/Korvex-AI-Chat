@@ -5,7 +5,7 @@ import { PLAIN_DIALECT } from '../dialect';
 const TAINT_KINDS = new Set(['browser', 'file', 'agent', 'code', 'github', 'work', 'web']);
 const taintNames = () => { const w = (ext.dialect ?? PLAIN_DIALECT).workTool; return new Set(['chat_read', ...(w ? [w.name] : [])]); };
 export function taints(tool: Pick<KorvexTool<unknown>, 'name' | 'kind'>): boolean {
-  return TAINT_KINDS.has(tool.kind) || taintNames().has(tool.name);
+  return TAINT_KINDS.has(tool.kind) || taintNames().has(tool.name) || tool.name.startsWith('mcp_');
 }
 
 const ALWAYS = new Set(['memory_remember', 'memory_forget']);

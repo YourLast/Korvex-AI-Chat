@@ -7,14 +7,15 @@ type Rule = { roles: string[]; users: string[]; invites: string[] };
 type View = {
   models: { id: string; name: string; roles: string[] | null; rule: Rule | null }[];
   features: { id: string; rule: Rule | null }[];
+  mcp?: { id: string; name: string; rule: Rule | null }[];
   users: { id: string; name: string; email: string; role: string }[];
   invites: { id: string; note: string; role: string; uses: number }[];
 };
 const FEATURE_NAME = (): Record<string, string> => ({ voice: adm("Голосовой ввод"), files: adm("Файлы"), memory: adm("Память о человеке"), automations: adm("Автоматизации"), webSearch: adm("Поиск в интернете"), compare: adm("Сравнение моделей"), push: adm("Уведомления"), code: adm("Режим кода") });
 const ROLE_NAME = (): Record<string, string> => ({ user: adm("Пользователь"), alpha: adm("Альфа"), admin: adm("Администратор") });
 
-function summary(rule: Rule | null, roles: string[] | null): string {
-  if (!rule) return roles ? admf("По конфигурации: {0}", roles.map((r) => ROLE_NAME()[r] ?? r).join(', ')) : adm("Всем");
+function summary(rule: Rule | null, roles: string[] | null, adminsOnly = false): string {
+  if (!rule) return roles ? admf("По конфигурации: {0}", roles.map((r) => ROLE_NAME()[r] ?? r).join(', ')) : adminsOnly ? adm("Только администраторам") : adm("Всем");
   const parts = [rule.roles.length ? rule.roles.map((r) => ROLE_NAME()[r] ?? r).join(', ') : '', rule.users.length ? admf("людей: {0}", rule.users.length) : '', rule.invites.length ? admf("по ссылкам: {0}", rule.invites.length) : ''].filter(Boolean);
   return parts.length ? parts.join(' · ') : adm("Только администраторам");
 }
@@ -22,7 +23,7 @@ function summary(rule: Rule | null, roles: string[] | null): string {
 export function AdminAccess() {
   const [v, setV] = useState<View | null>(null);
   const [err, setErr] = useState('');
-  const [edit, setEdit] = useState<{ kind: 'model' | 'feature'; id: string; title: string; rule: Rule } | null>(null);
+  const [edit, setEdit] = useState<{ kind: 'model' | 'feature' | 'mcp'; id: string; title: string; rule: Rule } | null>(null);
   const [q, setQ] = useState('');
   const [busy, setBusy] = useState(false);
   useEffect(() => { void fetch('/api/admin/access').then((r) => r.json()).then(setV).catch(() => setErr(adm("Нет связи с сервером"))); }, []);
@@ -38,8 +39,8 @@ export function AdminAccess() {
   };
   const toggle = (list: 'roles' | 'users' | 'invites', id: string, on: boolean) => edit && setEdit({ ...edit, rule: { ...edit.rule, [list]: on ? [...edit.rule[list], id] : edit.rule[list].filter((x) => x !== id) } });
   const people = useMemo(() => (v?.users ?? []).filter((u) => u.role !== 'admin' && (!q.trim() || `${u.name} ${u.email}`.toLowerCase().includes(q.trim().toLowerCase()))).slice(0, 50), [v, q]);
-  const open = (kind: 'model' | 'feature', id: string, title: string, rule: Rule | null, roles: string[] | null = null) =>
-    { setQ(''); setEdit({ kind, id, title, rule: rule ?? { roles: roles ?? ['user', 'alpha', 'admin'], users: [], invites: [] } }); };
+  const open = (kind: 'model' | 'feature' | 'mcp', id: string, title: string, rule: Rule | null, roles: string[] | null = null) =>
+    { setQ(''); setEdit({ kind, id, title, rule: rule ?? { roles: roles ?? (kind === 'mcp' ? ['admin'] : ['user', 'alpha', 'admin']), users: [], invites: [] } }); };
 
   return (
     <>
@@ -50,6 +51,9 @@ export function AdminAccess() {
       <Group title={adm("Функции")} foot={adm("Выключить функцию для всех — во вкладке «Функции»; здесь — кому она доступна, пока включена.")} testId="access-features">
         {(v?.features ?? []).map((f) => <Row key={f.id} title={FEATURE_NAME()[f.id] ?? f.id} sub={summary(f.rule, null)} chevron onClick={() => open('feature', f.id, FEATURE_NAME()[f.id] ?? f.id, f.rule)} testId={`access-feature-${f.id}`} />)}
       </Group>
+      {(v?.mcp ?? []).length > 0 && <Group title={adm("Серверы MCP")} foot={adm("Без настройки инструменты сервера доступны только администраторам.")} testId="access-mcp">
+        {(v?.mcp ?? []).map((s) => <Row key={s.id} title={s.name} sub={summary(s.rule, null, true)} chevron onClick={() => open('mcp', s.id, s.name, s.rule)} testId={`access-mcp-${s.id}`} />)}
+      </Group>}
       <Sheet open={!!edit} onClose={() => setEdit(null)} title={edit ? admf("Доступ: {0}", edit.title) : ''} testId="access-sheet"
         foot={<>
           <Button onClick={() => void save(null)} busy={busy} testId="access-reset">{adm("Как без настройки")}</Button>

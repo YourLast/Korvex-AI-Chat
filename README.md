@@ -56,14 +56,32 @@ API keys are stored encrypted (AES-256-GCM, the key file is `data/keys/korvex.ke
 You can also list models in `models.config.json` (see `models.config.example.json`); `apiKeyEnv` names the environment
 variable with the key.
 
+## MCP tools
+
+Connect remote MCP servers in **Admin → MCP**: the address of the server (Streamable HTTP, for example
+`https://mcp.example.com/mcp`) and, if it needs one, a request header with a key (`Authorization: Bearer …`, stored
+encrypted). **Check** reads the server's tools; turn single tools off if the model should not use them. Models with tool
+support get the tools in their answers, next to web search and memory.
+
+- **Who.** Without a setting, only admins get a server's tools. Open them to roles, people or invite-link groups in
+  **Admin → Access**.
+- **Asking first.** By default the chat asks the person before every tool that the server did not mark as read only;
+  per server you can ask always or never.
+- **Untrusted data.** What a server returns is treated like a web page: after it, the model cannot write to the user's
+  memory on its own, and messages to other chats still ask the person first.
+
+Local stdio servers are not supported yet: they run code on the server and need an isolated sandbox.
+
 ## Admin panel
 
 - **People** — invites (single and group links), roles, blocking, limits, activity.
 - **Models** — providers and models.
+- **MCP** — remote MCP servers and their tools.
 - **Features** — turn off voice input, files, user memory, automations, web search, model comparison, notifications or
   sign-up for everyone. Code mode (an agent that runs commands in a sandbox) is off by default: turn it on only on an
   isolated machine.
-- **Access** — who can use each model or feature: by role, by person, or everyone who joined through an invite link.
+- **Access** — who can use each model, feature or MCP server: by role, by person, or everyone who joined through an
+  invite link.
 - **Brand** — your product name instead of “Korvex” in every text and in how the model introduces itself, your logo,
   accent color and the line at the bottom of the sign-in page. The "Powered by Korvex" line and the [NOTICE](NOTICE) file
   stay as they are (see [Make it yours](#make-it-yours)).

@@ -70,4 +70,9 @@ export default {
   'e.chatAutomation': ['Чат используется автоматизацией «{name}»: сначала измените или удалите её', 'The chat is used by the automation “{name}”: change or delete it first', 'Čat koristi automatizacija „{name}“: prvo je izmenite ili obrišite'],
   'e.voiceNone': ['Нет записи', 'No recording', 'Nema snimka'],
   'e.voiceBig': ['Запись слишком большая', 'The recording is too large', 'Snimak je prevelik'],
+  'e.mcpName': ['Укажите название', 'Enter a name', 'Unesite naziv'],
+  'e.mcpUrl': ['Адрес — http(s)://… без логина и пароля', 'The address is http(s)://… without a login or password', 'Adresa je http(s)://… bez korisničkog imena i lozinke'],
+  'e.mcpHeader': ['Имя заголовка — латиница, цифры и дефис', 'A header name has Latin letters, digits and hyphens', 'Ime zaglavlja ima latinična slova, cifre i crticu'],
+  'e.mcpNone': ['Нет такого сервера', 'No such server', 'Nema takvog servera'],
+  'e.mcpMany': ['Слишком много серверов', 'Too many servers', 'Previše servera'],
 } satisfies Dict;

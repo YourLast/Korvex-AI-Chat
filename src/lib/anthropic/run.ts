@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import type { BetaContentBlockParam, BetaMessage, BetaMessageParam, BetaToolUnion, MessageCreateParamsStreaming } from '@anthropic-ai/sdk/resources/beta/messages/messages';
 import { execCall, MAX_ROUNDS, memTexts, retryPause, SAME_STOP, SAME_WARN, agentRules, type LoopHost } from '../agentLoop';
 import '../tools/all';
-import { allTools, getTool, toolRules } from '../tools/registry';
+import { allTools, getTool, sourceTools, toolRules } from '../tools/registry';
 import type { KorvexTool, StepEvent } from '../tools/types';
 import { newTaint } from '../tools/taint';
 import type { Message } from '../db/schema';
@@ -27,11 +27,13 @@ export function claudeTools(ctx: Pick<LoopHost, 'userId' | 'threadId' | 'folderI
   const c = { userId: ctx.userId, threadId: ctx.threadId, folderId: ctx.folderId, kind: ctx.kind, modelId: ctx.modelId, depth: ctx.depth };
   const on = (t: KorvexTool<unknown> | undefined) => { try { return !!t && t.enabled(c); } catch { return false; } };
   const code = on(getTool('code_open'));
-  return allTools().filter((t) => {
+  const own = allTools().filter((t) => {
     if (t.claudeEnabled) return t.claudeEnabled();
     if (t.name.startsWith('code_') || t.name.startsWith('github_')) return code;
     return on(t);
-  }).sort((a, b) => group(a.name) - group(b.name) || a.name.localeCompare(b.name)) as KorvexTool<Record<string, unknown>>[];
+  });
+  return [...own, ...sourceTools(c, new Set(allTools().map((t) => t.name)))]
+    .sort((a, b) => group(a.name) - group(b.name) || a.name.localeCompare(b.name)) as KorvexTool<Record<string, unknown>>[];
 }
 
 export const STRICT_MAX = 20;
@@ -51,6 +53,7 @@ export function strictNames(tools: KorvexTool<Record<string, unknown>>[]): Set<s
   let opt = 0;
   for (const t of [...tools].sort((a, b) => strictRank(a.name) - strictRank(b.name) || a.name.localeCompare(b.name))) {
     if (out.size >= STRICT_MAX) break;
+    if (t.name.startsWith('mcp_')) continue;
     const n = optionalCount(t.parameters);
     if (opt + n > STRICT_OPTIONAL_MAX) continue;
     opt += n; out.add(t.name);

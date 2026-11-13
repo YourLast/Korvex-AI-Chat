@@ -19,8 +19,24 @@ export function getTool(name: string): AnyTool | undefined { return reg().get(na
 export function allTools(): AnyTool[] { return [...reg().values()]; }
 
 export function toolsFor(ctx: Pick<ToolCtx, 'userId' | 'threadId' | 'folderId' | 'kind' | 'modelId' | 'depth'>): AnyTool[] {
-  return allTools().filter((t) => { try { return t.enabled(ctx); } catch (e) { console.error(`[tools] ${t.name}.enabled`, (e as Error).message); return false; } })
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const own = allTools().filter((t) => { try { return t.enabled(ctx); } catch (e) { console.error(`[tools] ${t.name}.enabled`, (e as Error).message); return false; } });
+  return [...own, ...sourceTools(ctx, new Set(allTools().map((t) => t.name)))].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+type SourceCtx = Pick<ToolCtx, 'userId' | 'threadId' | 'folderId' | 'kind' | 'modelId' | 'depth'>;
+type ToolSource = (ctx: SourceCtx) => AnyTool[];
+const gs = globalThis as unknown as { __kxToolSources?: Map<string, ToolSource> };
+const sources = () => (gs.__kxToolSources ??= new Map());
+export function registerToolSource(name: string, fn: ToolSource): () => void { sources().set(name, fn); return () => { sources().delete(name); }; }
+export function sourceTools(ctx: SourceCtx, taken: Set<string> = new Set()): AnyTool[] {
+  const out: AnyTool[] = [];
+  const seen = new Set(taken);
+  for (const [name, fn] of sources()) {
+    let list: AnyTool[] = [];
+    try { list = fn(ctx); } catch (e) { console.error(`[tools] source ${name}`, (e as Error).message); continue; }
+    for (const t of list) if (NAME_RE.test(t.name) && !seen.has(t.name)) { seen.add(t.name); out.push(t); }
+  }
+  return out;
 }
 
 export function openaiTools(tools: AnyTool[]) {

@@ -3,7 +3,7 @@ import { getDb, schema } from './db';
 import { getSetting, setSetting, deleteSetting } from './settings';
 
 export type AccessRule = { roles?: string[]; users?: string[]; invites?: string[] };
-export type AccessKind = 'model' | 'feature';
+export type AccessKind = 'model' | 'feature' | 'mcp';
 type Who = { id: string; role: string; invites: string[] };
 
 export const ruleOf = (kind: AccessKind, id: string): AccessRule | null => {

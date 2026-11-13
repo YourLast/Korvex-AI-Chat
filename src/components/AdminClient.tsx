@@ -20,18 +20,19 @@ import { ADMIN_LINKS } from '@/ext/client';
 import { AdminFeatures } from './AdminFeatures';
 import { AdminModels } from './AdminModels';
 import { AdminAccess } from './AdminAccess';
+import { AdminMcp } from './AdminMcp';
 import { AdminBrand } from './AdminBrand';
 import { AdminUpdate } from './AdminUpdate';
 
 type U = PersonRow;
 type Inv = InviteRow;
 type M = { id: string; name: string; fullName: string; upstreamModel: string; baseUrl: string; maxConcurrent: number; images: boolean; defaultLevel: string; variantOf?: string; variantName?: string; levels: { id: string; effort: string | null; hint: string }[] };
-type Tab = 'users' | 'ratings' | 'analytics' | 'state' | 'features' | 'models' | 'access' | 'brand';
+type Tab = 'users' | 'ratings' | 'analytics' | 'state' | 'features' | 'models' | 'mcp' | 'access' | 'brand';
 
 const ROLE = (): Record<string, string> => ({ admin: adm(roleRu('admin')), alpha: adm(roleRu('alpha')), user: adm(roleRu('user')) });
 const ROLE_OPTS: { value: Role; label: string; testId: string }[] = (['user', 'alpha', 'admin'] as const).map((r) => ({ value: r, label: ROLE()[r], testId: `role-opt-${r}` }));
 const date = (ts: number) => new Date(ts).toLocaleDateString(admLocale(), { day: 'numeric', month: 'long', year: 'numeric' });
-const tabOf = (hash: string): Tab => (hash === '#brand' ? 'brand' : hash === '#access' ? 'access' : hash === '#providers' ? 'models' : hash === '#features' ? 'features' : hash === '#analytics' ? 'analytics' : hash === '#ratings' ? 'ratings' : ['#notices', '#state', '#models'].includes(hash) ? 'state' : 'users');
+const tabOf = (hash: string): Tab => (hash === '#mcp' ? 'mcp' : hash === '#brand' ? 'brand' : hash === '#access' ? 'access' : hash === '#providers' ? 'models' : hash === '#features' ? 'features' : hash === '#analytics' ? 'analytics' : hash === '#ratings' ? 'ratings' : ['#notices', '#state', '#models'].includes(hash) ? 'state' : 'users');
 
 async function api(path: string, method: string, body?: unknown): Promise<{ ok: boolean; data: Record<string, unknown> }> {
   try {
@@ -103,7 +104,7 @@ export function AdminClient({ meId, users, invites, models, notices, tz }: { meI
     <KPage title={adm("Администрирование")} sub={`${admCount(users.length, W.user)} · ${admCount(models.length, W.model)}`} testId="admin"
       desc={adm("Люди и доступ, аналитика работы, объявления и состояние моделей.")}>
       <Seg block label={adm("Раздел")} value={tab} onChange={go} testId="admin-tabs" options={[
-        { value: 'users', label: adm("Люди"), testId: 'tab-users' }, { value: 'ratings', label: adm("Оценки"), testId: 'tab-ratings' }, { value: 'analytics', label: adm("Аналитика"), testId: 'tab-analytics' }, { value: 'models', label: adm("Модели"), testId: 'tab-models' }, { value: 'features', label: adm("Функции"), testId: 'tab-features' }, { value: 'access', label: adm("Доступ"), testId: 'tab-access' }, { value: 'brand', label: adm("Бренд"), testId: 'tab-brand' }, { value: 'state', label: adm("Состояние"), testId: 'tab-state' },
+        { value: 'users', label: adm("Люди"), testId: 'tab-users' }, { value: 'ratings', label: adm("Оценки"), testId: 'tab-ratings' }, { value: 'analytics', label: adm("Аналитика"), testId: 'tab-analytics' }, { value: 'models', label: adm("Модели"), testId: 'tab-models' }, { value: 'features', label: adm("Функции"), testId: 'tab-features' }, { value: 'mcp', label: 'MCP', testId: 'tab-mcp' }, { value: 'access', label: adm("Доступ"), testId: 'tab-access' }, { value: 'brand', label: adm("Бренд"), testId: 'tab-brand' }, { value: 'state', label: adm("Состояние"), testId: 'tab-state' },
       ]} />
 
       {}
@@ -131,6 +132,7 @@ export function AdminClient({ meId, users, invites, models, notices, tz }: { meI
       {tab === 'analytics' && <AdminAnalytics models={models} />}
       {tab === 'features' && <AdminFeatures />}
       {tab === 'models' && <AdminModels />}
+      {tab === 'mcp' && <AdminMcp />}
       {tab === 'access' && <AdminAccess />}
       {tab === 'brand' && <AdminBrand />}
       {tab === 'state' && notices && <AdminNotices snap={notices} models={models} />}
