@@ -127,7 +127,7 @@ describe('подделка отправителя (ревью безопасно
     const before = files();
     const base = { tag, auth: 'pass', message_id: '<spoof@evil.com>' };
     for (const sender of ['"<buh@client.ru>"@evil.com', '"x" <"<buh@client.ru>"@evil.com>', 'buh@client.ru <x@evil.com>', 'Бух <buh@client.ru>', 'grp: buh@client.ru;', '=?utf-8?q?buh=40client.ru?=@evil.com', 'buh@client.ru@evil.com', 'buh @client.ru', '(c)buh@client.ru'])
-      expect(await send({ ...base, sender, aligned_domain: 'evil.com' }), sender).toMatchObject({ status: 403, j: { reason: 'sender_format' } });
+      expect(await send({ ...base, sender, aligned_domain: 'evil.com' }), sender).toMatchObject({ status: 403, j: { reason: 'sender' } });
     expect(await send({ ...base, sender: 'buh@client.ru', aligned_domain: 'evil.com' })).toMatchObject({ status: 403, j: { reason: 'auth' } });
     expect(await send({ ...base, sender: 'buh@client.ru' })).toMatchObject({ status: 403, j: { reason: 'auth' } });
     expect(await send({ ...base, sender: 'buh@docs.client.ru', aligned_domain: 'docs.client.ru' })).toMatchObject({ status: 403, j: { reason: 'sender' } });

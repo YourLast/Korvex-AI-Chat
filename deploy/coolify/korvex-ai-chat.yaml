@@ -11,7 +11,7 @@
 
 services:
   korvex:
-    image: ghcr.io/yourlast/korvex-ai-chat:0.1.7
+    image: ghcr.io/yourlast/korvex-ai-chat:0.1.8
     volumes:
       - korvex-data:/data
     environment:

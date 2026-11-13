@@ -2,6 +2,11 @@
 
 Notable changes. Every release also has automatic notes on the [Releases](https://github.com/YourLast/Korvex-AI-Chat/releases) page.
 
+## v0.1.8
+
+- Organization mail intake: a sender that is not a bare `local@domain` address is reported with the reason `sender`, the same
+  as a sender outside the organization's list (agreed with the mail collector).
+
 ## v0.1.7
 
 - **Security fix: organization mail intake.** A sender written as `"<owner@example.com>"@attacker.example` could pass as an allowed

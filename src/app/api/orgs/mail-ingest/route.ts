@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   if (!box) return no(404, 'tag', 'Нет организации с такой меткой');
   if (auth !== 'pass') return no(403, 'auth', 'Письмо не прошло SPF/DKIM');
   const from = bareAddress(sender);
-  if (!from) return no(403, 'sender_format', 'Адрес отправителя — не голый local@domain');
+  if (!from) return no(403, 'sender', 'Адрес отправителя — не голый local@domain');
   if (!aligned || aligned !== from.domain) return no(403, 'auth', 'Домен отправителя не подтверждён выравниванием DMARC');
   if (!senderAllowed(box.senders, from.addr)) return no(403, 'sender', 'Отправитель не в списке организации');
   const name = (file.name.split(/[\\/]/).pop() || 'document').slice(0, 200);
