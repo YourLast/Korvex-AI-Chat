@@ -24,6 +24,7 @@ import { brokenText, unavailableText } from './unavailable';
 import { OutClaimer } from './outfiles';
 import { hasCodeSession } from './code/flag';
 import { agentToolsOn, answerStep, runAgentLoop, servStepsIn, toolsPath, UpRetry, type Steer } from './agentLoop';
+import { orgHeader } from './orgCard';
 import { agentHistory, chatToOai, folderInstruction, transcriptForMeta, withExtra } from './agentHistory';
 import type { StepEvent } from './tools/types';
 import type { MemoryInfo } from './types';
@@ -680,7 +681,7 @@ async function run(j: Live) {
         const retry = new UpRetry(canCut);
         for (;;) {
           let got = false, again = false;
-          for await (const ev of streamChat({ model, level, chatId: h.session, messages: h.messages, signal: j.ac.signal, timezone: tz, agent: j.inline?.agent, sources: j.kind !== 'api' && !j.apiKeyId })) {
+          for await (const ev of streamChat({ model, level, chatId: h.session, messages: h.messages, signal: j.ac.signal, timezone: tz, agent: j.inline?.agent, sources: j.kind !== 'api' && !j.apiKeyId, org: orgHeader(j.userId, j.folderId) })) {
             if (ev.t === 'err' && retry.want(ev, got, () => servStepsIn(j.reasoning.slice(mark.r)))) { again = true; break; }
             if (ev.t === 'r' || ev.t === 'c' || ev.t === 'tc') got = true;
             feed(j, ev);

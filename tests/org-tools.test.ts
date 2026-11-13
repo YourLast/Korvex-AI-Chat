@@ -82,3 +82,13 @@ describe('«Скачать» файлы ответа', () => {
     expect(html(true, true)).not.toContain('data-testid="results"');
   });
 });
+
+describe('карточка для заголовка запроса', () => {
+  it('заполненные поля и название; пустая карточка и чужая организация — null', () => {
+    expect(C.orgHeader('u', 'org')).toEqual({ name: 'Ромашка', inn: '7701234567', kpp: '770101001', tax: 'usn_income_expense', vat: '5' });
+    expect(C.orgHeader('u', 'org2')).toEqual({ name: 'Лютик', vat: '22' });
+    expect(C.orgHeader('v', 'org')).toBeNull();
+    expect(C.orgHeader('u', null)).toBeNull();
+    expect(C.orgHeader('u', 'nope')).toBeNull();
+  });
+});

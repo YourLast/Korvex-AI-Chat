@@ -47,6 +47,16 @@ export function orgCardText(name: string, c: OrgCard, policyName?: string | null
   return parts.length ? `Карточка организации «${name}»: ${parts.join('; ')}. Учитывай её во всех расчётах этой организации.` : null;
 }
 
+export type OrgHeader = { name: string; inn?: string; kpp?: string; tax?: Tax; vat?: Vat };
+export function orgHeader(userId: string, folderId: string | null): OrgHeader | null {
+  if (!folderId) return null;
+  const c = orgCard(folderId);
+  if (!c.inn && !c.kpp && !c.tax && !c.vat) return null;
+  const f = folderOf(userId, folderId);
+  if (!f) return null;
+  return { name: f.name, ...(c.inn ? { inn: c.inn } : {}), ...(c.kpp ? { kpp: c.kpp } : {}), ...(c.tax ? { tax: c.tax } : {}), ...(c.vat ? { vat: c.vat } : {}) };
+}
+
 export function orgCardFor(userId: string, folderId: string | null): string | null {
   if (!folderId) return null;
   const f = folderOf(userId, folderId);

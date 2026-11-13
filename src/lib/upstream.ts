@@ -1,4 +1,5 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import type { OrgHeader } from './orgCard';
 import { streamText } from 'ai';
 import type { ModelCfg, Level } from './models';
 import { upstreamEffort } from './levels';
@@ -44,6 +45,7 @@ export async function* streamChat(opts: {
   timezone?: string | null;
   agent?: AgentReq;
   sources?: boolean;
+  org?: OrgHeader | null;
 }): AsyncGenerator<UpEvent> {
   if (opts.agent) { yield* streamAgent({ ...opts, agent: opts.agent }); return; }
   const { model, level, chatId, messages, signal } = opts;
@@ -57,7 +59,7 @@ export async function* streamChat(opts: {
     apiKey: modelKey(model) ?? D.defaultKey,
     includeUsage: true,
     fetch: tapFetch,
-    headers: { ...(D.headers?.(chatId, {}) ?? {}), [TZ_HEADER]: tzOrDefault(opts.timezone) },
+    headers: { ...(D.headers?.(chatId, { org: opts.org }) ?? {}), [TZ_HEADER]: tzOrDefault(opts.timezone) },
     metadataExtractor: {
       extractMetadata: async ({ parsedBody }) => {
         const x = D.extras?.(parsedBody);
@@ -215,7 +217,7 @@ function agentFrame(f: unknown, st: AgentState, D: Dialect): UpEvent[] {
   return out;
 }
 
-async function* streamAgent(opts: { model: ModelCfg; level: Level; chatId: string; signal: AbortSignal; timezone?: string | null; agent: AgentReq; sources?: boolean }): AsyncGenerator<UpEvent> {
+async function* streamAgent(opts: { model: ModelCfg; level: Level; chatId: string; signal: AbortSignal; timezone?: string | null; agent: AgentReq; sources?: boolean; org?: OrgHeader | null }): AsyncGenerator<UpEvent> {
   const { model, level, chatId, signal, agent } = opts;
   const D = dialect();
   const key = modelKey(model) ?? D.defaultKey;
@@ -240,7 +242,7 @@ async function* streamAgent(opts: { model: ModelCfg; level: Level; chatId: strin
       signal,
       headers: {
         'Content-Type': 'application/json', Accept: 'text/event-stream', ...(key ? { Authorization: `Bearer ${key}` } : {}),
-        ...(D.headers?.(chatId, { agent: agent.header !== false }) ?? {}), [TZ_HEADER]: tzOrDefault(opts.timezone),
+        ...(D.headers?.(chatId, { agent: agent.header !== false, org: opts.org }) ?? {}), [TZ_HEADER]: tzOrDefault(opts.timezone),
       },
       body: JSON.stringify(body),
     });

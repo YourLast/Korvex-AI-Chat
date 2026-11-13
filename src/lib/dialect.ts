@@ -1,10 +1,11 @@
+import type { OrgHeader } from './orgCard';
 export type Memory = Record<string, unknown>;
 export type Extras = { memory?: Memory; sources?: unknown[]; sinfo?: Record<string, number> };
 export type QueueInfo = { state: 'queued' | 'started'; ahead: number; eta: number | null };
 
 export type Dialect = {
   name: string;
-  headers?(chatId: string, o: { agent?: boolean }): Record<string, string>;
+  headers?(chatId: string, o: { agent?: boolean; org?: OrgHeader | null }): Record<string, string>;
   body?(o: { sources?: boolean }): Record<string, unknown>;
   memoryKey?: string;
   extras?(c: unknown): Extras | null;
