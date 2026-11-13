@@ -31,6 +31,21 @@ export function fmtEta(sec: number, lang: Lang = 'ru'): string {
   return tr(lang, 'queue.etaSec', { n: Math.min(55, Math.max(5, Math.round(sec / 5) * 5)) });
 }
 
+export function serveQueueOf(v: unknown): { ahead: number; eta: number | null } | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as { ahead?: unknown; eta?: unknown };
+  const ahead = Number(o.ahead), eta = Number(o.eta);
+  return { ahead: Number.isFinite(ahead) && ahead > 0 ? Math.floor(ahead) : 0, eta: Number.isFinite(eta) && eta > 0 ? Math.round(eta) : null };
+}
+
+export function fmtWait(sec: number, lang: Lang = 'ru'): string | null {
+  if (!Number.isFinite(sec) || sec < 60) return null;
+  const min = Math.round(sec / 60);
+  if (min < 60) return tr(lang, 'squeue.min', { n: min });
+  const h = Math.floor(min / 60), m = Math.round((min % 60) / 5) * 5;
+  return m === 0 ? tr(lang, 'squeue.h', { h }) : m === 60 ? tr(lang, 'squeue.h', { h: h + 1 }) : tr(lang, 'squeue.hm', { h, m });
+}
+
 export function ordinal(n: number, lang: Lang = 'ru'): string {
   if (lang === 'en') { const m100 = n % 100, m10 = n % 10; return `${n}${m100 >= 11 && m100 <= 13 ? 'th' : m10 === 1 ? 'st' : m10 === 2 ? 'nd' : m10 === 3 ? 'rd' : 'th'}`; }
   return lang === 'sr' ? `${n}. mesto` : `${n}-й`;

@@ -28,7 +28,7 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
-const chat = (o: Partial<ChatRef> = {}): ChatRef => ({ id: 't1', title: 'Отчёт по скважинам', muted: false, folderId: null, ...o });
+const chat = (o: Partial<ChatRef> = {}): ChatRef => ({ id: 't1', title: 'Отчёт по складу', muted: false, folderId: null, ...o });
 const folders = [{ id: 'f1', name: 'Ремонт', color: 'green', instruction: '', collapsed: false, sort: 0, count: 0 }, { id: 'f2', name: 'Работа', color: '', instruction: '', collapsed: false, sort: 1, count: 0 }] as FolderView[];
 
 function Host({ guardMs = 0, lang = 'ru' as Lang, target = chat() as ChatRef | null, first = 'menu' as ChatView, refresh = vi.fn(async () => {}), onClose = vi.fn(), f = folders }) {
@@ -40,7 +40,7 @@ const flush = () => act(async () => { await Promise.resolve(); await Promise.res
 describe('меню действий', () => {
   it('Переименовать, Переместить в проект, Не уведомлять, Удалить (красным); название чата сверху', () => {
     render(createElement(Host));
-    expect(screen.getByTestId('chat-sheet-title').textContent).toBe('Отчёт по скважинам');
+    expect(screen.getByTestId('chat-sheet-title').textContent).toBe('Отчёт по складу');
     expect(screen.getByTestId('chat-act-rename').textContent).toBe('Переименовать');
     expect(screen.getByTestId('chat-act-move').textContent).toBe('Переместить в проект');
     expect(screen.getByTestId('chat-act-mute').textContent).toBe('Не уведомлять');
@@ -108,7 +108,7 @@ describe('переименование', () => {
     fireEvent.click(screen.getByTestId('chat-act-rename'));
     const input = screen.getByTestId('chat-rename-input') as HTMLInputElement;
     expect(document.activeElement).toBe(input);
-    expect(input.value).toBe('Отчёт по скважинам');
+    expect(input.value).toBe('Отчёт по складу');
     fireEvent.change(input, { target: { value: '  Сводка за октябрь  ' } });
     fireEvent.keyDown(input, { key: 'Enter' }); await flush();
     expect(calls).toEqual([{ url: '/api/threads/t1', method: 'PATCH', body: { title: 'Сводка за октябрь' } }]);
@@ -123,7 +123,7 @@ describe('переименование', () => {
     expect((screen.getByTestId('chat-rename-save') as HTMLButtonElement).disabled).toBe(true);
     fireEvent.keyDown(input, { key: 'Enter' }); await flush();
     expect(calls).toHaveLength(0);
-    fireEvent.change(input, { target: { value: 'Отчёт по скважинам' } });
+    fireEvent.change(input, { target: { value: 'Отчёт по складу' } });
     fireEvent.click(screen.getByTestId('chat-rename-save')); await flush();
     expect(calls).toHaveLength(0); expect(onClose).toHaveBeenCalled();
   });
@@ -144,7 +144,7 @@ describe('удаление', () => {
     render(createElement(Host));
     fireEvent.click(screen.getByTestId('chat-act-delete'));
     expect(document.querySelector('.pj-eyebrow')!.textContent).toBe('Удалить чат?');
-    expect(screen.getByTestId('chat-delete-title').textContent).toBe('Отчёт по скважинам');
+    expect(screen.getByTestId('chat-delete-title').textContent).toBe('Отчёт по складу');
     expect(document.querySelector('.pj-text')!.textContent).toContain('без возврата');
     expect(screen.getByTestId('chat-delete-ok').classList.contains('pj-danger')).toBe(true);
     expect(screen.getByTestId('chat-delete-ok').textContent).toBe('Удалить');
@@ -197,7 +197,7 @@ describe('шапка чата и меню', () => {
     fireEvent.click(screen.getByTestId('top-title'));
     fireEvent.click(screen.getByTestId('top-more'));
     expect(chatMenu).toHaveBeenCalledTimes(2);
-    expect(chatMenu.mock.calls[0][0]).toMatchObject({ id: 't1', title: 'Отчёт по скважинам' });
+    expect(chatMenu.mock.calls[0][0]).toMatchObject({ id: 't1', title: 'Отчёт по складу' });
     expect(screen.getByTestId('top-title').getAttribute('aria-label')).toBe('Действия с чатом');
   });
 

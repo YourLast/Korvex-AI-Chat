@@ -57,6 +57,7 @@ type Live = {
   steps: Map<string, StepEvent>; stepsDirty: boolean; steers: Steer[]; interrupt: (() => void) | null; depth: number; folderId: string | null;
   agent: { transcript: unknown[]; final: string; rounds: number } | null; rBase: number; sepR: boolean; sepC: boolean;
   over?: boolean;
+  sq?: { ahead: number; eta: number | null; at: number } | null;
   claude: ClaudeRecord | null; errorUser: string | null;
   listeners: Set<(e: UpEvent | { t: 'state'; status: JobStatus; ahead?: number; position?: number; eta?: number }) => void>;
   done: Promise<JobResult>; resolve: (r: JobResult) => void;
@@ -89,8 +90,25 @@ const modelName = (id: string) => getModel(id)?.name ?? id;
 function jobEvent(j: Live, extra: Record<string, unknown> = {}) {
   publish(j.userId, {
     t: 'job', job: j.id, th: j.threadId, gid: j.groupId, m: j.messageId, kind: j.kind, status: j.status, model: j.modelId, level: j.levelId,
-    modelName: modelName(j.modelId), startedAt: j.startedAt, ...(j.lane ? { lane: j.lane, pair: j.pairKey } : {}), ...extra,
+    modelName: modelName(j.modelId), startedAt: j.startedAt, ...(j.lane ? { lane: j.lane, pair: j.pairKey } : {}),
+    ...(j.sq && j.status === 'running' ? { sq: { ahead: j.sq.ahead, eta: j.sq.eta } } : {}), ...extra,
   });
+}
+
+function serveQueue(j: Live, ev: Extract<UpEvent, { t: 'q' }>) {
+  if (ev.state === 'started') { endServeQueue(j); return; }
+  const now = Date.now();
+  const prev = j.sq;
+  if (prev) j.guard?.hold(now - prev.at);
+  j.sq = { ahead: ev.ahead, eta: ev.eta, at: now };
+  if (!prev || prev.ahead !== ev.ahead || prev.eta !== ev.eta) jobEvent(j);
+}
+function endServeQueue(j: Live) {
+  const q = j.sq;
+  if (!q) return;
+  j.sq = null;
+  j.guard?.hold(Date.now() - q.at);
+  if (j.status === 'running') jobEvent(j);
 }
 
 function queue(key: string) { const e = ex(); let q = e.queues.get(key); if (!q) e.queues.set(key, (q = [])); return q; }
@@ -491,6 +509,8 @@ export function withNote(msgs: ChatMsg[], note: string | null): ChatMsg[] {
 }
 
 function feed(j: Live, ev: UpEvent) {
+  if (ev.t === 'q') { serveQueue(j, ev); j.listeners.forEach((f) => f(ev)); return; }
+  if (j.sq) endServeQueue(j);
   if (ev.t === 'r' || ev.t === 'c') genTick(j.gen, Date.now(), ev.d);
   if (ev.t === 'r') {
     let d = ev.d;
@@ -559,7 +579,7 @@ async function runTools(j: Live, model: ModelCfg, level: Level, tz: string, h: R
     modelId: j.modelId, depth: j.depth, model, level, tz, session: h.session, signal: j.ac.signal,
     messages: path === 'agent' ? agentHistory(h.hist ?? [], model, j.userId, tz, h.folderSys, true, pctx) : chatToOai(h.messages, pctx, { model, tz, folderSys: h.folderSys }),
     chatMessages: (extra) => withExtra(h.messages, extra),
-    round: () => { j.sepR = j.sepC = true; j.rBase = j.rMs; },
+    round: () => { endServeQueue(j); j.sepR = j.sepC = true; j.rBase = j.rMs; },
     feed: (ev) => feed(j, ev),
     len: () => ({ r: j.reasoning.length, c: j.content.length }),
     step: (s) => stepOut(j, s),
@@ -665,6 +685,7 @@ async function run(j: Live) {
             if (ev.t === 'r' || ev.t === 'c' || ev.t === 'tc') got = true;
             feed(j, ev);
           }
+          endServeQueue(j);
           if (!again || j.ac.signal.aborted) break;
           if (got) rollbackTo(j, mark);
           if (!(await retry.pause((s) => stepOut(j, s), { r: j.reasoning.length, c: j.content.length }, 0, j.ac.signal, 'retry', got))) break;
@@ -686,6 +707,7 @@ function finalize(j: Live, status: JobStatus) {
   const wasRunning = j.status === 'running';
   if (j.timer) clearTimeout(j.timer);
   j.guard?.clear();
+  j.sq = null;
   j.claimer?.finish(j.content, j.reasoning);
   flushDeltas(j);
   const followUp = status === 'done' || (status === 'cancelled' && j.steers.some((x) => !x.delivered && x.mode === 'now'));
@@ -863,14 +885,14 @@ export function jobListen(jobId: string, fn: Live['listeners'] extends Set<infer
   return () => j.listeners.delete(fn);
 }
 
-export type LiveView = { jobId: string; status: JobStatus; ahead: number; position: number; eta: number; startedAt: number | null; createdAt: number; content: string; reasoning: string; rStart: number | null; rMs: number; gen?: { n: number; ms: number }; steps?: StepEvent[] };
+export type LiveView = { jobId: string; status: JobStatus; ahead: number; position: number; eta: number; sq?: { ahead: number; eta: number | null }; startedAt: number | null; createdAt: number; content: string; reasoning: string; rStart: number | null; rMs: number; gen?: { n: number; ms: number }; steps?: StepEvent[] };
 export function liveOfMessage(messageId: string): LiveView | null {
   const id = ex().byMsg.get(messageId);
   const j = id ? ex().live.get(id) : undefined;
   if (!j) return null;
   const steps = stepList(j);
   const q = j.status === 'queued' ? placeOf(j) : null;
-  return { jobId: j.id, status: j.status, ahead: q?.ahead ?? 0, position: q?.position ?? 0, eta: q?.eta ?? 0, startedAt: j.startedAt, createdAt: j.createdAt, content: j.content, reasoning: j.reasoning, rStart: j.rStart, rMs: j.rMs, gen: genOf(j), ...(steps.length ? { steps } : {}) };
+  return { jobId: j.id, status: j.status, ahead: q?.ahead ?? 0, position: q?.position ?? 0, eta: q?.eta ?? 0, ...(j.sq && j.status === 'running' ? { sq: { ahead: j.sq.ahead, eta: j.sq.eta } } : {}), startedAt: j.startedAt, createdAt: j.createdAt, content: j.content, reasoning: j.reasoning, rStart: j.rStart, rMs: j.rMs, gen: genOf(j), ...(steps.length ? { steps } : {}) };
 }
 export function activeJobs(userId: string) {
   return [...ex().live.values()].filter((j) => j.userId === userId).map((j) => ({ id: j.id, threadId: j.threadId, messageId: j.messageId, status: j.status, modelId: j.modelId }));

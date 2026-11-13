@@ -51,6 +51,23 @@ describe('armJobTimeout (фейковые часы)', () => {
     expect(seen).toEqual(['hold 5', 'touch2']);
   });
 
+  it('через серв: ход ждал в очереди сервера (hold) — потолок 4 ч сдвигается на это время, но суммарно не больше чем на 4 ч', () => {
+    vi.useFakeTimers();
+    const got: string[] = [];
+    const g = armJobTimeout(timeoutPlan('xhigh'), (m) => got.push(m));
+    for (let i = 0; i < 6 * 150; i++) { vi.advanceTimersByTime(10_000); g.touch(); g.hold(10_000); }
+    for (let i = 0; i < 6 * 239; i++) { vi.advanceTimersByTime(10_000); g.touch(); }
+    expect(got).toEqual([]);
+    vi.advanceTimersByTime(70_000);
+    expect(got).toEqual(['Превышено время ответа (4 ч)']);
+    const got2: string[] = [];
+    const g2 = armJobTimeout(timeoutPlan('max'), (m) => got2.push(m));
+    for (let i = 0; i < 6 * 60 * 8 - 1; i++) { vi.advanceTimersByTime(10_000); g2.touch(); g2.hold(10_000); }
+    expect(got2).toEqual([]);
+    vi.advanceTimersByTime(20_000);
+    expect(got2).toEqual(['Превышено время ответа (4 ч)']);
+  });
+
   it('max: ход 90 минут с keepalive каждые 10 с не рвётся; после 15 минут тишины — рвётся один раз', () => {
     vi.useFakeTimers();
     const got: string[] = [];

@@ -124,7 +124,7 @@ describe('ошибки по-человечески', () => {
 
 describe('склейка расшифровки с набранным текстом', () => {
   it('пустое поле — расшифровка с маркером; набранное — через пробел, маркер один и в начале', () => {
-    expect(joinText('', VOICE_MARKER + 'Сколько скважин?')).toBe(VOICE_MARKER + 'Сколько скважин?');
+    expect(joinText('', VOICE_MARKER + 'Сколько позиций?')).toBe(VOICE_MARKER + 'Сколько позиций?');
     expect(joinText('Посчитай  ', VOICE_MARKER + 'сумму по кусту.')).toBe(VOICE_MARKER + 'Посчитай сумму по кусту.');
     const twice = joinText(joinText('', VOICE_MARKER + 'Раз.'), VOICE_MARKER + 'Два.');
     expect(twice).toBe(VOICE_MARKER + 'Раз. Два.');
@@ -152,11 +152,11 @@ describe('прочее', () => {
 
 describe('проявление слов', () => {
   it('набранное раньше видно сразу, новое — по словам; 25–40 мс на слово, всё не дольше REVEAL_TOTAL_MS', () => {
-    const full = joinText('Посчитай', VOICE_MARKER + 'сколько скважин на кусте');
+    const full = joinText('Посчитай', VOICE_MARKER + 'сколько позиций на складе');
     const from = revealFrom(full, 'Посчитай');
     const p = revealPlan(full, from);
     expect(p.head).toBe(VOICE_MARKER + 'Посчитай');
-    expect(p.parts.filter((x) => x.w).map((x) => x.t)).toEqual(['сколько', 'скважин', 'на', 'кусте']);
+    expect(p.parts.filter((x) => x.w).map((x) => x.t)).toEqual(['сколько', 'позиций', 'на', 'складе']);
     expect(p.parts.map((x) => x.t).join('')).toBe(full.slice(from));
     expect(p.step).toBeGreaterThanOrEqual(25); expect(p.step).toBeLessThanOrEqual(40);
     expect(p.fade).toBeGreaterThanOrEqual(350); expect(p.fade).toBeLessThanOrEqual(450);

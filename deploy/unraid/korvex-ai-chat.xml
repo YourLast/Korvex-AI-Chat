@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>Korvex-AI-Chat</Name>
+  <Repository>ghcr.io/yourlast/korvex-ai-chat:latest</Repository>
+  <Registry>https://github.com/YourLast/Korvex-AI-Chat/pkgs/container/korvex-ai-chat</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/YourLast/Korvex-AI-Chat/issues</Support>
+  <Project>https://github.com/YourLast/Korvex-AI-Chat</Project>
+  <Overview>An AI chat for your family or team on your own server. Answers keep generating on the server: close the tab and open the chat later or on the phone. Installs on a phone as an app, voice input, web search, invite links, roles. One container, all data (SQLite, files) in /data.&#xD;
+&#xD;
+Models: OpenAI, Anthropic or any OpenAI-compatible API (Admin, Models), or your Ollama server: set Ollama URL and a small local model (IBM Granite 4 Micro, 2.1 GB) downloads there by itself; chat titles and memory use it too.&#xD;
+&#xD;
+The first account you create becomes the admin.</Overview>
+  <Category>AI: Productivity:</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/YourLast/Korvex-AI-Chat/main/deploy/unraid/korvex-ai-chat.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/YourLast/Korvex-AI-Chat/main/public/icon-512.png</Icon>
+  <Requires>Optional: an Ollama server for the local model, SearXNG for web search, speaches for voice input (all available in Community Applications).</Requires>
+  <Config Name="Web UI port" Target="3000" Default="3000" Mode="tcp" Description="Port of the chat" Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/appdata/korvex-ai-chat" Mode="rw" Description="Chats, files and settings (SQLite)" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/korvex-ai-chat</Config>
+  <Config Name="Ollama URL" Target="KX_OLLAMA_URL" Default="" Mode="" Description="Optional. Your Ollama server, for example http://tower.local:11434. Empty: add models by API in Admin, Models." Type="Variable" Display="always" Required="false" Mask="false"></Config>
+  <Config Name="Local model" Target="KX_LOCAL_MODEL" Default="granite4:micro" Mode="" Description="The model from ollama.com/library that downloads into Ollama on the first start" Type="Variable" Display="advanced" Required="false" Mask="false">granite4:micro</Config>
+  <Config Name="SearXNG URL" Target="KX_SEARX_URL" Default="" Mode="" Description="Optional. SearXNG for the web search tool, for example http://tower.local:8080. Its settings.yml needs search.formats with json." Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Speech-to-text URL" Target="STT_URL" Default="" Mode="" Description="Optional. An OpenAI-compatible speech-to-text server (speaches) for voice input, for example http://tower.local:8000/v1" Type="Variable" Display="advanced" Required="false" Mask="false"></Config>
+  <Config Name="Speech-to-text model" Target="STT_MODEL" Default="Systran/faster-whisper-small" Mode="" Description="The model of the speech-to-text server" Type="Variable" Display="advanced" Required="false" Mask="false">Systran/faster-whisper-small</Config>
+  <Config Name="Secure cookies" Target="COOKIE_SECURE" Default="0|1" Mode="" Description="1 when the chat is served over HTTPS (reverse proxy)" Type="Variable" Display="advanced" Required="false" Mask="false">0</Config>
+</Container>

@@ -5,6 +5,7 @@ import type { StepEvent } from '@/lib/tools/types';
 import { serverNow, setServerNow } from '@/lib/clock';
 import { useLive, type LiveEv } from '@/lib/live';
 import { browserTimeZone } from '@/lib/tz';
+import { serveQueueOf } from '@/lib/queueEta';
 
 export type TurnMode = 'send' | 'regenerate' | 'edit' | 'continue';
 export type SendArgs = {
@@ -135,7 +136,8 @@ export function useChatStream(initial: MsgView[], initialHasMore = false, thread
         if (!ref.current.some((m) => m.id === e.m)) { void reload(id); return; }
         setMsgs((all) => all.map((m) => (m.id === e.m ? {
           ...m, streaming: true, jobId: String(e.job),
-          ...(status === 'queued' ? { phase: 'queued' as const, ahead: Number(e.ahead) || 0, eta: Number(e.eta) || 0 } : { phase: m.content ? 'answer' as const : m.reasoning ? 'think' as const : 'wait' as const, ahead: 0, eta: 0, startedAt: Number(e.startedAt) || m.startedAt }),
+          ...(status === 'queued' ? { phase: 'queued' as const, ahead: Number(e.ahead) || 0, eta: Number(e.eta) || 0, squeue: null } : { phase: m.content ? 'answer' as const : m.reasoning ? 'think' as const : 'wait' as const, ahead: 0, eta: 0, startedAt: Number(e.startedAt) || m.startedAt,
+            squeue: serveQueueOf(e.sq) }),
         } : m)));
       } else {
         void reload(id);

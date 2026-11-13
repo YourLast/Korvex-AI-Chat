@@ -10,6 +10,8 @@ RUN npx next build && npm prune --omit=dev --no-audit --no-fund && rm -rf .next/
 FROM node:22-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 DATA_DIR=/data PORT=3000
+# Tools (web search, user memory, other chats) for every model with tools on, not only Claude; KX_AGENT_TOOLS=0 turns them off
+ENV KX_AGENT_TOOLS=1 KX_TOOLS_PATH=chat
 COPY --from=build --chown=node:node /app /app
 COPY --chmod=755 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN mkdir -p /data && chown node:node /data

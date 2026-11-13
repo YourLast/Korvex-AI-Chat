@@ -73,7 +73,7 @@ export function loadThread(userId: string, threadId: string, opts: LoadOpts = {}
     const lv = liveOfMessage(m.id);
     if (lv) {
       Object.assign(v, {
-        content: lv.content, reasoning: lv.reasoning, reasoningMs: lv.rMs || null, streaming: true, jobId: lv.jobId, ahead: lv.ahead, eta: lv.eta,
+        content: lv.content, reasoning: lv.reasoning, reasoningMs: lv.rMs || null, streaming: true, jobId: lv.jobId, ahead: lv.ahead, eta: lv.eta, squeue: lv.sq ?? null,
         phase: lv.status === 'queued' ? 'queued' : lv.content ? 'answer' : lv.reasoning ? 'think' : 'wait',
         startedAt: lv.startedAt ?? lv.createdAt, rStartedAt: lv.rStart, liveGen: lv.gen, ...(lv.steps ? { steps: lv.steps } : {}),
       });

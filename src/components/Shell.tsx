@@ -349,7 +349,7 @@ export function Shell({ user, models, retired, locked, initialThreads, initialFo
           <MainCtx.Provider value={main}>
           <nav className="sb-scroll" data-testid="thread-list" ref={listRef}>
             {!org && <FolderSection folders={folders} setFolders={setFolders} threads={threads.filter(inFolder)} row={row} onChanged={() => { void refresh(); void loadFolders(); }} />}
-            {org && groups.length === 0 && <p className="t-cap" style={{ padding: 'var(--s-5) var(--s-3)' }} data-testid="org-no-chats">{tx('org.noChats')}</p>}
+            {org && groups.length === 0 && <p className="t-cap" style={{ padding: 'var(--s-5) var(--s-3)' }} data-testid="org-no-chats">{tx(orgMode ? 'org.org.noChats' : 'org.noChats')}</p>}
             <ProjectDialog edit={newOrg ? 'new' : null} onClose={() => setNewOrg(false)} onSaved={() => { setNewOrg(false); void loadFolders(); }} onCreated={(f) => setOrg(f.id)} />
             {groups.length === 0 && !folders.length && <p className="t-cap" style={{ padding: 'var(--s-5) var(--s-3)' }}>{tx('shell.noChats')}</p>}
             {groups.map((g) => (

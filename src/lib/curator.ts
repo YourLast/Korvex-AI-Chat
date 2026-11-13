@@ -2,12 +2,11 @@ import { and, asc, eq, gt, inArray } from 'drizzle-orm';
 import { getDb, schema } from './db';
 import { publish } from './bus';
 import { onJobFinished, type FinishedJob } from './jobs';
-import { gateUrl } from './titles';
+import { gateModel, gateUrl } from './titles';
 import { addMemory, askedToForget, asksName, CURATOR_KEYS, dedupeMemory, workData, askedToRemember, deleteMemory, isIntro, isSecret, isSection, KEYS, listMemory, memoryAllowed, memoryMeta, memoryPrefs, profileName, refreshWritingProfile, refutesMemory, REFUTE_MAX_DELETES, ruleConflict, SECTIONS, sensitiveTopic, setMemoryMeta, stripHedge, sweepMaybe, updateMemory, type Section } from './memory';
 import { MARKER } from './turn';
 import { plainText } from './textsearch';
 import { registerBusy } from './instance';
-import { cfg } from './cfg';
 import { userLang } from './userLang';
 
 const SYSTEM = [
@@ -207,7 +206,7 @@ type St = { on: boolean; running: boolean; tasks: Task[]; timer: NodeJS.Timeout 
 const g = globalThis as unknown as { __kxCurator?: St };
 const S = (): St => (g.__kxCurator ??= { on: false, running: false, tasks: [], timer: null, done: new Set(), gateDownUntil: 0, stats: { runs: 0, changed: 0, none: 0, fail: 0, busy: 0, skipped: 0, rescued: 0 } });
 
-const MODEL = () => process.env.KX_MEMORY_ENGINE_MODEL || cfg('KX_TITLE_ENGINE_MODEL');
+const MODEL = () => process.env.KX_MEMORY_ENGINE_MODEL || gateModel();
 export function curatorUrl(): string {
   const env = process.env.KX_MEMORY_ENGINE_URL;
   if (env !== undefined) return env.trim().replace(/\/+$/, '');

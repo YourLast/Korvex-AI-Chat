@@ -182,13 +182,13 @@ describe('экран чата: правка на телефоне через п�
   const models = [
     { id: 'alpha', name: 'Alpha', fullName: 'Alpha', defaultLevel: 'medium', images: true, levels: [{ id: 'low', label: 'low' }, { id: 'medium', label: 'medium' }, { id: 'xhigh', label: 'xhigh' }] },
   ] as unknown as PublicModel[];
-  const u1: MsgView = { id: 'u1', role: 'user', content: 'Сколько скважин в отчёте?', files: [doc] };
+  const u1: MsgView = { id: 'u1', role: 'user', content: 'Сколько позиций в отчёте?', files: [doc] };
   const a1: MsgView = { id: 'a1', role: 'assistant', content: 'Двенадцать.', meta: { modelId: 'alpha', levelId: 'medium' } };
   const shell = { models, refresh: async () => {}, openDrawer: () => {}, threads: [], role: 'user' };
   async function mount(initial: MsgView[] = [u1, a1]) {
     const { ChatClient } = await import('@/components/ChatClient');
     return render(createElement(ShellCtx.Provider, { value: shell as never },
-      createElement(ChatClient, { models, thread: { id: 't1', title: 'Скважины', modelId: 'alpha', effort: 'xhigh' }, initial, fileNames: [] })));
+      createElement(ChatClient, { models, thread: { id: 't1', title: 'Склад', modelId: 'alpha', effort: 'xhigh' }, initial, fileNames: [] })));
   }
 
   it('карандаш -> текст и файл в поле, вопрос приглушён; «Отправить» — POST /api/chat mode edit (та же правка), модель и уровень чипа, вложения поля', async () => {
@@ -197,19 +197,19 @@ describe('экран чата: правка на телефоне через п�
     fireEvent.change(input(), { target: { value: 'черновик' } });
     fireEvent.click(screen.getByTestId('edit'));
     expect(screen.getByTestId('edit-plate')).toBeTruthy();
-    expect(input().value).toBe('Сколько скважин в отчёте?');
+    expect(input().value).toBe('Сколько позиций в отчёте?');
     expect(chips()).toEqual(['отчёт.pdf']);
     expect(screen.queryByTestId('edit-box')).toBeNull();
     expect(document.querySelector('[data-testid=user-msg]')!.className).toContain('is-edit-src');
     expect((window.history.state as Record<string, unknown> | null)?.kxBack).toBeTruthy();
-    fireEvent.change(input(), { target: { value: 'Сколько скважин в отчёте за 2025 год?' } });
+    fireEvent.change(input(), { target: { value: 'Сколько позиций в отчёте за 2025 год?' } });
     await act(async () => { fireEvent.click(screen.getByTestId('send')); await new Promise((r) => setTimeout(r, 0)); });
     const post = calls.find((c) => c.url === '/api/chat')!;
     expect(post.method).toBe('POST');
-    expect(post.body).toMatchObject({ threadId: 't1', mode: 'edit', editId: 'u1', text: 'Сколько скважин в отчёте за 2025 год?', fileIds: ['f-doc'], replaceFiles: true, modelId: 'alpha', levelId: 'xhigh' });
+    expect(post.body).toMatchObject({ threadId: 't1', mode: 'edit', editId: 'u1', text: 'Сколько позиций в отчёте за 2025 год?', fileIds: ['f-doc'], replaceFiles: true, modelId: 'alpha', levelId: 'xhigh' });
     await waitFor(() => expect(screen.queryByTestId('edit-plate')).toBeNull());
     expect(input().value).toBe('черновик');
-    await waitFor(() => expect([...document.querySelectorAll('[data-testid=user-msg] .bubble')].map((b) => b.textContent)).toEqual(['Сколько скважин в отчёте за 2025 год?']));
+    await waitFor(() => expect([...document.querySelectorAll('[data-testid=user-msg] .bubble')].map((b) => b.textContent)).toEqual(['Сколько позиций в отчёте за 2025 год?']));
     await waitFor(() => expect(screen.getByTestId('versions').textContent).toContain('2/2'));
   });
 

@@ -34,7 +34,7 @@ beforeAll(async () => {
     db.insert(schema.users).values({ id: u.id, email: `${u.id}@t`, name: u.id === 'usr-a' ? 'Анна' : u.id === 'usr-b' ? 'Борис' : u.id, passwordHash: 'x', role, createdAt: T0 }).run();
     db.insert(schema.sessions).values({ id: sha(u.token), userId: u.id, createdAt: T0, expiresAt: Date.now() + 864e5 }).run();
   }
-  db.insert(schema.threads).values({ id: 'th-a1', userId: A.id, title: 'Отчёт по скважинам', modelId: 'alpha', effort: 'off', leafId: 'a3', readAt: 5, createdAt: T0, updatedAt: T0 + 9000 }).run();
+  db.insert(schema.threads).values({ id: 'th-a1', userId: A.id, title: 'Отчёт по складу', modelId: 'alpha', effort: 'off', leafId: 'a3', readAt: 5, createdAt: T0, updatedAt: T0 + 9000 }).run();
   const msg = (id: string, seq: number, parent: string | null, role: 'user' | 'assistant', content: string, meta: Record<string, unknown> | null = null) =>
     db.insert(schema.messages).values({ id, threadId: 'th-a1', seq, parentId: parent, role, content, meta, createdAt: T0 + seq * 1000 }).run();
   msg('u1', 1, null, 'user', 'Сделай сводку по добыче');
@@ -56,10 +56,10 @@ beforeAll(async () => {
   db.insert(schema.messages).values({ id: 'c1', threadId: 'th-b1', seq: 1, parentId: null, role: 'user', content: 'Проверь договор', createdAt: T0 }).run();
   db.insert(schema.messages).values({ id: 'c2', threadId: 'th-b1', seq: 2, parentId: 'c1', role: 'assistant', content: 'Договор в порядке', meta: { modelId: 'beta', levelId: 'off' }, createdAt: T0 + 1 }).run();
   db.insert(schema.ratings).values({ id: 'r4', userId: B.id, threadId: 'th-b1', messageId: 'c2', value: 1, reasons: [], comment: null, modelId: 'beta', levelId: 'off', createdAt: T0 + 500, updatedAt: T0 + 500 }).run();
-  db.insert(schema.files).values({ id: '11111111-1111-4111-8111-111111111111', userId: A.id, threadId: 'th-a1', name: 'wells.csv', mime: 'text/csv', size: 12, sha256: 'x', text: 'скважина;июль\nW-07;1210', createdAt: T0 + 10 }).run();
+  db.insert(schema.files).values({ id: '11111111-1111-4111-8111-111111111111', userId: A.id, threadId: 'th-a1', name: 'wells.csv', mime: 'text/csv', size: 12, sha256: 'x', text: 'позиция;июль\nW-07;1210', createdAt: T0 + 10 }).run();
   const fd = path.join(dir, 'files', '11111111-1111-4111-8111-111111111111');
   fs.mkdirSync(fd, { recursive: true });
-  fs.writeFileSync(path.join(fd, 'original.csv'), 'скважина;июль\nW-07;1210');
+  fs.writeFileSync(path.join(fd, 'original.csv'), 'позиция;июль\nW-07;1210');
   db.insert(schema.outFiles).values({ token: TOKEN, userId: A.id, threadId: 'th-a1', messageId: 'a1', source: 'job', createdAt: T0 + 20 }).run();
   fs.mkdirSync(path.join(OUT, TOKEN));
   fs.writeFileSync(path.join(OUT, TOKEN, 'report.csv'), 'a;b\n1;2');
@@ -182,7 +182,7 @@ describe('выборки администратора', () => {
     expect(userUploads(B.id)).toEqual([]);
     const outs = userOutFiles(A.id);
     expect(outs).toHaveLength(1);
-    expect(outs[0]).toMatchObject({ name: 'report.csv', token: TOKEN, url: `/out/${TOKEN}/report.csv`, threadTitle: 'Отчёт по скважинам' });
+    expect(outs[0]).toMatchObject({ name: 'report.csv', token: TOKEN, url: `/out/${TOKEN}/report.csv`, threadTitle: 'Отчёт по складу' });
     expect(uploadText('11111111-1111-4111-8111-111111111111')?.text).toContain('W-07');
     expect(uploadText('нет')).toBeNull();
   });
@@ -195,7 +195,7 @@ describe('выборки администратора', () => {
     expect([all.up, all.down]).toEqual([2, 3]);
     const down = ratingsFeed({ value: -1 });
     expect(down.rows.map((r) => r.id)).toEqual(['r3', 'r1b', 'r1']);
-    expect(down.rows[0]).toMatchObject({ userName: 'Анна', threadTitle: 'Отчёт по скважинам', reasons: ['incomplete', 'format'], comment: 'Нет таблицы', exists: true, value: -1 });
+    expect(down.rows[0]).toMatchObject({ userName: 'Анна', threadTitle: 'Отчёт по складу', reasons: ['incomplete', 'format'], comment: 'Нет таблицы', exists: true, value: -1 });
     expect(down.rows[0].answer).toContain('Выводы');
     expect(down.rows[0].question).toContain('выводы');
     expect(ratingsFeed({ value: 1 }).rows.map((r) => r.id)).toEqual(['r4', 'r2']);
@@ -261,7 +261,7 @@ describe('журнал просмотров', () => {
     await Chat({ params: Promise.resolve({ id: 'th-a1' }), searchParams: Promise.resolve({ m: 'a3' }) });
     await (await import('@/app/(app)/admin/users/[id]/page')).default({ params: Promise.resolve({ id: 'usr-a' }) });
     const log = viewLog(10);
-    expect(log.map((v) => [v.adminName, v.ownerName, v.kind, v.threadTitle]).sort()).toEqual([[ADMIN.id, 'Анна', 'chat', 'Отчёт по скважинам'], [ADMIN.id, 'Анна', 'user', null]]);
+    expect(log.map((v) => [v.adminName, v.ownerName, v.kind, v.threadTitle]).sort()).toEqual([[ADMIN.id, 'Анна', 'chat', 'Отчёт по складу'], [ADMIN.id, 'Анна', 'user', null]]);
     expect(log).toHaveLength(2);
     expect(log.find((v) => v.kind === 'chat')).toMatchObject({ adminId: ADMIN.id, ownerId: A.id, threadId: 'th-a1' });
     expect(logView({ adminId: ADMIN2.id, ownerId: A.id, kind: 'chat', target: 'th-a1', threadId: 'th-a1' })).toBe(true);
@@ -300,7 +300,7 @@ describe('память человека', () => {
     expect(r.status).toBe(200);
     const d = (await r.json()) as import('@/lib/adminTypes').AdminMemory;
     expect(d.items.map((x) => x.id).sort()).toEqual(['m-guess', 'm-man', 'm-name', 'm-work']);
-    expect(d.items.find((x) => x.id === 'm-name')!.chat).toEqual({ id: 'th-a1', title: 'Отчёт по скважинам', intro: false });
+    expect(d.items.find((x) => x.id === 'm-name')!.chat).toEqual({ id: 'th-a1', title: 'Отчёт по складу', intro: false });
     expect(d.items.find((x) => x.id === 'm-guess')!.sure).toBe(false);
     expect(d.callName).toEqual({ value: 'Анна', fromProfile: false });
     expect(d.on).toBe(true);

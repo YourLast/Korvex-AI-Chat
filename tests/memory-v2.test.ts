@@ -87,7 +87,7 @@ describe('имя: профиль — слабый источник, спроси
     expect(M.looksLikeName('Ivan')).toBe(true);
     expect(M.looksLikeName('Пётр Смирнов')).toBe(true);
     for (const bad of ['ivan.ts', 'e2e-abc', 'admin', 'user42', 'a@b.c', 'E2E Админ', 'x']) expect(M.looksLikeName(bad)).toBe(false);
-    expect(M.looksLikeName('ivanpetrov', 'ivanpetrov@x.org')).toBe(false);
+    expect(M.looksLikeName('petrsmirnov', 'petrsmirnov@x.org')).toBe(false);
     const th = await thread('a1');
     answer = 'Привет! Чем помочь? Кстати, как тебя зовут?';
     await turn('a1', th, 'привет');

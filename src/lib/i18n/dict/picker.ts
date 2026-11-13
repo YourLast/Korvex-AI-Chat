@@ -52,4 +52,14 @@ export default {
   'queue.etaMin': ['~1–2 мин', '~1–2 min', '~1–2 min'],
   'queue.etaSec': ['~{n} с', '~{n} s', '~{n} s'],
   'queue.waiting': ['В очереди…', 'In the queue…', 'U redu…'],
+
+  'squeue.in': ['Расчёт в очереди, перед вами {n} — начнём автоматически', 'The calculation is queued, {n} ahead of you — it will start automatically', 'Proračun je u redu čekanja, ispred vas {n} — počinjemo automatski'],
+  'squeue.next': ['Расчёт в очереди, вы следующий — начнём автоматически', 'The calculation is queued, you’re next — it will start automatically', 'Proračun je u redu čekanja, vi ste sledeći — počinjemo automatski'],
+  'squeue.wait': ['Ждать примерно {t}', 'Estimated wait: about {t}', 'Procenjeno čekanje: oko {t}'],
+  'squeue.soon': ['Начнём меньше чем через минуту', 'Starting in under a minute', 'Počinjemo za manje od minuta'],
+  'squeue.min': ['{n} мин', '{n} min', '{n} min'],
+  'squeue.h': ['{h} ч', '{h} h', '{h} h'],
+  'squeue.hm': ['{h} ч {m} мин', '{h} h {m} min', '{h} h {m} min'],
+  'squeue.note': ['Можно закрыть вкладку — ответ сохранится в чате.', 'You can close the tab — the answer will be saved in the chat.', 'Možete da zatvorite karticu — odgovor će biti sačuvan u četu.'],
+  'squeue.admin': ['Расчёт в очереди…', 'Calculation queued…', 'Proračun u redu…'],
 } satisfies Dict;

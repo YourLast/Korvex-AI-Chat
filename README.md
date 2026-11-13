@@ -36,6 +36,8 @@ Settings are environment variables — see [.env.example](.env.example). How it 
 
 - **Your server:** `docker compose up -d` — the app, a local model (Ollama), speech-to-text (speaches) and web search (SearXNG).
   With an NVIDIA GPU: `docker compose -f compose.yaml -f compose.gpu.yaml up -d`.
+- **Home servers:** CasaOS / ZimaOS, Unraid and Coolify — ready templates in [deploy/](deploy/), steps in
+  [docs/DEPLOY.md](docs/DEPLOY.md#home-servers-casaos-zimaos-unraid-coolify).
 - **Cloud:** [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/YourLast/Korvex-AI-Chat)
   · Railway and Fly.io — a few steps in [docs/DEPLOY.md](docs/DEPLOY.md).
 - **Vercel** is not supported yet: long answers, background jobs and SQLite need a long-running server —

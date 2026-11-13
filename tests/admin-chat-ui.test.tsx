@@ -16,7 +16,7 @@ const user = (id: string, content: string): MsgView => ({ id, role: 'user', cont
 const ans = (id: string, content: string, rating?: MsgView['rating']): MsgView => ({ id, role: 'assistant', content, meta: { modelId: 'alpha', levelId: 'low' }, rating: rating ?? null });
 
 const data = (over: Partial<AdminChatData> = {}): AdminChatData => ({
-  thread: { id: 't1', title: 'Отчёт по скважинам', modelId: 'alpha', effort: 'low', createdAt: T0, updatedAt: T0, temporary: false, compareGroup: false, folder: null },
+  thread: { id: 't1', title: 'Отчёт по складу', modelId: 'alpha', effort: 'low', createdAt: T0, updatedAt: T0, temporary: false, compareGroup: false, folder: null },
   owner: { id: 'u', name: 'Анна Тестова', email: 'anna@test.local' },
   messages: [
     user('u1', 'Сделай сводку'), ans('a1', 'Первая сводка', { value: -1, reasons: ['wrong'], comment: 'Цифра не та' }),

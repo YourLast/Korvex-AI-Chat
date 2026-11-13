@@ -47,7 +47,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     calls++;
     expect(url).toBe('/api/transcribe');
-    const r = replies.shift() ?? { status: 200, body: { text: M + 'Сколько скважин на кусте?' } };
+    const r = replies.shift() ?? { status: 200, body: { text: M + 'Сколько позиций на складе?' } };
     return { status: r.status, ok: r.status < 400, json: async () => r.body } as Response;
   }));
   window.matchMedia = ((q: string) => ({ matches: q.includes('pointer: fine'), media: q, addEventListener() {}, removeEventListener() {} })) as unknown as typeof window.matchMedia;
@@ -78,7 +78,7 @@ describe('запись с кнопками (тап)', () => {
     expect(screen.getByTestId('rec-stt').textContent).toBe('Распознаю…');
     await tick(800);
     expect(calls).toBe(1);
-    expect(input().value).toBe(M + 'Сколько скважин на кусте?');
+    expect(input().value).toBe(M + 'Сколько позиций на складе?');
     expect(sent).toHaveLength(0);
     expect((screen.getByTestId('send') as HTMLButtonElement).disabled).toBe(false);
   });
@@ -105,7 +105,7 @@ describe('запись с кнопками (тап)', () => {
     await tick(1500);
     fireEvent.keyDown(window, { key: 'Enter' });
     await tick(800);
-    expect(input().value).toBe(M + 'Посчитай Сколько скважин на кусте?');
+    expect(input().value).toBe(M + 'Посчитай Сколько позиций на складе?');
   });
 
   it('«Отправлять сразу после распознавания» — текст уходит модели сам', async () => {
@@ -114,7 +114,7 @@ describe('запись с кнопками (тап)', () => {
     await tapMic(); await tick(1500);
     fireEvent.click(screen.getByTestId('rec-done'));
     await tick(800);
-    expect(sent).toEqual([{ text: M + 'Сколько скважин на кусте?' }]);
+    expect(sent).toEqual([{ text: M + 'Сколько позиций на складе?' }]);
     expect(input().value).toBe('');
   });
 });
@@ -153,10 +153,10 @@ describe('анимация «Распознаю…» и проявление с�
     expect(screen.queryByTestId('composer-input')).toBeNull();
     await tick(300);
     expect(screen.queryByTestId('rec')).toBeNull();
-    expect(input().value).toBe(M + 'Сколько скважин на кусте?');
+    expect(input().value).toBe(M + 'Сколько позиций на складе?');
     expect(input().classList.contains('is-reveal')).toBe(true);
     expect(screen.getByTestId('reveal').querySelectorAll('.wr-w')).toHaveLength(4);
-    fireEvent.change(input(), { target: { value: M + 'Сколько скважин?' } });
+    fireEvent.change(input(), { target: { value: M + 'Сколько позиций?' } });
     expect(screen.queryByTestId('reveal')).toBeNull();
     expect(input().classList.contains('is-reveal')).toBe(false);
   });
@@ -174,7 +174,7 @@ describe('анимация «Распознаю…» и проявление с�
     await tapMic(); await tick(1500);
     fireEvent.click(screen.getByTestId('rec-done'));
     await tick(300);
-    expect(input().value).toBe(M + 'Сколько скважин на кусте?');
+    expect(input().value).toBe(M + 'Сколько позиций на складе?');
     const r = screen.getByTestId('reveal');
     expect(r.dataset.motion).toBe('fade');
     expect(r.classList.contains('wr--rm')).toBe(true);
@@ -198,7 +198,7 @@ describe('«зажми и говори»', () => {
     await act(async () => { win('pointerup', 300); });
     await tick(800);
     expect(calls).toBe(1);
-    expect(input().value).toContain('скважин');
+    expect(input().value).toContain('позиций');
   });
   it('свайп влево дальше порога — отмена без распознавания', async () => {
     mount();
@@ -250,7 +250,7 @@ describe('ошибки', () => {
     expect(calls).toBe(2);
     expect(ctl.started).toBe(1);
     expect(screen.queryByTestId('voice-err')).toBeNull();
-    expect(input().value).toContain('скважин');
+    expect(input().value).toContain('позиций');
   });
   it('пустой результат — «Не удалось разобрать, попробуйте ещё раз» и «Записать снова»', async () => {
     replies = [{ status: 200, body: { text: '' } }];

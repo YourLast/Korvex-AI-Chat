@@ -5,7 +5,9 @@ import { createElement } from 'react';
 import { cleanup, fireEvent, render, screen, waitFor, act } from '@testing-library/react';
 import fs from 'node:fs';
 import path from 'node:path';
-import { QueueCard } from '@/components/QueueCard';
+import { QueueCard, ServeQueueCard } from '@/components/QueueCard';
+import { I18nProvider } from '@/lib/i18n/react';
+import { fmtWait, serveQueueOf } from '@/lib/queueEta';
 import { AssistantMsg } from '@/components/Message';
 import { Announce, StatusCtx } from '@/components/Announce';
 import { AdminNotices, type NoticesSnap } from '@/components/AdminNotices';
@@ -165,5 +167,61 @@ describe('администратор: «Высокая нагрузка — Ав
     render(createElement(AdminNotices, { snap: snap(undefined) }));
     expect(screen.getByTestId('busy-auto').getAttribute('aria-checked')).toBe('true');
     expect(screen.getByTestId('busy-now').textContent).toBe('выключен');
+  });
+});
+
+describe('карточка очереди сервера', () => {
+  const sq = (o: Partial<MsgView>): MsgView => q({ phase: 'wait', ahead: 0, eta: 0, squeue: { ahead: 2, eta: 4800 }, ...o });
+  it('«Расчёт в очереди, перед вами 2 — начнём автоматически», ожидание часами и минутами, подсказка про вкладку', () => {
+    render(createElement(ServeQueueCard, { ahead: 2, eta: 4800 }));
+    expect(screen.getByTestId('squeued-title').textContent).toBe('Расчёт в очереди, перед вами 2 — начнём автоматически');
+    expect(screen.getByTestId('squeued-sub').textContent).toBe('Ждать примерно 1 ч 20 мин');
+    const card = screen.getByTestId('squeued');
+    expect(card.getAttribute('role')).toBe('status');
+    expect(card.textContent).toContain('Можно закрыть вкладку — ответ сохранится в чате.');
+  });
+  it('место обновляется по кадрам: 2 → 1 → «вы следующий»; полоска растёт', () => {
+    const { rerender } = render(createElement(ServeQueueCard, { ahead: 2, eta: 7200 }));
+    expect(Number(screen.getByTestId('squeued-bar').getAttribute('aria-valuenow'))).toBe(33);
+    rerender(createElement(ServeQueueCard, { ahead: 1, eta: 4800 }));
+    expect(screen.getByTestId('squeued-title').textContent).toBe('Расчёт в очереди, перед вами 1 — начнём автоматически');
+    rerender(createElement(ServeQueueCard, { ahead: 0, eta: 2400 }));
+    expect(screen.getByTestId('squeued-title').textContent).toBe('Расчёт в очереди, вы следующий — начнём автоматически');
+    expect(screen.getByTestId('squeued-sub').textContent).toBe('Ждать примерно 40 мин');
+    expect(Number(screen.getByTestId('squeued-bar').getAttribute('aria-valuenow'))).toBe(100);
+  });
+  it('без оценки — без строки ожидания; меньше минуты — «начнём меньше чем через минуту»', () => {
+    const { unmount } = render(createElement(ServeQueueCard, { ahead: 1, eta: null }));
+    expect(screen.queryByTestId('squeued-sub')).toBeNull();
+    unmount();
+    render(createElement(ServeQueueCard, { ahead: 0, eta: 30 }));
+    expect(screen.getByTestId('squeued-sub').textContent).toBe('Начнём меньше чем через минуту');
+  });
+  it('английский и сербский', () => {
+    const html = (lang: 'en' | 'sr') => renderToStaticMarkup(createElement(I18nProvider, { lang, children: createElement(ServeQueueCard, { ahead: 2, eta: 3600 }) }));
+    expect(html('en')).toContain('The calculation is queued, <span class="tnum">2</span> ahead of you — it will start automatically');
+    expect(html('en')).toContain('Estimated wait: about 1 h');
+    expect(html('sr')).toContain('Proračun je u redu čekanja, ispred vas <span class="tnum">2</span> — počinjemo automatski');
+  });
+  it('в ответе чата: карточка вместо «Думаю…»; администратору чужого чата — без мест; очередь позади или ответ готов — карточки нет', () => {
+    const own = renderToStaticMarkup(createElement(AssistantMsg, { m: sq({}), models }));
+    expect(own).toContain('data-testid="squeued"');
+    expect(own).toContain('Расчёт в очереди, перед вами');
+    expect(own).not.toContain('Думаю');
+    expect(own).not.toContain('err-box');
+    const other = renderToStaticMarkup(createElement(AssistantMsg, { m: sq({}), models, readOnly: true }));
+    expect(other).toContain('Расчёт в очереди…');
+    expect(other).not.toContain('перед вами');
+    expect(renderToStaticMarkup(createElement(AssistantMsg, { m: sq({ squeue: null }), models }))).not.toContain('squeued');
+    expect(renderToStaticMarkup(createElement(AssistantMsg, { m: sq({ streaming: false, content: 'Итого 42.' }), models }))).not.toContain('squeued');
+    expect(renderToStaticMarkup(createElement(AssistantMsg, { m: sq({ phase: 'queued', ahead: 1 }), models }))).not.toContain('squeued');
+  });
+  it('ожидание словами и место из события', () => {
+    expect([30, 60, 89, 35 * 60, 59 * 60 + 40, 3600, 4800, 2 * 3600 + 58 * 60].map((x) => fmtWait(x))).toEqual([null, '1 мин', '1 мин', '35 мин', '1 ч', '1 ч', '1 ч 20 мин', '3 ч']);
+    expect(fmtWait(4800, 'en')).toBe('1 h 20 min');
+    expect(serveQueueOf({ ahead: 2, eta: 5400 })).toEqual({ ahead: 2, eta: 5400 });
+    expect(serveQueueOf({ ahead: '1', eta: null })).toEqual({ ahead: 1, eta: null });
+    expect(serveQueueOf({ ahead: -1, eta: -5 })).toEqual({ ahead: 0, eta: null });
+    for (const v of [undefined, null, 'x', 3]) expect(serveQueueOf(v)).toBeNull();
   });
 });

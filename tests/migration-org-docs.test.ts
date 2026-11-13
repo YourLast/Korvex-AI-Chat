@@ -37,4 +37,30 @@ describe('миграция библиотеки документов орган�
     expect(cols(db)).toContain('folder_id');
     db.close();
   });
+
+  it('0031_org_inbox: накат → строка приёма → откат с бэкапом → накат снова', () => {
+    const dir = tmpData();
+    const file = path.join(dir, 'korvex.db');
+    const migrations = path.join(process.cwd(), 'drizzle');
+    const journal = JSON.parse(fs.readFileSync(path.join(migrations, 'meta', '_journal.json'), 'utf8')) as { entries: { tag: string; when: number }[] };
+    const w = Object.fromEntries(journal.entries.map((e) => [e.tag, e.when]));
+    expect(w['0031_org_inbox']).toBeGreaterThan(w['0030_org_docs']);
+    const tables = (db: Database.Database) => (db.prepare(`select name from sqlite_master where type = 'table'`).all() as { name: string }[]).map((r) => r.name);
+    const open = () => { const s = new Database(file); s.pragma('foreign_keys = ON'); migrate(drizzle(s), { migrationsFolder: migrations }); return s; };
+    let db = open();
+    db.prepare(`insert into users (id, email, name, password_hash, role, disabled, created_at) values ('u', 'u@t', 'U', 'x', 'user', 0, 1)`).run();
+    db.prepare(`insert into folders (id, user_id, name, created_at, updated_at) values ('f', 'u', 'Ромашка', 1, 1)`).run();
+    db.prepare(`insert into org_inbox (folder_id, user_id, tag, created_at, updated_at) values ('f', 'u', 'abcdefabcdef', 1, 1)`).run();
+    db.prepare(`delete from folders where id = 'f'`).run();
+    expect((db.prepare(`select count(*) c from org_inbox`).get() as { c: number }).c).toBe(0);
+    db.close();
+    execFileSync(process.execPath, ['scripts/db-rollback.mjs', '0031_org_inbox'], { env: { ...process.env, DATA_DIR: dir }, stdio: 'pipe' });
+    db = new Database(file);
+    expect(tables(db)).not.toContain('org_inbox');
+    expect(cols(db)).toContain('folder_id');
+    db.close();
+    db = open();
+    expect(tables(db)).toContain('org_inbox');
+    db.close();
+  });
 });

@@ -14,7 +14,7 @@ describe('длинное сообщение пользователя', () => {
     expect(queryByTestId('user-more')).toBeNull();
   });
   it('50 000 знаков — свёрнуто, «Показать полностью» раскрывает и «Свернуть» сворачивает; текст целиком в разметке', () => {
-    const text = 'Длинный абзац отчёта по скважинам. '.repeat(1500).slice(0, 50000);
+    const text = 'Длинный абзац отчёта по складу. '.repeat(1500).slice(0, 50000);
     const { container, getByTestId } = render(createElement(UserTurn, { m: msg(text) }));
     const b = container.querySelector('.bubble')!;
     expect(b.className).toContain('is-clamped');

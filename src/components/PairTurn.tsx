@@ -60,7 +60,7 @@ export function PairVote({ a, b, vote, names, onVoted, compact }: { a?: MsgView;
   );
 }
 
-const laneState = (m?: MsgView) => (!m ? undefined : m.streaming ? (m.phase === 'queued' ? 'queued' : 'live') : m.meta?.error || m.meta?.errorUser ? 'err' : 'done');
+const laneState = (m?: MsgView) => (!m ? undefined : m.streaming ? (m.phase === 'queued' || m.squeue ? 'queued' : 'live') : m.meta?.error || m.meta?.errorUser ? 'err' : 'done');
 
 export function PairTurn({ u, a, b, models, fileNames, last, open, busy, onRegen, onContinue, onSwitch, onPick, onVoted, readOnly, foot }: {
   u: MsgView & { pair: PairView }; a?: MsgView; b?: MsgView; models: PublicModel[]; fileNames: string[]; last: boolean; open: boolean; busy: boolean;

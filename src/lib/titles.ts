@@ -10,6 +10,7 @@ import { onJobFinished, type FinishedJob } from './jobs';
 import { plainText } from './textsearch';
 import { registerBusy } from './instance';
 import { cfg } from './cfg';
+import { localConf } from './localModel';
 import { envKey } from './models';
 import { userLang } from './userLang';
 
@@ -96,7 +97,6 @@ const g = globalThis as unknown as { __kxTitles?: St };
 const T = (): St => (g.__kxTitles ??= { on: false, ticking: false, tasks: new Map(), running: null, timer: null, failed: new Map(), skip: new Set(), lastBackfill: 0, scanAt: 0, scanFound: false, gateDownUntil: 0,
   stats: { ok: 0, keep: 0, fail: 0, busy: 0 } });
 
-const GATE_MODEL = cfg('KX_TITLE_ENGINE_MODEL');
 const BACKFILL = process.env.KX_TITLE_BACKFILL !== '0';
 const BACKFILL_GAP_MS = Number(process.env.KX_TITLE_BACKFILL_GAP_MS) || 4_000;
 const GATE_TIMEOUT_MS = Number(process.env.KX_TITLE_TIMEOUT_MS) || 600_000;
@@ -104,12 +104,18 @@ const BUSY_MAX = 40;
 const downPause = () => Number(process.env.KX_TITLE_DOWN_MS) || 60_000;
 const busyPause = () => Number(process.env.KX_TITLE_BUSY_MS) || 10_000 + Math.round(Math.random() * 20_000);
 
-export function gateUrl(): string {
+function gateTarget(): { url: string; model: string } {
   const env = process.env.KX_TITLE_ENGINE_URL;
-  if (env !== undefined) return env.trim().replace(/\/+$/, '');
+  const model = cfg('KX_TITLE_ENGINE_MODEL');
+  if (env !== undefined) return { url: env.trim().replace(/\/+$/, ''), model };
   const stand = process.env[envKey(cfg('KX_TITLE_STATE_MODEL') || '-')]?.trim();
-  return (stand || cfg('KX_TITLE_ENGINE_DEFAULT_URL')).replace(/\/+$/, '');
+  const url = (stand || cfg('KX_TITLE_ENGINE_DEFAULT_URL')).replace(/\/+$/, '');
+  if (url) return { url, model };
+  const local = localConf();
+  return local ? { url: `${local.url}/v1`, model: model || local.model } : { url: '', model };
 }
+export const gateUrl = (): string => gateTarget().url;
+export const gateModel = (): string => gateTarget().model;
 
 const gwCache = new Map<string, { at: number; v: { mode: string } | null }>();
 async function gateState(url: string): Promise<{ mode: string } | null> {
@@ -147,7 +153,7 @@ function netCode(e: unknown): string {
 }
 
 async function ask(url: string, messages: ReturnType<typeof titleMessages>, signal: AbortSignal): Promise<string> {
-  const body = { model: GATE_MODEL, stream: false, max_tokens: 32, temperature: 0.3, chat_template_kwargs: { enable_thinking: false }, messages };
+  const body = { model: gateModel(), stream: false, max_tokens: 32, temperature: 0.3, chat_template_kwargs: { enable_thinking: false }, messages };
   let r: Response;
   try { r = await fetch(url + '/chat/completions', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   catch (e) {

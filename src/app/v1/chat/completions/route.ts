@@ -308,6 +308,7 @@ export async function POST(req: Request) {
         else if (e.t === 'r') chunk({ reasoning_content: e.d });
         else if (e.t === 'tc') chunk({ tool_calls: addCalls(e.d) });
         else if (e.t === 'state' && e.status === 'queued') write(`: queued ahead=${e.ahead ?? 0}\n\n`);
+        else if (e.t === 'q' && e.state === 'queued') write(`: queued ahead=${e.ahead}\n\n`);
       });
       void done.then((r) => {
         clearInterval(ka);

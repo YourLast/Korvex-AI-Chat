@@ -1,0 +1,113 @@
+# documentation: https://github.com/YourLast/Korvex-AI-Chat
+# slogan: Self-hosted AI chat with a local model, web search and voice. Answers keep generating when the tab is closed.
+# category: ai
+# tags: ai,chat,llm,ollama,openai,anthropic,searxng,self-hosted
+# logo: svgs/korvex-ai-chat.svg
+# port: 3000
+#
+# Coolify: New Resource → Docker Compose Empty, paste this file, deploy. The first account you create becomes the admin.
+# The same stack as compose.yaml in the repository root: the app, a small local model (Ollama on the CPU, 2.1 GB on the first
+# start), web search (SearXNG) and voice input (speaches). Serve it over HTTPS and set COOKIE_SECURE=1.
+
+services:
+  korvex:
+    image: ghcr.io/yourlast/korvex-ai-chat:0.1.3
+    volumes:
+      - korvex-data:/data
+    environment:
+      - SERVICE_URL_KORVEX_3000
+      - COOKIE_SECURE=${COOKIE_SECURE:-0}
+      - KX_OLLAMA_URL=http://ollama:11434
+      - KX_LOCAL_MODEL=${KX_LOCAL_MODEL:-granite4:micro}
+      - KX_SEARX_URL=http://search:8080
+      - STT_URL=http://stt:8000/v1
+      - STT_MODEL=Systran/faster-whisper-small
+    depends_on:
+      - ollama
+      - search
+      - stt
+
+  ollama:
+    image: ollama/ollama:0.40.16
+    environment:
+      - OLLAMA_CONTEXT_LENGTH=8192
+      - OLLAMA_KEEP_ALIVE=24h
+    volumes:
+      - ollama:/root/.ollama
+
+  search:
+    image: searxng/searxng:2026.9.25-12f8b6515
+    environment:
+      - SEARXNG_SECRET=${SERVICE_HEX_32_SEARCH}
+    # settings.yml is written on start: no repository checkout to mount it from
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cat > /etc/searxng/settings.yml <<'KX_SETTINGS'
+        # SearXNG for the web search tool (compose.yaml). Only the app talks to it: it is not published outside the compose network.
+        use_default_settings: true
+        general:
+          instance_name: "Korvex AI Chat search"
+          privacypolicy_url: false
+          donation_url: false
+          contact_url: false
+        server:
+          limiter: false
+          image_proxy: false
+          public_instance: false
+        search:
+          formats:
+            - html
+            - json
+          safe_search: 1
+          default_lang: "auto"
+          suspended_times:
+            SearxEngineTooManyRequests: 900
+            SearxEngineAccessDenied: 3600
+            SearxEngineCaptcha: 3600
+        outgoing:
+          request_timeout: 6.0
+          max_request_timeout: 10.0
+        # Engines that answer server requests well; the big ones that often show a captcha to servers are off.
+        engines:
+          - name: bing
+            disabled: false
+          - name: bing news
+            disabled: false
+            categories: [news, general]
+          - name: duckduckgo news
+            disabled: false
+            categories: [news, general]
+          - name: mojeek
+            disabled: false
+          - name: startpage
+            disabled: false
+          - name: wikipedia
+            disabled: false
+          - name: reddit
+            disabled: false
+          - name: hackernews
+            disabled: false
+          - name: arxiv
+            disabled: false
+          - name: google
+            disabled: true
+          - name: duckduckgo
+            disabled: true
+          - name: brave
+            disabled: true
+          - name: qwant
+            disabled: true
+        KX_SETTINGS
+        exec /usr/local/searxng/entrypoint.sh
+
+  stt:
+    image: ghcr.io/speaches-ai/speaches:0.8.3-cpu
+    volumes:
+      - stt-models:/home/ubuntu/.cache/huggingface/hub
+
+volumes:
+  korvex-data: null
+  ollama: null
+  stt-models: null

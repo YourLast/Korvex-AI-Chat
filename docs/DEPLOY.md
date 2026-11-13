@@ -25,9 +25,30 @@ Put the app behind HTTPS (Caddy, nginx, Traefik) and set `COOKIE_SECURE=1`.
 docker compose -f compose.yaml -f compose.gpu.yaml up -d
 ```
 
+**Tools.** Models with tools on (the local model, OpenAI, Anthropic …) can search the web, remember things about the user
+and read other chats. The schemas of the tools add about 1,400 tokens to a request: on a slow CPU the first answer of a chat
+starts later (the local model then keeps them in its cache). `KX_AGENT_TOOLS=0` turns tools off.
+
 **Another local model.** Put `KX_LOCAL_MODEL=<name from ollama.com/library>` into `.env` next to `compose.yaml` before the
 first start (later: add the model in **Admin → Models** under the Ollama provider). `KX_LOCAL_MODEL=` (empty) — no local
 model: add models by API in **Admin → Models** instead.
+
+## Home servers: CasaOS, ZimaOS, Unraid, Coolify
+
+Ready templates are in [deploy/](../deploy/). Each pins the image of this release.
+
+- **CasaOS / ZimaOS:** App Store → **Custom Install** → **Import**, paste
+  [deploy/casaos/docker-compose.yml](../deploy/casaos/docker-compose.yml). It is the full stack of `compose.yaml`: the app,
+  the local model, web search and voice input. Data lives in `/DATA/AppData/korvex-ai-chat/`.
+- **Unraid:** Docker → **Add Container** → **Template repositories**, add
+  `https://github.com/YourLast/Korvex-AI-Chat`, then pick **Korvex-AI-Chat**. It is the app alone. For the local model
+  set **Ollama URL** to your Ollama container (Community Applications has one). Optional settings point at SearXNG
+  (web search; its `settings.yml` needs `json` in `search.formats`) and speaches (voice input).
+- **Coolify:** **New Resource** → **Docker Compose Empty**, paste
+  [deploy/coolify/korvex-ai-chat.yaml](../deploy/coolify/korvex-ai-chat.yaml). Coolify gives it a domain. Behind HTTPS
+  set `COOKIE_SECURE=1`.
+
+With only **Ollama URL** set, chat titles and user memory use the local model too.
 
 ## Render
 

@@ -1,5 +1,6 @@
 export type Memory = Record<string, unknown>;
 export type Extras = { memory?: Memory; sources?: unknown[]; sinfo?: Record<string, number> };
+export type QueueInfo = { state: 'queued' | 'started'; ahead: number; eta: number | null };
 
 export type Dialect = {
   name: string;
@@ -8,6 +9,7 @@ export type Dialect = {
   memoryKey?: string;
   extras?(c: unknown): Extras | null;
   maintFrame?(c: unknown): number | null;
+  queueFrame?(c: unknown): QueueInfo | null;
   maintOf?(err: unknown): number | null;
   maintSoft?(err: unknown): boolean;
   conversationHeader?: string;

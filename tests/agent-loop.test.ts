@@ -552,7 +552,7 @@ describe('инструменты чатов, облака и папок', () => 
     const rep = mkThread('ua', 'Отчёт файлы');
     const tok = 'ab'.repeat(16);
     fs.mkdirSync(path.join(OUT, tok));
-    fs.writeFileSync(path.join(OUT, tok, 'итог.csv'), 'скважина;дебит\nС-1;120\n');
+    fs.writeFileSync(path.join(OUT, tok, 'итог.csv'), 'позиция;дебит\nС-1;120\n');
     db.insert(schema.outFiles).values({ token: tok, userId: 'ua', threadId: rep, messageId: null, source: 'job', createdAt: now() }).run();
     const me = mkThread('ua', 'Получатель');
     const s = submit(me, `[tc:files_list {"query":"отчёт"}][tc:files_get {"id":"out:${tok}/итог.csv"}]`);

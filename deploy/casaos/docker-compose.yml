@@ -1,0 +1,200 @@
+# Korvex AI Chat for CasaOS / ZimaOS (App Store v2 format). The same stack as compose.yaml in the repository root:
+# the app, a small local model (Ollama on the CPU), web search (SearXNG) and voice input (speaches).
+# CasaOS: App Store → Custom Install → Import, paste this file. The first account you create becomes the admin.
+name: korvex-ai-chat
+services:
+  korvex-ai-chat:
+    image: ghcr.io/yourlast/korvex-ai-chat:0.1.3
+    restart: unless-stopped
+    ports:
+      - target: 3000
+        published: "3000"
+        protocol: tcp
+    environment:
+      KX_OLLAMA_URL: http://korvex-ollama:11434
+      KX_LOCAL_MODEL: granite4:micro
+      KX_SEARX_URL: http://korvex-search:8080
+      STT_URL: http://korvex-stt:8000/v1
+      STT_MODEL: Systran/faster-whisper-small
+      COOKIE_SECURE: "0"
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/data
+        target: /data
+    depends_on:
+      - korvex-ollama
+      - korvex-search
+      - korvex-stt
+    networks:
+      - korvex
+    x-casaos:
+      envs:
+        - container: KX_LOCAL_MODEL
+          description:
+            en_US: The local model from ollama.com/library (downloads on the first start)
+            ru_RU: Локальная модель из ollama.com/library (скачивается при первом запуске)
+        - container: COOKIE_SECURE
+          description:
+            en_US: Set to 1 when the chat is served over HTTPS
+            ru_RU: 1, когда чат открывают по HTTPS
+      ports:
+        - container: "3000"
+          description:
+            en_US: Web UI
+            ru_RU: Веб-интерфейс
+      volumes:
+        - container: /data
+          description:
+            en_US: Chats, files and settings (SQLite)
+            ru_RU: Чаты, файлы и настройки (SQLite)
+
+  korvex-ollama:
+    image: ollama/ollama:0.40.16
+    restart: unless-stopped
+    environment:
+      OLLAMA_CONTEXT_LENGTH: "8192"
+      OLLAMA_KEEP_ALIVE: 24h
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/ollama
+        target: /root/.ollama
+    networks:
+      - korvex
+
+  korvex-search:
+    image: searxng/searxng:2026.9.25-12f8b6515
+    restart: unless-stopped
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-korvex-local-search}   # the search server is reachable only from the app
+    # settings.yml is written on start: an app store has no repository checkout to mount it from
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        cat > /etc/searxng/settings.yml <<'KX_SETTINGS'
+        # SearXNG for the web search tool (compose.yaml). Only the app talks to it: it is not published outside the compose network.
+        use_default_settings: true
+        general:
+          instance_name: "Korvex AI Chat search"
+          privacypolicy_url: false
+          donation_url: false
+          contact_url: false
+        server:
+          limiter: false
+          image_proxy: false
+          public_instance: false
+        search:
+          formats:
+            - html
+            - json
+          safe_search: 1
+          default_lang: "auto"
+          suspended_times:
+            SearxEngineTooManyRequests: 900
+            SearxEngineAccessDenied: 3600
+            SearxEngineCaptcha: 3600
+        outgoing:
+          request_timeout: 6.0
+          max_request_timeout: 10.0
+        # Engines that answer server requests well; the big ones that often show a captcha to servers are off.
+        engines:
+          - name: bing
+            disabled: false
+          - name: bing news
+            disabled: false
+            categories: [news, general]
+          - name: duckduckgo news
+            disabled: false
+            categories: [news, general]
+          - name: mojeek
+            disabled: false
+          - name: startpage
+            disabled: false
+          - name: wikipedia
+            disabled: false
+          - name: reddit
+            disabled: false
+          - name: hackernews
+            disabled: false
+          - name: arxiv
+            disabled: false
+          - name: google
+            disabled: true
+          - name: duckduckgo
+            disabled: true
+          - name: brave
+            disabled: true
+          - name: qwant
+            disabled: true
+        KX_SETTINGS
+        exec /usr/local/searxng/entrypoint.sh
+    networks:
+      - korvex
+
+  korvex-stt:
+    image: ghcr.io/speaches-ai/speaches:0.8.3-cpu
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/stt
+        target: /home/ubuntu/.cache/huggingface/hub
+    networks:
+      - korvex
+
+networks:
+  korvex:
+    driver: bridge
+
+x-casaos:
+  id: site.korvexai.chat
+  main: korvex-ai-chat
+  index: /
+  port_map: "3000"
+  scheme: http
+  category: AI
+  version: "0.1.3"
+  architectures:
+    - amd64
+    - arm64
+  author: Korvex
+  developer: Korvex
+  icon: https://raw.githubusercontent.com/YourLast/Korvex-AI-Chat/main/public/icon-512.png
+  screenshot_link:
+    - https://raw.githubusercontent.com/YourLast/Korvex-AI-Chat/main/docs/screenshot.png
+  website: https://github.com/YourLast/Korvex-AI-Chat
+  repo: https://github.com/YourLast/Korvex-AI-Chat
+  support: https://github.com/YourLast/Korvex-AI-Chat/issues
+  docs: https://github.com/YourLast/Korvex-AI-Chat/blob/main/docs/DEPLOY.md
+  title:
+    en_US: Korvex AI Chat
+    ru_RU: Korvex AI Chat
+  tagline:
+    en_US: Self-hosted AI chat with a local model, web search and voice
+    ru_RU: Свой ИИ-чат с локальной моделью, веб-поиском и голосом
+  description:
+    en_US: |
+      An AI chat for your family or team on your own server.
+
+      - Works without API keys: a small local model (IBM Granite 4 Micro, 2.1 GB) downloads on the first start and runs on the CPU.
+      - Answers keep generating on the server: close the tab, open the chat later or on the phone — the answer is there.
+      - Installs on a phone as an app; voice input; web search (SearXNG).
+      - Add OpenAI, Anthropic or any OpenAI-compatible model in Admin → Models.
+      - Invite people by links; roles for admins and users.
+
+      Data stays in one folder: chats, files and settings in SQLite.
+    ru_RU: |
+      ИИ-чат для семьи или команды на своём сервере.
+
+      - Работает без ключей: маленькая локальная модель (IBM Granite 4 Micro, 2,1 ГБ) скачивается при первом запуске и работает на процессоре.
+      - Ответ идёт на сервере: закройте вкладку, откройте чат позже или с телефона — ответ на месте.
+      - Ставится на телефон как приложение; голосовой ввод; веб-поиск (SearXNG).
+      - Модели OpenAI, Anthropic и любые OpenAI-совместимые — в «Админка → Модели».
+      - Люди приходят по ссылкам-приглашениям; роли администратора и пользователя.
+
+      Данные — в одной папке: чаты, файлы и настройки в SQLite.
+  tips:
+    before_install:
+      en_US: |
+        The first account you create becomes the admin. On the first start the local model downloads (2.1 GB): the chat shows the progress.
+      ru_RU: |
+        Первый созданный аккаунт — администратор. При первом запуске скачивается локальная модель (2,1 ГБ): чат показывает ход загрузки.

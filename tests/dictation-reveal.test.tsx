@@ -38,10 +38,10 @@ const words = (n: number, p = 'w') => Array.from({ length: n }, (_, i) => p + i)
 
 describe('новые слова: что проявляется, а что уже было в поле', () => {
   it('диктовка дописана к набранному: head — набранное, анимируются только новые слова', () => {
-    const full = joinText('Посчитай', M + 'сколько скважин');
+    const full = joinText('Посчитай', M + 'сколько позиций');
     const p = revealPlan(full, revealFrom(full, 'Посчитай'));
     expect(p.head).toBe(M + 'Посчитай');
-    expect(p.parts.filter((x) => x.w).map((x) => x.t)).toEqual(['сколько', 'скважин']);
+    expect(p.parts.filter((x) => x.w).map((x) => x.t)).toEqual(['сколько', 'позиций']);
     expect(p.count).toBe(2); expect(p.skipped).toBe(0);
   });
   it('вторая диктовка подряд: слова первой не проявляются заново (и маркер голоса остаётся один)', () => {
@@ -64,9 +64,9 @@ describe('новые слова: что проявляется, а что уже
     expect(revealFrom('х у', 'а б')).toBe(0);
   });
   it('обрывок слова не считается «уже набранным»: «Пос» + «Посчитай» — слово проявится целиком', () => {
-    const from = revealFrom('Посчитай скважины', 'Пос');
+    const from = revealFrom('Посчитай позиции', 'Пос');
     expect(from).toBe(0);
-    expect(revealPlan('Посчитай скважины', from).count).toBe(2);
+    expect(revealPlan('Посчитай позиции', from).count).toBe(2);
   });
   it('ничего нового — анимировать нечего', () => {
     expect(revealPlan('уже было', revealFrom('уже было', 'уже было')).count).toBe(0);
@@ -122,9 +122,9 @@ describe('WordReveal поверх поля', () => {
 
   it('новые слова — отдельные span-ы с шагом по времени; набранное раньше — обычным текстом без анимации', () => {
     const onDone = vi.fn();
-    render(createElement(Harness, { full: 'Посчитай сколько скважин на кусте', from: 'Посчитай'.length, onDone }));
-    expect(spans().map((s) => s.textContent)).toEqual(['сколько', 'скважин', 'на', 'кусте']);
-    expect(layer().textContent).toBe('Посчитай сколько скважин на кусте');
+    render(createElement(Harness, { full: 'Посчитай сколько позиций на складе', from: 'Посчитай'.length, onDone }));
+    expect(spans().map((s) => s.textContent)).toEqual(['сколько', 'позиций', 'на', 'складе']);
+    expect(layer().textContent).toBe('Посчитай сколько позиций на складе');
     const d = spans().map(delay);
     expect(d[0]).toBe(0);
     for (let i = 1; i < d.length; i++) { expect(d[i] - d[i - 1]).toBeGreaterThanOrEqual(25); expect(d[i] - d[i - 1]).toBeLessThanOrEqual(40); }
@@ -215,7 +215,7 @@ describe('WordReveal поверх поля', () => {
 });
 
 describe('диктовка в поле ввода (Composer): набор прерывает анимацию', () => {
-  let phrase = 'Сколько скважин на кусте?';
+  let phrase = 'Сколько позиций на складе?';
   const sent: string[] = [];
   const mount = () => render(createElement(Composer, { busy: false, placeholder: 'Напишите', modelSlot: null, onStop: () => {}, onSend: (t: string) => { sent.push(t); } }));
   const input = () => screen.getByTestId('composer-input') as HTMLTextAreaElement;
@@ -234,7 +234,7 @@ describe('диктовка в поле ввода (Composer): набор пре�
 
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'Date', 'performance', 'requestAnimationFrame', 'cancelAnimationFrame'] });
-    sent.length = 0; phrase = 'Сколько скважин на кусте?'; localStorage.clear(); media(false);
+    sent.length = 0; phrase = 'Сколько позиций на складе?'; localStorage.clear(); media(false);
     vi.stubGlobal('fetch', vi.fn(async () => ({ status: 200, ok: true, json: async () => ({ text: M + phrase }) } as Response)));
     HTMLCanvasElement.prototype.getContext = (() => null) as unknown as typeof HTMLCanvasElement.prototype.getContext;
   });
@@ -244,9 +244,9 @@ describe('диктовка в поле ввода (Composer): набор пре�
     mount();
     fireEvent.change(input(), { target: { value: 'Посчитай' } });
     await dictate();
-    expect(input().value).toBe(M + 'Посчитай Сколько скважин на кусте?');
-    expect(newWords()).toEqual(['Сколько', 'скважин', 'на', 'кусте?']);
-    expect(wr()!.textContent).toBe(M + 'Посчитай Сколько скважин на кусте?');
+    expect(input().value).toBe(M + 'Посчитай Сколько позиций на складе?');
+    expect(newWords()).toEqual(['Сколько', 'позиций', 'на', 'складе?']);
+    expect(wr()!.textContent).toBe(M + 'Посчитай Сколько позиций на складе?');
     expect(input().classList.contains('is-reveal')).toBe(true);
   });
 
@@ -258,7 +258,7 @@ describe('диктовка в поле ввода (Composer): набор пре�
     phrase = 'и ещё одно предложение';
     await dictate();
     expect(newWords()).toEqual(['и', 'ещё', 'одно', 'предложение']);
-    expect(wr()!.textContent).toContain('Сколько скважин на кусте? и ещё одно предложение');
+    expect(wr()!.textContent).toContain('Сколько позиций на складе? и ещё одно предложение');
   });
 
   it('набор текста в поле во время анимации сразу снимает копию; поле снова показывает свой текст', async () => {
@@ -266,10 +266,10 @@ describe('диктовка в поле ввода (Composer): набор пре�
     await dictate();
     expect(wr()).not.toBeNull();
     expect(input().classList.contains('is-reveal')).toBe(true);
-    fireEvent.change(input(), { target: { value: M + 'Сколько скважин на кусте?!' } });
+    fireEvent.change(input(), { target: { value: M + 'Сколько позиций на складе?!' } });
     expect(wr()).toBeNull();
     expect(input().classList.contains('is-reveal')).toBe(false);
-    expect(input().value).toBe(M + 'Сколько скважин на кусте?!');
+    expect(input().value).toBe(M + 'Сколько позиций на складе?!');
   });
 
   it('клавиша в поле (без изменения текста, например стрелка) тоже снимает копию', async () => {
@@ -293,7 +293,7 @@ describe('диктовка в поле ввода (Composer): набор пре�
     mount();
     await dictate();
     fireEvent.click(screen.getByTestId('send'));
-    expect(sent).toEqual([M + 'Сколько скважин на кусте?']);
+    expect(sent).toEqual([M + 'Сколько позиций на складе?']);
     expect(wr()).toBeNull();
     expect(input().value).toBe('');
   });
@@ -305,7 +305,7 @@ describe('диктовка в поле ввода (Composer): набор пре�
     await tick(1500);
     expect(wr()).toBeNull();
     expect(input().classList.contains('is-reveal')).toBe(false);
-    expect(input().value).toBe(M + 'Сколько скважин на кусте?');
+    expect(input().value).toBe(M + 'Сколько позиций на складе?');
   });
 
   it('диктовка на 80 слов: анимируются последние 60, текст в поле целиком', async () => {

@@ -2,6 +2,22 @@
 
 Notable changes. Every release also has automatic notes on the [Releases](https://github.com/YourLast/Korvex-AI-Chat/releases) page.
 
+## v0.1.3
+
+- **Fix: tools work with every model.** In v0.1.2 web search, user memory and chat tools ran only for Claude models: the image
+  did not turn on the tool loop. Now it is on by default (`KX_AGENT_TOOLS=1`) for every model with tools, the built-in local
+  model included; `KX_AGENT_TOOLS=0` turns it off (a faster first answer on a slow CPU, without web search).
+- **Home-server app stores.** Ready templates in [deploy/](deploy/): CasaOS and ZimaOS (the full stack: the app, the local
+  model, web search, voice input), Unraid (the app; Ollama, SearXNG and speaches by their own templates) and Coolify
+  (Docker Compose Empty). Steps — [docs/DEPLOY.md](docs/DEPLOY.md#home-servers-casaos-zimaos-unraid-coolify).
+- **Organization upload address** (Organizations mode → an organization's settings): documents arrive into its library without
+  a person — by an organization key (`POST /api/orgs/<id>/ingest` with `Authorization: Bearer kxo_…`, for 1C or bank exports on a
+  schedule) or by e-mail through your mail collector (`POST /api/orgs/mail-ingest`; the address is `KX_ORG_MAIL` plus the
+  organization's tag, the collector's secret is `KX_COLLECTOR_KEY_SHA256`). The same parsing as uploads from the chat, allowed
+  senders, repeats of the same letter are not stored twice, 500 files per organization per day; `KX_ORG_INGEST=0` turns it off.
+- With only an Ollama address and a local model set (`KX_OLLAMA_URL`, `KX_LOCAL_MODEL`), chat titles and user memory use the
+  local model too: one setting is enough on Unraid or on a cloud host with your own Ollama.
+
 ## v0.1.2
 
 - **License.** Starting with v0.1.2, the license adds an attribution condition: if you run Korvex AI Chat for other people,

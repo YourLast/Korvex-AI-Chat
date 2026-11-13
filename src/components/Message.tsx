@@ -23,7 +23,7 @@ import { HeadMark } from './HeadMark';
 import { useWork } from './WorkCtx';
 import { serverNow } from '@/lib/clock';
 import { useIsAdmin } from './Shell';
-import { QueueCard } from './QueueCard';
+import { QueueCard, ServeQueueCard } from './QueueCard';
 import { FolderCard } from './FolderCard';
 import { SrcCtx, SrcList } from './SrcChip';
 import { sourcesOf, stripMarkers } from '@/lib/srcmark';
@@ -202,6 +202,7 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
   const lab = levelLabel(models, { modelId: meta.modelId ?? '', levelId: meta.levelId ?? '' }), level = lab.level;
   const dur = meta.durationMs;
   const waiting = m.streaming && !m.content && !m.reasoning;
+  const sq = m.streaming && m.phase !== 'queued' ? m.squeue : null;
   const shown = useThrottled(m.content, 140, !!m.streaming);
   const speed = speedText(m, tx.lang);
   const sources = useMemo(() => sourcesOf(meta.usage), [meta.usage]);
@@ -223,7 +224,9 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
       {}
       {m.phase === 'queued' && (readOnly ? <p className="t-cap" data-testid="queued">{tx('msg.queuedAdmin')}</p> : <QueueCard ahead={m.ahead ?? 0} eta={m.eta} />)}
       {}
-      {waiting && m.phase !== 'queued' && <p className="t-cap ans-wait"><span className="ans-wait-ic" aria-hidden="true"><HeadMark live /></span><span className="shimmer">{tx('msg.thinking')}</span></p>}
+      {sq && (readOnly ? <p className="t-cap" data-testid="squeued">{tx('squeue.admin')}</p> : <ServeQueueCard ahead={sq.ahead} eta={sq.eta} />)}
+      {}
+      {waiting && m.phase !== 'queued' && !sq && <p className="t-cap ans-wait"><span className="ans-wait-ic" aria-hidden="true"><HeadMark live /></span><span className="shimmer">{tx('msg.thinking')}</span></p>}
       {shown && <SrcCtx.Provider value={srcCtx}><Markdown text={shown} live={!!m.streaming} /></SrcCtx.Provider>}
       <SrcList sources={sources} live={!!m.streaming} />
       <SharedShots m={m} />

@@ -131,6 +131,17 @@ export type Thread = typeof threads.$inferSelect;
 export type Message = typeof messages.$inferSelect;
 export type FileRow = typeof files.$inferSelect;
 
+export const orgInbox = sqliteTable('org_inbox', {
+  folderId: text('folder_id').primaryKey().references(() => folders.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  tag: text('tag').notNull(),
+  senders: text('senders', { mode: 'json' }).$type<string[]>().notNull().default([]),
+  keyHash: text('key_hash'),
+  keyHint: text('key_hint'),
+  createdAt: integer('created_at').notNull(),
+  updatedAt: integer('updated_at').notNull(),
+}, (t) => [uniqueIndex('org_inbox_tag').on(t.tag), uniqueIndex('org_inbox_key').on(t.keyHash)]);
+
 export const automations = sqliteTable('automations', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),

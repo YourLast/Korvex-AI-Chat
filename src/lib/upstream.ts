@@ -4,7 +4,7 @@ import type { ModelCfg, Level } from './models';
 import { upstreamEffort } from './levels';
 import { tzOrDefault, TZ_HEADER } from './tz';
 import { isUnreachable } from './unavailable';
-import { PLAIN_DIALECT, type Dialect, type Memory } from './dialect';
+import { PLAIN_DIALECT, type Dialect, type Memory, type QueueInfo } from './dialect';
 import { modelKey } from './providers';
 import { brandText } from './brandCore';
 import { ext } from '@/ext';
@@ -32,6 +32,7 @@ export type UpEvent =
   | { t: 'c'; d: string }
   | { t: 'tc'; d: ToolCallDelta[] }
   | { t: 'done'; finish: string; usage: Record<string, unknown> | null; memory: Memory | null; durationMs: number }
+  | ({ t: 'q' } & QueueInfo)
   | { t: 'err'; message: string; unreachable?: boolean; maint?: number; maintSoft?: boolean };
 
 export async function* streamChat(opts: {
@@ -88,6 +89,7 @@ export async function* streamChat(opts: {
     messages: rest as never,
     abortSignal: signal,
     maxRetries: 0,
+    includeRawChunks: !!D.queueFrame,
     providerOptions: effort || opts.sources ? { [D.name]: { ...(effort ? { reasoningEffort: effort } : {}), ...(opts.sources ? (D.body?.({ sources: true }) ?? {}) : {}) } } : undefined,
   });
 
@@ -115,6 +117,11 @@ export async function* streamChat(opts: {
         case 'text-delta':
           yield { t: 'c', d: p.text };
           break;
+        case 'raw': {
+          const q = D.queueFrame?.((p as { rawValue?: unknown }).rawValue) ?? null;
+          if (q) yield { t: 'q', ...q };
+          break;
+        }
         case 'finish-step': {
           const pmd = ((p as { providerMetadata?: Record<string, { memory?: Memory; sources?: unknown; sources_unverified?: number; sources_total?: number } | undefined> }).providerMetadata ?? {})[D.name];
           const pm = pmd?.memory;
@@ -174,6 +181,8 @@ function agentFrame(f: unknown, st: AgentState, D: Dialect): UpEvent[] {
   const out: UpEvent[] = [];
   const fr = f as { error?: unknown; usage?: Record<string, unknown> | null; choices?: { delta?: Record<string, unknown>; message?: Record<string, unknown>; finish_reason?: unknown }[] };
   if (!fr || typeof fr !== 'object') return out;
+  const q = D.queueFrame?.(fr) ?? null;
+  if (q) out.push({ t: 'q', ...q });
   if (fr.error) {
     const e = fr.error as { message?: unknown } | string;
     st.err = typeof e === 'string' ? e : typeof e?.message === 'string' ? e.message : 'upstream error';

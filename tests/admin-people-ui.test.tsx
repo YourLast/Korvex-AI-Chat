@@ -44,12 +44,12 @@ describe('список людей', () => {
 
 describe('карточка человека', () => {
   it('три раздела, числа и пометка «только чтение»; первая страница чатов с сервера', () => {
-    const chats = [{ id: 't1', title: 'Отчёт по скважинам', modelId: 'alpha', createdAt: T0, updatedAt: T0, messages: 7, up: 1, down: 3, folder: null, compare: false, temporary: false }];
+    const chats = [{ id: 't1', title: 'Отчёт по складу', modelId: 'alpha', createdAt: T0, updatedAt: T0, messages: 7, up: 1, down: 3, folder: null, compare: false, temporary: false }];
     const h = renderToStaticMarkup(createElement(AdminUser, { person: users[0], models: [{ id: 'alpha', name: 'Alpha', levels: [] }], tz: 'Europe/Moscow', initial: { rows: chats, total: 1 }, isMe: false, meId: 'me' }));
     for (const t of ['ut-chats', 'ut-files', 'ut-ratings']) expect(h).toContain(`data-testid="${t}"`);
     expect(h).toContain('только чтение'); expect(h).toContain('data-testid="user-moderation"');
     expect(h).toContain('href="/admin/chat/t1"');
-    expect(h).toContain('Отчёт по скважинам');
+    expect(h).toContain('Отчёт по складу');
     expect(h).toContain('Alpha · 7 сообщений');
   });
 });

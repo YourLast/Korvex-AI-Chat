@@ -65,7 +65,7 @@ beforeAll(async () => {
   const u = (id: string, name: string, role: 'admin' | 'user' = 'user', source = '') =>
     db.insert(schema.users).values({ id, email: `${id}@t.rs`, name, passwordHash: pw, role, source, createdAt: T0 }).run();
   u('adm1', 'Админ Один', 'admin'); u('adm2', 'Админ Два', 'admin');
-  u('u1', 'Анна Орлова'); u('u2', 'Борис Куликов'); u('u3', 'Вера Седова'); u('u4', 'Глеб (создан админом)', 'user', 'admin'); u('u5', 'Дарья (без ссылки)'); u('u6', 'Иван с поста'); u('adm3', 'Админ по ссылке', 'admin');
+  u('u1', 'Анна Орлова'); u('u2', 'Борис Зайцев'); u('u3', 'Вера Седова'); u('u4', 'Глеб (создан админом)', 'user', 'admin'); u('u5', 'Дарья (без ссылки)'); u('u6', 'Иван с поста'); u('adm3', 'Админ по ссылке', 'admin');
   db.insert(schema.invites).values({ id: 'inv1', tokenHash: 'h1', role: 'user', note: 'Класс (Сербия)', createdBy: 'adm1', expiresAt: T0 + 9e9, maxUses: 30, uses: 4, createdAt: T0 }).run();
   db.insert(schema.invites).values({ id: 'inv2', tokenHash: 'h2', role: 'user', note: 'Пост TT', createdBy: 'adm1', expiresAt: T0 + 9e9, maxUses: 30, uses: 1, createdAt: T0 }).run();
   for (const [i, uid, inv] of [['a', 'u1', 'inv1'], ['b', 'u2', 'inv1'], ['c', 'u3', 'inv1'], ['d', 'adm3', 'inv1'], ['e', 'u6', 'inv2']] as const)

@@ -23,7 +23,7 @@ const T0 = 1_760_000_000_000;
 const SRC = { cls: { key: 'inv:i1', kind: 'invite', label: 'Класс (Сербия)', inviteId: 'i1' }, tt: { key: 'inv:i2', kind: 'invite', label: 'Пост TT', inviteId: 'i2' }, adm: { key: 'admin', kind: 'admin', label: 'создан админом' }, none: { key: 'none', kind: 'none', label: 'без ссылки' } } as const;
 const p = (o: Partial<PersonRow>): PersonRow => ({ id: 'u1', email: 'anna@t.rs', name: 'Анна Орлова', role: 'user', disabled: false, createdAt: T0, chats: 1, messages: 2, files: 0, up: 0, down: 0, lastAt: T0, blockKind: '', blockReason: '', blockedAt: null, source: SRC.cls, ...o });
 const users = [
-  p({}), p({ id: 'u2', email: 'boris@t.rs', name: 'Борис Куликов', disabled: true, blockKind: 'ban', blockReason: 'спам', blockedAt: T0 }),
+  p({}), p({ id: 'u2', email: 'boris@t.rs', name: 'Борис Зайцев', disabled: true, blockKind: 'ban', blockReason: 'спам', blockedAt: T0 }),
   p({ id: 'u3', email: 'vera@t.rs', name: 'Вера Седова', source: SRC.tt }), p({ id: 'u4', email: 'gleb@t.rs', name: 'Глеб', source: SRC.adm, disabled: true, blockKind: 'pause' }),
   p({ id: 'u5', email: 'dasha@t.rs', name: 'Дарья', source: SRC.none, role: 'admin' }),
 ];

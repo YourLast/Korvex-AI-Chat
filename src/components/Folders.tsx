@@ -1,5 +1,6 @@
 'use client';
-import { useFT } from './orgMode';
+import { useFT, useOrgMode } from './orgMode';
+import { OrgInbox } from './OrgInbox';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from './Icon';
@@ -192,6 +193,7 @@ function AutoArea({ value, onChange, placeholder, testId, autoFocus, maxLength }
 
 export function ProjectDialog({ edit, onClose, onSaved, onCreated }: { edit: FolderView | 'new' | null; onClose: () => void; onSaved: () => void; onCreated?: (f: FolderView) => void }) {
   const t = useFT();
+  const orgMode = useOrgMode();
   const [name, setName] = useState('');
   const [instr, setInstr] = useState('');
   const [color, setColor] = useState('');
@@ -243,6 +245,7 @@ export function ProjectDialog({ edit, onClose, onSaved, onCreated }: { edit: Fol
       ) : (
         <button type="button" className="pj-more" onClick={() => setShowInstr(true)} data-testid="folder-instr-open"><Icon n="plus" sm />{t('fld.instr')}</button>
       )}
+      {orgMode && edit && edit !== 'new' && <OrgInbox folderId={edit.id} />}
       <div className="pj-note">
         <button type="button" className="pj-info" aria-expanded={why} onClick={() => setWhy((v) => !v)} data-testid="folder-why"
           title={t('fld.visibleWhy')}>

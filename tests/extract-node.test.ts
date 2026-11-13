@@ -19,10 +19,10 @@ describe('извлекатель ядра', () => {
   });
   it('таблица xlsx — каждый лист в CSV с заголовком листа', async () => {
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['скважина', 'дебит'], ['А-1', 12.5]]), 'Март');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['склад', 'остаток'], ['А-1', 12.5]]), 'Март');
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['итог', 42]]), 'Итоги');
     const r = await extractNode(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }) as Buffer, 'wells.xlsx');
-    expect(r.text).toContain('[sheet Март]\nскважина,дебит\nА-1,12.5');
+    expect(r.text).toContain('[sheet Март]\nсклад,остаток\nА-1,12.5');
     expect(r.text).toContain('[sheet Итоги]\nитог,42');
     expect(r.info).toMatchObject({ format: 'xlsx', sheets: 2 });
   });

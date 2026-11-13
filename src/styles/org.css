@@ -37,3 +37,9 @@
 .od-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2); width: 100%; }
 .od-up { display: inline-flex; gap: var(--s-1); flex-wrap: wrap; }
 @media (max-width: 760px) { .od-period input[type="date"] { height: var(--hit); } .od-types button { height: var(--hit); } }
+.org-in { display: flex; flex-direction: column; gap: var(--s-3); }
+.org-in-row { display: flex; flex-direction: column; gap: var(--s-1); }
+.org-in-row > small, .org-in-hint { color: var(--text-3); font-size: var(--fs-cap); }
+.org-in-line { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); }
+.org-in code, .org-in-key code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--fs-cap); color: var(--text-1); word-break: break-all; }
+.org-in-key { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: var(--s-2); border-radius: var(--r-2); background: var(--surface-3); }

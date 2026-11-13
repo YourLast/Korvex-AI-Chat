@@ -31,30 +31,40 @@ const hours = (ms: number) => Math.round(ms / 3_600_000);
 export function armJobTimeout(plan: TimeoutPlan, onTimeout: (message: string) => void, now: () => number = Date.now): JobGuard {
   let fired = false;
   const fire = (msg: string) => { if (fired) return; fired = true; clear(); onTimeout(msg); };
-  const timers: NodeJS.Timeout[] = [];
   let ticker: NodeJS.Timeout | null = null;
   let last = now();
   let total: NodeJS.Timeout | null = null;
-  let deadline = now() + (plan.kind === 'total' ? plan.ms : 0);
-  const clear = () => { for (const t of timers) clearTimeout(t); timers.length = 0; if (total) clearTimeout(total); total = null; if (ticker) clearInterval(ticker); ticker = null; };
+  let ceil: NodeJS.Timeout | null = null;
+  let deadline = now() + (plan.kind === 'total' ? plan.ms : plan.ceilingMs);
+  let held = 0;
+  const clear = () => { if (total) clearTimeout(total); total = null; if (ceil) clearTimeout(ceil); ceil = null; if (ticker) clearInterval(ticker); ticker = null; };
   const armTotal = () => {
     if (plan.kind !== 'total') return;
     if (total) clearTimeout(total);
     total = setTimeout(() => fire(`Превышено время ответа (${minutes(plan.ms)} минут)`), Math.max(0, deadline - now()));
   };
+  const armCeil = () => {
+    if (plan.kind !== 'idle') return;
+    if (ceil) clearTimeout(ceil);
+    ceil = setTimeout(() => fire(`Превышено время ответа (${hours(plan.ceilingMs)} ч)`), Math.max(0, deadline - now()));
+  };
   if (plan.kind === 'total') {
     armTotal();
   } else {
-    timers.push(setTimeout(() => fire(`Превышено время ответа (${hours(plan.ceilingMs)} ч)`), plan.ceilingMs));
+    armCeil();
     ticker = setInterval(() => {
       if (now() - last >= plan.idleMs) fire(`Модель не отвечает ${minutes(plan.idleMs)} минут`);
     }, Math.min(IDLE_TICK_MS, plan.idleMs));
   }
   const hold = (ms: number) => {
     last = now();
-    if (fired || plan.kind !== 'total' || !(ms > 0)) return;
-    deadline += ms;
-    armTotal();
+    if (fired || !(ms > 0)) return;
+    if (plan.kind === 'total') { deadline += ms; armTotal(); return; }
+    const add = Math.min(ms, plan.ceilingMs - held);
+    if (add <= 0) return;
+    held += add;
+    deadline += add;
+    armCeil();
   };
   return { touch: () => { last = now(); }, hold, clear, plan };
 }
