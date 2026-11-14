@@ -148,11 +148,21 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
 
   const buildLabels = () => {
     rowBase.textContent = ''; rowOn.textContent = '';
+    const pre = o.testId?.startsWith('levels-') ? `lvl-${o.testId.slice(7)}-` : null;
     levels.forEach((l) => {
       for (const row of [rowBase, rowOn]) {
         const c = document.createElement('span');
         c.className = 'kxe-cell';
         c.textContent = l.label;
+        if (row === rowBase) {
+          c.dataset.lvl = l.id;
+          if (pre) c.dataset.testid = pre + l.id;
+          c.addEventListener('click', () => {
+            const i = levels.findIndex((x) => x.id === l.id);
+            if (i < 0 || i === near) return;
+            commit(i, false); target = pOf(near); kick();
+          });
+        }
         row.append(c);
       }
     });
