@@ -6,7 +6,7 @@ import { errText } from '@/lib/i18n/errors';
 
 type Card = { inn: string; kpp: string; tax: string | null; vat: string | null; policyFileId: string | null; policyName: string | null };
 type Doc = { id: string; name: string; library: boolean };
-const TAXES = ['osn', 'usn_income', 'usn_income_expense', 'ausn'] as const;
+const TAXES = ['osn', 'usn_income', 'usn_income_expense', 'ausn', 'psn'] as const;
 const VATS = ['none', '0', '5', '7', '10', '20', '22'] as const;
 
 export function OrgCard({ folderId }: { folderId: string }) {

@@ -52,6 +52,8 @@ describe('карточка организации', () => {
     C.setOrgCard('u', 'org2', { vat: '22' });
     expect(folderInstruction('org2', 'u')).toMatch(/^Инструкция папки «Лютик»[\s\S]*Отвечай кратко\n\nКарточка организации «Лютик»: ставка НДС: 22%\./);
     expect(folderInstruction('org', 'v')).toBeNull();
+    C.setOrgCard('u', 'org2', { tax: 'psn' });
+    expect(folderInstruction('org2', 'u')).toContain('система налогообложения: ПСН (патент)');
   });
   it('файл учётной политики — к первому сообщению чата организации, копией; дальше не повторяется', async () => {
     const T = await import('@/lib/turn');
@@ -86,7 +88,7 @@ describe('«Скачать» файлы ответа', () => {
 describe('карточка для заголовка запроса', () => {
   it('заполненные поля и название; пустая карточка и чужая организация — null', () => {
     expect(C.orgHeader('u', 'org')).toEqual({ name: 'Ромашка', inn: '7701234567', kpp: '770101001', tax: 'usn_income_expense', vat: '5' });
-    expect(C.orgHeader('u', 'org2')).toEqual({ name: 'Лютик', vat: '22' });
+    expect(C.orgHeader('u', 'org2')).toEqual({ name: 'Лютик', tax: 'psn', vat: '22' });
     expect(C.orgHeader('v', 'org')).toBeNull();
     expect(C.orgHeader('u', null)).toBeNull();
     expect(C.orgHeader('u', 'nope')).toBeNull();

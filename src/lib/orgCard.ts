@@ -2,14 +2,14 @@ import { and, eq } from 'drizzle-orm';
 import { getDb, schema } from './db';
 import { getSetting, setSetting } from './settings';
 
-export const TAXES = ['osn', 'usn_income', 'usn_income_expense', 'ausn'] as const;
+export const TAXES = ['osn', 'usn_income', 'usn_income_expense', 'ausn', 'psn'] as const;
 export type Tax = (typeof TAXES)[number];
 export const VATS = ['none', '0', '5', '7', '10', '20', '22'] as const;
 export type Vat = (typeof VATS)[number];
 export type OrgCard = { inn?: string; kpp?: string; tax?: Tax | null; vat?: Vat | null; policyFileId?: string | null };
 
 const key = (folderId: string) => `org.card.${folderId}`;
-const TAX_RU: Record<Tax, string> = { osn: 'ОСН', usn_income: 'УСН «Доходы»', usn_income_expense: 'УСН «Доходы минус расходы»', ausn: 'АУСН' };
+const TAX_RU: Record<Tax, string> = { osn: 'ОСН', usn_income: 'УСН «Доходы»', usn_income_expense: 'УСН «Доходы минус расходы»', ausn: 'АУСН', psn: 'ПСН (патент)' };
 const VAT_RU = (v: Vat) => (v === 'none' ? 'без НДС' : `${v}%`);
 
 export function orgCard(folderId: string | null | undefined): OrgCard {

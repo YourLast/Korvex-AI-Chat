@@ -92,6 +92,7 @@ export default {
   'org.card.tax.usn_income': ['УСН «Доходы»', 'Simplified: income', 'Pojednostavljeni: prihodi'],
   'org.card.tax.usn_income_expense': ['УСН «Доходы минус расходы»', 'Simplified: income minus expenses', 'Pojednostavljeni: prihodi minus rashodi'],
   'org.card.tax.ausn': ['АУСН', 'Automated simplified (AUSN)', 'Automatizovani pojednostavljeni (AUSN)'],
+  'org.card.tax.psn': ['ПСН (патент)', 'Patent system (PSN)', 'Patentni sistem (PSN)'],
   'org.card.vat': ['Ставка НДС', 'VAT rate', 'Stopa PDV'],
   'org.card.vatNone': ['без НДС', 'no VAT', 'bez PDV'],
   'org.card.policy': ['Учётная политика', 'Accounting policy', 'Računovodstvena politika'],
