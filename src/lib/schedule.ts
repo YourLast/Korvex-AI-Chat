@@ -1,6 +1,7 @@
 import { buildCron, parsePreset } from './cron';
 import { localeOf, tr, type Key, type Lang } from './i18n/core';
 import { errText } from './i18n/errors';
+import { fmtHM, hour12Of } from './hourFormat';
 
 const dk = (s: string) => s as Key;
 
@@ -10,7 +11,7 @@ export type When = { repeat: Repeat; time: string; dow: number; every: number; c
 export const EVERY_HOURS = [2, 3, 4, 6, 8, 12] as const;
 export const dowList = (lang: Lang = 'ru'): [number, string][] => [1, 2, 3, 4, 5, 6, 7].map((d): [number, string] => [d, tr(lang, dk(`tools.dow.${d}`))]);
 
-const hm = (time: string) => { const [h, m] = time.split(':'); return `${parseInt(h, 10) || 0}:${(m ?? '00').padStart(2, '0')}`; };
+const hm = (time: string, lang: Lang) => { const [h, m] = time.split(':'); return fmtHM(`${parseInt(h, 10) || 0}:${(m ?? '00').padStart(2, '0')}`, lang); };
 const two = (n: number) => String(n).padStart(2, '0');
 
 export function whenOf(cron: string): When {
@@ -34,10 +35,10 @@ export function cronOf(w: When): string {
 export function describeWhen(w: When, lang: Lang = 'ru'): string {
   const min = parseInt(w.time.split(':')[1] ?? '0', 10) || 0;
   switch (w.repeat) {
-    case 'daily': return tr(lang, 'tools.sched.daily', { t: hm(w.time) });
-    case 'weekdays': return tr(lang, 'tools.sched.weekdays', { t: hm(w.time) });
-    case 'weekly': return tr(lang, 'tools.sched.weeklyAt', { day: tr(lang, dk(`tools.sched.every.${w.dow % 7}`)), t: hm(w.time) });
-    case 'monthly': return tr(lang, 'tools.sched.monthly', { t: hm(w.time) });
+    case 'daily': return tr(lang, 'tools.sched.daily', { t: hm(w.time, lang) });
+    case 'weekdays': return tr(lang, 'tools.sched.weekdays', { t: hm(w.time, lang) });
+    case 'weekly': return tr(lang, 'tools.sched.weeklyAt', { day: tr(lang, dk(`tools.sched.every.${w.dow % 7}`)), t: hm(w.time, lang) });
+    case 'monthly': return tr(lang, 'tools.sched.monthly', { t: hm(w.time, lang) });
     case 'hourly': return min ? tr(lang, 'tools.sched.hourlyAt', { m: two(min) }) : tr(lang, 'tools.sched.hourly');
     case 'every': return tr(lang, 'tools.sched.everyN', { n: w.every }) + (min ? tr(lang, 'tools.sched.atMin', { m: two(min) }) : '');
     case 'custom': return tr(lang, 'tools.sched.custom', { cron: w.cron });
@@ -56,7 +57,7 @@ export function relTime(ts: number, tz: string, now = Date.now(), lang: Lang = '
   const loc = localeOf(lang);
   let zone = tz;
   try { new Intl.DateTimeFormat(loc, { timeZone: zone }); } catch { zone = 'UTC'; }
-  const t = new Intl.DateTimeFormat(loc, { timeZone: zone, hour: 'numeric', minute: '2-digit' }).format(new Date(ts));
+  const t = new Intl.DateTimeFormat(loc, { timeZone: zone, hour: 'numeric', minute: '2-digit', hour12: hour12Of(lang) }).format(new Date(ts)).replace(/\s(?=[AP]M)/, '\u00a0');
   const d = dayDiff(ymd(ts, zone), ymd(now, zone));
   if (d === 0) return tr(lang, 'tools.rel.today', { t });
   if (d === 1) return tr(lang, 'tools.rel.tomorrow', { t });

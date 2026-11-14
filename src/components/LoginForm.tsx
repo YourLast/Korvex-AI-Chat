@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { errText } from '@/lib/i18n/errors';
 import { useT } from '@/lib/i18n/react';
 import { localeOf } from '@/lib/i18n/core';
+import { hour12Of } from '@/lib/hourFormat';
 import { Icon } from './Icon';
 import { Button, Field, Group, KSolo, Notice } from './Kit';
 
@@ -22,7 +23,7 @@ export function LoginForm({ signupOpen, firstUser, support }: { signupOpen: bool
     const until = Number(q.get('seat')) || 0;
     let tz = q.get('tz') || undefined;
     try { new Intl.DateTimeFormat('en', { timeZone: tz }); } catch { tz = undefined; }
-    const when = until ? new Intl.DateTimeFormat(localeOf(t.lang), { timeZone: tz, day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(until)) : '';
+    const when = until ? new Intl.DateTimeFormat(localeOf(t.lang), { timeZone: tz, day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', hour12: hour12Of(t.lang) }).format(new Date(until)) : '';
     setErr(`${until ? t('seat.pause24', { when }) : t('seat.pause')}\n\n${t('support.line', { tg: support.handle, email: support.email })}`);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

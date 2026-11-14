@@ -4,6 +4,7 @@ import { useT } from '@/lib/i18n/react';
 import { disablePush, enablePush, pushEnv, pushOn, testPush, type PushEnv } from '@/lib/pushClient';
 import { deniedHint } from '@/lib/notifyPrompt';
 import { Group, Row, SwitchRow } from './Kit';
+import { TimeField } from './TimeField';
 import { tzLabel } from './SettingsClient';
 
 export function NotifySettings({ quiet: quiet0, timezone }: { quiet: string | null; timezone: string }) {
@@ -56,8 +57,8 @@ export function NotifySettings({ quiet: quiet0, timezone }: { quiet: string | nu
         <SwitchRow title={t('tools.notify.quiet')} sub={quiet ? t('tools.notify.quietSub') : undefined}
           checked={!!quiet} onChange={(v) => void saveQuiet(v ? '23:00-08:00' : null)} testId="quiet-switch" />
         {quiet && <>
-          <Row title={t('tools.notify.from')} right={<input type="time" className="k-inl" value={pad(qa)} aria-label={t('tools.notify.quietFrom')} data-testid="quiet-from" onChange={(e) => e.target.value && void saveQuiet(`${e.target.value}-${pad(qb)}`)} />} />
-          <Row title={t('tools.notify.to')} right={<input type="time" className="k-inl" value={pad(qb)} aria-label={t('tools.notify.quietTo')} data-testid="quiet-to" onChange={(e) => e.target.value && void saveQuiet(`${pad(qa)}-${e.target.value}`)} />} />
+          <Row title={t('tools.notify.from')} right={<TimeField value={pad(qa)} lang={t.lang} label={t('tools.notify.quietFrom')} testId="quiet-from" onChange={(v) => void saveQuiet(`${v}-${pad(qb)}`)} />} />
+          <Row title={t('tools.notify.to')} right={<TimeField value={pad(qb)} lang={t.lang} label={t('tools.notify.quietTo')} testId="quiet-to" onChange={(v) => void saveQuiet(`${pad(qa)}-${v}`)} />} />
         </>}
       </Group>
       {iphoneTab && (

@@ -8,6 +8,7 @@ import { Button, DestructiveButton, EmptyState, Field, Group, KPage, Notice, Pic
 import { useIsAdmin, useShell } from './Shell';
 import { families, modelLabel } from '@/lib/levels';
 import { ModelMark } from './ModelMark';
+import { TimeField } from './TimeField';
 
 type Run = { id: string; startedAt: number; finishedAt: number | null; status: string; trigger: string; error: string | null; durationMs: number | null; messageId?: string | null };
 type Form = { id?: string; name: string; description: string; prompt: string; modelId: string; levelId: string; when: When; timezone: string; target: string; notify: boolean };
@@ -85,7 +86,7 @@ function AutoForm({ init, tz, onDone, onClose }: { init: Form; tz: string; onDon
         {r === 'weekly' && <PickerRow title={t('tools.auto.dow')} value={f.when.dow} onChange={(v) => setW({ dow: v })} testId="auto-dow" options={dowList(t.lang).map(([v, l]) => ({ value: v, label: l }))} />}
         {r === 'every' && <PickerRow title={t('tools.auto.every')} value={f.when.every} onChange={(v) => setW({ every: v })} testId="auto-every" options={EVERY_HOURS.map((n) => ({ value: n, label: t('tools.hours', { n }) }))} />}
         {(r === 'daily' || r === 'weekdays' || r === 'weekly' || r === 'monthly') && (
-          <Row title={t('tools.auto.time')} right={<input type="time" className="k-inl" value={f.when.time} onChange={(e) => e.target.value && setW({ time: e.target.value })} aria-label={t('tools.auto.timeLabel')} data-testid="auto-time" />} />
+          <Row title={t('tools.auto.time')} right={<TimeField value={f.when.time} onChange={(v) => setW({ time: v })} lang={t.lang} label={t('tools.auto.timeLabel')} testId="auto-time" />} />
         )}
         {(r === 'hourly' || r === 'every') && (
           <Row title={t('tools.auto.minute')} sub={t('tools.auto.minuteEx', { m: String(minute).padStart(2, '0') })} right={<input type="number" className="k-inl" min={0} max={59} value={minute} style={{ width: 80 }} aria-label={t('tools.auto.minute')}
