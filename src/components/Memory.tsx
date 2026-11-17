@@ -83,7 +83,8 @@ export function MemoryBody({ memory: m, usage, fileNames }: { memory: MemoryInfo
     ...(other > 0 ? [{ k: 'other', cls: 'c-web', name: t('tools.mem.other'), v: other }] : []),
   ];
   const sum = Math.max(1, rows.reduce((s, r) => s + r.v, 0));
-  const u = (usage ?? {}) as { prompt_tokens?: number; completion_tokens?: number; completion_tokens_details?: { reasoning_tokens?: number }; prompt_tokens_details?: { cached_tokens?: number }; calls?: number; rounds?: number };
+  const ux = (usage ?? {}) as Record<string, unknown>;
+  const u = { ...ux, ...((ux[EXTRA_KEY] as object | undefined) ?? {}) } as { prompt_tokens?: number; completion_tokens?: number; completion_tokens_details?: { reasoning_tokens?: number }; prompt_tokens_details?: { cached_tokens?: number }; calls?: number; rounds?: number };
   const listed: { name: string; tokens: number | undefined; image?: boolean }[] = m.file_list?.length
     ? m.file_list.map((f) => ({ name: f.name || t('tools.mem.file'), tokens: f.tokens }))
     : (fileNames ?? []).map((name) => ({ name, tokens: undefined as number | undefined }));

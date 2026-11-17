@@ -80,8 +80,8 @@
 .pj-dot i { width: 20px; height: 20px; border-radius: 50%; background: var(--pj); }
 .pj-dot.is-static { cursor: default; }
 .pj-title--ro { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 36px; }
-.pj-danger { background: #e5484d; color: #fff; }
-@media (hover: hover) { .pj-danger:hover:not(:disabled) { background: #ec5d61; } }
+.k-btn.pj-danger { background: #e5484d; color: #fff; }
+@media (hover: hover) { .k-btn.pj-danger:hover:not(:disabled) { background: #ec5d61; } }
 .pj-field { display: flex; flex-direction: column; gap: 6px; }
 .pj-lab { color: var(--text-3); font-size: 13px; line-height: 18px; }
 .pj-dot:focus-visible, .pj-sw:focus-visible, .pj-more:focus-visible, .pj-info:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
