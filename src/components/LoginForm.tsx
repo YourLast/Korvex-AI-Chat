@@ -32,7 +32,7 @@ export function LoginForm({ signupOpen, firstUser, support }: { signupOpen: bool
     e.preventDefault();
     setBusy(true); setErr('');
     try {
-      const r = await fetch(mode === 'in' ? '/api/auth/login' : '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pw, name, lang: t.lang }) });
+      const r = await fetch(mode === 'in' ? '/api/auth/login' : '/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password: pw, name, lang: t.lang, timezone: (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return undefined; } })() }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error((j as { error?: string }).error ? errText(t.lang, (j as { error?: string }).error) : r.status === 401 ? t('e.badCreds') : t('auth.loginFail', { code: r.status }));
       window.location.href = '/';

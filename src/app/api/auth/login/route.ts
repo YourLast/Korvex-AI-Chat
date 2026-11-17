@@ -5,10 +5,11 @@ import { getDb, schema } from '@/lib/db';
 import { fail, json } from '@/lib/api';
 import { reqLang } from '@/lib/i18n/server';
 import { seatAutoUnblock, seatPauseText } from '@/lib/seat';
+import { resolveUserTz } from '@/lib/usertz';
 import { deviceUser, loginBlocked, loginDelayMs, loginFailed, loginKeys, loginOk, sameOrigin, setDeviceCookie, startSession, verifyPassword } from '@/lib/auth';
 
 export const runtime = 'nodejs';
-const Body = z.object({ email: z.string().email().max(200), password: z.string().min(1).max(500) });
+const Body = z.object({ email: z.string().email().max(200), password: z.string().min(1).max(500), timezone: z.string().max(64).optional() });
 
 export async function POST(req: Request) {
   if (!sameOrigin(req)) return fail(403, 'bad origin');
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
   loginOk(key);
   await startSession(me.id);
   await setDeviceCookie(me.id);
+  if (p.data.timezone) resolveUserTz(me.id, p.data.timezone);
   ext.userArrived?.(me.id, 'login');
   return json({ ok: true });
 }
