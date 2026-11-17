@@ -1,9 +1,9 @@
 import { ext } from '@/ext';
 import { z } from 'zod';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getDb, schema } from '@/lib/db';
 import { json } from '@/lib/api';
-import { createUser, EmailTaken, sameOrigin, startSession } from '@/lib/auth';
+import { createUser, EmailTaken, hashPassword, sameOrigin, startSession } from '@/lib/auth';
 import { asLang } from '@/lib/i18n/core';
 import { reqLang } from '@/lib/i18n/server';
 import { giveBackInvite, inviteState, recordInviteUse, takeInvite, type InviteState } from '@/lib/invites';
@@ -26,7 +26,21 @@ export async function POST(req: Request) {
   if (st.state !== 'ok' || !st.invite) return bad(st.state === 'ok' ? 'unknown' : st.state);
   const inv = st.invite;
   const email = p.data.email.trim().toLowerCase();
-  if (db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.email, email)).get()) return json({ error: 'Такая почта уже есть', code: 'email_taken' }, 409);
+  const bound = inv.email ? inv.email.trim().toLowerCase() : null;
+  if (bound && email !== bound) return json({ error: 'Эта ссылка — для другой почты', code: 'email_mismatch' }, 403);
+  const had = db.select({ id: schema.users.id, name: schema.users.name, source: schema.users.source, passwordHash: schema.users.passwordHash }).from(schema.users).where(eq(schema.users.email, email)).get();
+  if (had) {
+    if (!bound || had.source !== 'setup' || had.passwordHash) return json({ error: 'Такая почта уже есть', code: 'email_taken' }, 409);
+    if (!takeInvite(inv.id)) { const s = inviteState(p.data.token).state; return bad(s === 'ok' ? 'used_up' : s); }
+    const passwordHash = await hashPassword(p.data.password);
+    const name = p.data.name.replace(/\s+/g, ' ').trim() || had.name;
+    const r = db.update(schema.users).set({ passwordHash, name, source: '', lang: asLang(p.data.lang) ?? reqLang(req) })
+      .where(and(eq(schema.users.id, had.id), eq(schema.users.source, 'setup'), eq(schema.users.passwordHash, ''))).run();
+    if (r.changes !== 1) { giveBackInvite(inv.id); return json({ error: 'Такая почта уже есть', code: 'email_taken' }, 409); }
+    recordInviteUse(inv.id, { id: had.id, name });
+    await startSession(had.id);
+    return json({ ok: true });
+  }
   if (!takeInvite(inv.id)) { const s = inviteState(p.data.token).state; return bad(s === 'ok' ? 'used_up' : s); }
   let u;
   try { u = await createUser(email, p.data.name, p.data.password, inv.role, { lang: asLang(p.data.lang) ?? reqLang(req) }); }

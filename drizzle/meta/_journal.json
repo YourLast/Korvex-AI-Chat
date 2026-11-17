@@ -225,6 +225,13 @@
       "when": 1794610000000,
       "tag": "0031_org_inbox",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1794900000000,
+      "tag": "0032_invite_email",
+      "breakpoints": true
     }
   ]
 }

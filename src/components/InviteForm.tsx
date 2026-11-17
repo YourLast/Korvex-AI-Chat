@@ -12,11 +12,11 @@ const BAD: Record<Exclude<InviteState, 'ok'>, { title: Key; text: Key }> = {
   used_up: { title: 'auth.invite.usedUp', text: 'auth.invite.usedUpText' },
   revoked: { title: 'auth.invite.revoked', text: 'auth.invite.revokedText' },
 };
-const CODE: Record<string, Key> = { unknown: 'e.inviteBad', expired: 'e.inviteExpired', used_up: 'e.inviteUsedUp', revoked: 'e.inviteRevoked', email_taken: 'e.emailTaken' };
+const CODE: Record<string, Key> = { unknown: 'e.inviteBad', expired: 'e.inviteExpired', used_up: 'e.inviteUsedUp', revoked: 'e.inviteRevoked', email_taken: 'e.emailTaken', email_mismatch: 'e.inviteEmail' };
 
-export function InviteForm({ token, state, seats: seatsIn = null }: { token: string; state: InviteState; seats?: { left: number; max: number } | null }) {
+export function InviteForm({ token, state, seats: seatsIn = null, email: bound = null }: { token: string; state: InviteState; seats?: { left: number; max: number } | null; email?: string | null }) {
   const t = useT();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(bound ?? '');
   const [name, setName] = useState('');
   const [pw, setPw] = useState('');
   const [err, setErr] = useState('');
@@ -72,7 +72,7 @@ export function InviteForm({ token, state, seats: seatsIn = null }: { token: str
           {seats && <p className="inv-seats" role="status" data-testid="invite-seats">{t('auth.seatsLeft', { left: seats.left, max: seats.max })}</p>}
         </div>
         <Group foot={short ? <span className="k-neg">{t('auth.pwShort')}</span> : t('auth.pwHint')}>
-          <Field label={t('auth.email')} type="email" inputMode="email" required value={email} onChange={setEmail} autoComplete="email" placeholder={t('auth.emailPh')} testId="inv-email" id="e" />
+          <Field label={t('auth.email')} type="email" inputMode="email" required value={email} onChange={setEmail} autoComplete="email" placeholder={t('auth.emailPh')} testId="inv-email" id="e" readOnly={!!bound} />
           <Field label={t('auth.name')} value={name} onChange={setName} autoComplete="name" placeholder={t('auth.nameFullPh')} id="n" />
           <Field label={t('auth.password')} type="password" required minLength={8} value={pw} onChange={setPw} autoComplete="new-password" testId="inv-password" id="p" invalid={short} />
         </Group>

@@ -20,6 +20,7 @@ export async function POST(req: Request) {
   const db = getDb();
   const open = featureOn('signup');
   if (!open && db.select({ id: schema.users.id }).from(schema.users).limit(1).all().length > 0) return fail(403, CLOSED);
+  if (process.env.KX_LAN === '1' && db.select({ id: schema.users.id }).from(schema.users).limit(1).all().length === 0) return fail(403, CLOSED);
   const p = Body.safeParse(await req.json().catch(() => null));
   if (!p.success) return fail(400, p.error.issues[0]?.message || 'Неверные данные');
   const email = p.data.email.trim().toLowerCase();

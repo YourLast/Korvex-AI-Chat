@@ -37,6 +37,7 @@ export const invites = sqliteTable('invites', {
   maxUses: integer('max_uses').notNull().default(1),
   uses: integer('uses').notNull().default(0),
   revokedAt: integer('revoked_at'),
+  email: text('email'),
   createdAt: integer('created_at').notNull(),
 });
 

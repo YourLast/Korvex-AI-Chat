@@ -51,6 +51,7 @@ export default {
   'e.tooManyLogins': ['Слишком много попыток с этого устройства. Подождите 15 минут.', 'Too many attempts from this device. Please wait 15 minutes.', 'Previše pokušaja sa ovog uređaja. Sačekajte 15 minuta.'],
   'e.pwShort': ['Пароль — не короче 8 символов', 'The password must be at least 8 characters', 'Lozinka mora imati najmanje 8 znakova'],
   'e.emailTaken': ['Такая почта уже есть', 'This email is already registered', 'Ova e-pošta je već registrovana'],
+  'e.inviteEmail': ['Эта ссылка — для другой почты', 'This link is for a different email', 'Ovaj link je za drugu e-poštu'],
   'e.signupClosed': ['Регистрация закрыта. Обратитесь к администратору.', 'Sign-up is closed. Please contact the administrator.', 'Registracija je zatvorena. Obratite se administratoru.'],
   'e.adminOnly': ['Только для администратора', 'Administrators only', 'Samo za administratora'],
   'e.tooManyAtOnce': ['Слишком много запросов сразу: дождитесь ответа на предыдущие', 'Too many requests at once: please wait for the previous answers', 'Previše zahteva odjednom: sačekajte odgovore na prethodne'],

@@ -437,6 +437,7 @@ export function AccountMenu({ name, email, admin, agents = admin, api = true, me
   ];
   const adm: AcctItem[] = admin ? [
     { href: '/admin', icon: 'user', label: admText('Администрирование'), testId: 'admin-link', on: (p) => p.startsWith('/admin') },
+    { href: '/admin?tour=1', icon: 'play', label: admText('Тур по админке'), testId: 'tour-link', on: () => false },
     { href: '/vp', icon: 'eye', label: 'Диагностика экрана', testId: 'vp-link', on: (p) => p.startsWith('/vp') },
   ] : [];
   useEffect(() => {

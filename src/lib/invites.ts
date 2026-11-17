@@ -54,7 +54,7 @@ export function listInvites(limit = 100, db: Db = getDb()): InviteRow[] {
   const ids = rows.map((r) => r.id);
   const uses = ids.length ? db.select().from(schema.inviteUses).where(inArray(schema.inviteUses.inviteId, ids)).orderBy(asc(schema.inviteUses.createdAt)).all() : [];
   return rows.map((r) => ({
-    id: r.id, role: r.role, note: r.note, expiresAt: r.expiresAt, usedAt: r.usedAt, createdAt: r.createdAt, maxUses: r.maxUses, uses: r.uses, revokedAt: r.revokedAt,
+    id: r.id, role: r.role, note: r.note, expiresAt: r.expiresAt, usedAt: r.usedAt, createdAt: r.createdAt, maxUses: r.maxUses, uses: r.uses, revokedAt: r.revokedAt, email: r.email ?? null,
     people: uses.filter((u) => u.inviteId === r.id).map((u) => ({ name: u.name, at: u.createdAt })),
   }));
 }

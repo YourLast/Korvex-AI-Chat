@@ -1,8 +1,8 @@
 'use client';
 import { adm, admCount, admErr, admLang, admLocale, admf } from '@/lib/i18n/adm';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { W } from '@/lib/plural';
 import { relTime } from '@/lib/schedule';
 import type { PersonRow } from '@/lib/adminTypes';
@@ -13,7 +13,7 @@ import { AdminPeople, AuditLog, ViewLog, statsLine } from './AdminPeople';
 import { UserModeration } from './UserModeration';
 import { AdminRatings } from './AdminRatings';
 import { AdminNotices, type NoticesSnap } from './AdminNotices';
-import { inviteLive, type InviteRow } from '@/lib/inviteTypes';
+import { inviteLive, isForever, isUnlimited, type InviteRow } from '@/lib/inviteTypes';
 import { Button, CopyButton, DestructiveButton, Field, Group, KPage, Notice, Row, Seg, Sheet, toast, useConfirm } from './Kit';
 import { roleRu, type Role } from '@/lib/roles';
 import { ADMIN_LINKS } from '@/ext/client';
@@ -23,6 +23,7 @@ import { AdminAccess } from './AdminAccess';
 import { AdminMcp } from './AdminMcp';
 import { AdminBrand } from './AdminBrand';
 import { AdminUpdate } from './AdminUpdate';
+import { AdminTour, type TourTab } from './AdminTour';
 
 type U = PersonRow;
 type Inv = InviteRow;
@@ -41,10 +42,20 @@ async function api(path: string, method: string, body?: unknown): Promise<{ ok: 
   } catch { return { ok: false, data: { error: adm("Нет связи с сервером") } }; }
 }
 
-export function AdminClient({ meId, users, invites, models, notices, tz }: { meId: string; users: U[]; invites: Inv[]; models: M[]; notices?: NoticesSnap; tz: string }) {
+export function AdminClient({ meId, users, invites, models, notices, tz, tour = false }: { meId: string; users: U[]; invites: Inv[]; models: M[]; notices?: NoticesSnap; tz: string; tour?: boolean }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('users');
   useEffect(() => { setTab(tabOf(window.location.hash)); }, []);
+  const [touring, setTouring] = useState(false);
+  const again = useSearchParams().get('tour') === '1';
+  useEffect(() => { if (tour) setTouring(true); }, [tour]);
+  useEffect(() => {
+    if (!again) return;
+    setTouring(true);
+    router.replace(window.location.pathname + window.location.hash, { scroll: false });
+  }, [again, router]);
+  const tourTab = useCallback((t: TourTab) => setTab(t), []);
+  const tourEnd = useCallback(() => setTouring(false), []);
   const go = (t: Tab) => { setTab(t); window.history.replaceState(window.history.state, '', t === 'users' ? window.location.pathname : `#${t === 'state' ? 'state' : t === 'models' ? 'providers' : t}`); };
   const [sheet, setSheet] = useState<'invite' | 'user' | null>(null);
   const [inv, setInv] = useState({ role: 'user' as Role, note: '', days: 7, group: false, maxUses: 30 });
@@ -89,12 +100,12 @@ export function AdminClient({ meId, users, invites, models, notices, tz }: { meI
   const invRow = (i: Inv) => {
     const group = i.maxUses > 1;
     const alive = inviteLive(i);
-    const used = group ? admf("использовано {0} из {1}", i.uses, i.maxUses) : i.uses ? admf("использовано {0}", i.usedAt ? relTime(i.usedAt, tz, Date.now(), admLang()) : '').trim() : '';
-    const st = i.revokedAt ? admf("отозвана {0}", relTime(i.revokedAt, tz, Date.now(), admLang())) : i.uses >= i.maxUses ? (group ? admf("{0} — лимит исчерпан", used) : used) : i.expiresAt <= Date.now() ? (group ? admf("{0} · истекло", used) : adm("истекло")) : admf("{0}действует до {1}", used ? used + ' · ' : '', relTime(i.expiresAt, tz, Date.now(), admLang()));
+    const used = isUnlimited(i) ? admf("использовано {0} · без лимита", i.uses) : group ? admf("использовано {0} из {1}", i.uses, i.maxUses) : i.uses ? admf("использовано {0}", i.usedAt ? relTime(i.usedAt, tz, Date.now(), admLang()) : '').trim() : '';
+    const st = i.revokedAt ? admf("отозвана {0}", relTime(i.revokedAt, tz, Date.now(), admLang())) : i.uses >= i.maxUses ? (group ? admf("{0} — лимит исчерпан", used) : used) : i.expiresAt <= Date.now() ? (group ? admf("{0} · истекло", used) : adm("истекло")) : isForever(i) ? admf("{0}бессрочно", used ? used + ' · ' : '') : admf("{0}действует до {1}", used ? used + ' · ' : '', relTime(i.expiresAt, tz, Date.now(), admLang()));
     const names = i.people.map((p) => p.name || '—');
     const shown = names.length > 8 ? admf("{0} и ещё {1}", names.slice(0, 8).join(', '), names.length - 8) : names.join(', ');
     return (
-      <Row key={i.id} title={<Link href={`/admin/invites/${i.id}`} className="ist-tlink" data-testid={`invite-open-${i.id}`}>{`${group ? adm("Групповая ссылка · ") : ''}${i.note || adm("Без заметки")}`}</Link>} tone={alive ? undefined : 'muted'} sub={`${ROLE()[i.role]} · ${st}`} sub2={names.length ? <span title={names.join(', ')} data-testid={`invite-people-${i.id}`}>{adm("Зарегистрировались:")} {shown}</span> : undefined} testId={`invite-${i.id}`}
+      <Row key={i.id} title={<Link href={`/admin/invites/${i.id}`} className="ist-tlink" data-testid={`invite-open-${i.id}`}>{`${group ? adm("Групповая ссылка · ") : ''}${i.note || adm("Без заметки")}${i.email ? ` · ${i.email}` : ''}`}</Link>} tone={alive ? undefined : 'muted'} sub={`${ROLE()[i.role]} · ${st}`} sub2={names.length ? <span title={names.join(', ')} data-testid={`invite-people-${i.id}`}>{adm("Зарегистрировались:")} {shown}</span> : undefined} testId={`invite-${i.id}`}
         right={<>{<Link href={`/admin/invites/${i.id}`} className="k-icon-btn ist-open" aria-label={adm("Статистика по ссылке")} title={adm("Статистика по ссылке")} data-testid={`invite-stats-${i.id}`}><Icon n="chev-right" sm /></Link>}{alive || !i.revokedAt ? <DestructiveButton iconOnly icon="trash" testId={`invite-del-${i.id}`} onConfirm={() => act(api(`/api/admin/invites/${i.id}`, 'DELETE'), alive ? adm("Ссылка отозвана") : adm("Приглашение убрано"))}
           confirm={{ title: alive ? adm("Отозвать приглашение?") : adm("Убрать приглашение из списка?"), message: alive ? (i.uses ? adm("По ссылке больше нельзя будет зарегистрироваться. Уже созданные аккаунты останутся, запись с именами сохранится.") : adm("Ссылка перестанет работать.")) : adm("Аккаунты, созданные по ней, останутся."), action: alive ? adm("Отозвать") : adm("Убрать") }}>{alive ? adm("Отозвать") : adm("Убрать")}</DestructiveButton> : undefined}</>} />
     );
@@ -102,7 +113,8 @@ export function AdminClient({ meId, users, invites, models, notices, tz }: { meI
 
   return (
     <KPage title={adm("Администрирование")} sub={`${admCount(users.length, W.user)} · ${admCount(models.length, W.model)}`} testId="admin"
-      desc={adm("Люди и доступ, аналитика работы, объявления и состояние моделей.")}>
+      desc={adm("Люди и доступ, аналитика работы, объявления и состояние моделей.")}
+      topTools={<Button kind="plain" icon="play" onClick={() => setTouring(true)} testId="tour-start">{adm("Тур по админке")}</Button>}>
       <Seg block label={adm("Раздел")} value={tab} onChange={go} testId="admin-tabs" options={[
         { value: 'users', label: adm("Люди"), testId: 'tab-users' }, { value: 'ratings', label: adm("Оценки"), testId: 'tab-ratings' }, { value: 'analytics', label: adm("Аналитика"), testId: 'tab-analytics' }, { value: 'models', label: adm("Модели"), testId: 'tab-models' }, { value: 'features', label: adm("Функции"), testId: 'tab-features' }, { value: 'mcp', label: 'MCP', testId: 'tab-mcp' }, { value: 'access', label: adm("Доступ"), testId: 'tab-access' }, { value: 'brand', label: adm("Бренд"), testId: 'tab-brand' }, { value: 'state', label: adm("Состояние"), testId: 'tab-state' },
       ]} />
@@ -190,6 +202,7 @@ export function AdminClient({ meId, users, invites, models, notices, tz }: { meI
         )}
       </Sheet>
       {confirmUi}
+      <AdminTour open={touring} onTab={tourTab} onClose={tourEnd} />
     </KPage>
   );
 }

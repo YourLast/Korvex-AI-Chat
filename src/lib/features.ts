@@ -16,7 +16,7 @@ const DEFS: Record<FeatureId, Def> = {
   automations: { id: 'automations', def: () => process.env.KX_SCHEDULER !== '0' },
   webSearch: { id: 'webSearch', def: () => !!searchConf() },
   compare: { id: 'compare', def: () => true },
-  push: { id: 'push', def: () => true },
+  push: { id: 'push', def: () => process.env.KX_LAN !== '1' },
   code: { id: 'code', def: () => cfg('KX_FEATURE_CODE') === '1', warn: 'code' },
   signup: { id: 'signup', def: () => process.env.ALLOW_SIGNUP === '1' },
 };

@@ -146,14 +146,14 @@ export function SelectRow({ title, value, options, onChange, testId, sub, displa
   );
 }
 
-export function Field({ label, value, onChange, placeholder, type = 'text', multiline, rows = 3, maxLength, min, max, inputMode, autoComplete, invalid, testId, mono, autoFocus, required, minLength, name, id, trailing }: {
+export function Field({ label, value, onChange, placeholder, type = 'text', multiline, rows = 3, maxLength, min, max, inputMode, autoComplete, invalid, testId, mono, autoFocus, required, minLength, name, id, trailing, readOnly }: {
   label: ReactNode; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; multiline?: boolean; rows?: number; maxLength?: number; min?: number; max?: number;
-  inputMode?: 'text' | 'numeric' | 'email' | 'url'; autoComplete?: string; invalid?: boolean; testId?: string; mono?: boolean; autoFocus?: boolean; required?: boolean; minLength?: number; name?: string; id?: string; trailing?: ReactNode;
+  inputMode?: 'text' | 'numeric' | 'email' | 'url'; autoComplete?: string; invalid?: boolean; testId?: string; mono?: boolean; autoFocus?: boolean; required?: boolean; minLength?: number; name?: string; id?: string; trailing?: ReactNode; readOnly?: boolean;
 }) {
   const input = multiline
     ? <textarea value={value} rows={rows} maxLength={maxLength} placeholder={placeholder} onChange={(e) => onChange(e.target.value)} data-testid={testId} autoFocus={autoFocus} required={required} name={name} id={id} />
     : <input type={type} value={value} maxLength={maxLength} min={min} max={max} minLength={minLength} placeholder={placeholder} inputMode={inputMode} autoComplete={autoComplete}
-        onChange={(e) => onChange(e.target.value)} data-testid={testId} autoFocus={autoFocus} required={required} name={name} id={id} />;
+        onChange={(e) => onChange(e.target.value)} data-testid={testId} autoFocus={autoFocus} required={required} name={name} id={id} readOnly={readOnly} />;
   return (
     <label className={`k-field${mono ? ' k-field--mono' : ''}`} data-invalid={invalid || undefined}>
       <span className="k-field-l">{label}</span>
