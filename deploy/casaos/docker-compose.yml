@@ -4,7 +4,7 @@
 name: korvex-ai-chat
 services:
   korvex-ai-chat:
-    image: ghcr.io/yourlast/korvex-ai-chat:0.1.14
+    image: ghcr.io/yourlast/korvex-ai-chat:0.1.15
     restart: unless-stopped
     ports:
       - target: 3000
@@ -152,7 +152,7 @@ x-casaos:
   port_map: "3000"
   scheme: http
   category: AI
-  version: "0.1.14"
+  version: "0.1.15"
   architectures:
     - amd64
     - arm64

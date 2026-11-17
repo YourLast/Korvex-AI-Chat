@@ -1,5 +1,4 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { gunzipSync } from 'node:zlib';
 import { randomUUID } from 'node:crypto';
 import { tmpData } from './helpers';
 import type { MsgView } from '@/lib/types';
@@ -23,17 +22,12 @@ beforeAll(async () => {
 
 describe('jsonz: gzip и ETag', () => {
   const req = (h: Record<string, string> = {}) => new Request('http://x/api/threads', { headers: h });
-  it('большой ответ — gzip, если клиент принимает; маленький и без Accept-Encoding — как есть', async () => {
+  it('сжатие не в маршруте (next 16.4.6 снимает Content-Encoding): тело — сам JSON при любом Accept-Encoding', async () => {
     const { jsonz } = await import('@/lib/api');
     const big = { threads: Array.from({ length: 200 }, (_, i) => ({ id: `t${i}`, title: `Чат номер ${i}` })) };
     const r = jsonz(req({ 'accept-encoding': 'gzip, deflate, br' }), big);
-    expect(r.headers.get('content-encoding')).toBe('gzip');
-    expect(r.headers.get('vary')).toBe('Accept-Encoding');
-    const raw = Buffer.from(await r.arrayBuffer());
-    expect(JSON.parse(gunzipSync(raw).toString())).toEqual(big);
-    expect(raw.length).toBeLessThan(JSON.stringify(big).length / 3);
-    expect(jsonz(req(), big).headers.get('content-encoding')).toBeNull();
-    expect(jsonz(req({ 'accept-encoding': 'gzip' }), { ok: true }).headers.get('content-encoding')).toBeNull();
+    expect(r.headers.get('content-encoding')).toBeNull();
+    expect(await r.json()).toEqual(big);
     expect(await jsonz(req(), { ok: true }, { status: 202 }).json()).toEqual({ ok: true });
   });
   it('ETag: тот же ответ на If-None-Match -> 304 без тела; другой — 200', async () => {

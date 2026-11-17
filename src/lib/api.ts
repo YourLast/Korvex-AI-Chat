@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createHash } from 'node:crypto';
-import { gzipSync } from 'node:zlib';
 import { currentUser, sameOrigin } from './auth';
 import type { User } from './db/schema';
 import { AGENTS_ONLY, canAgents } from './roles';
@@ -10,16 +9,12 @@ export const fail = (status: number, message: string) => NextResponse.json({ err
 
 export function jsonz(req: Request, data: unknown, opts: { status?: number; etag?: boolean } = {}): Response {
   const buf = Buffer.from(JSON.stringify(data));
-  const headers: Record<string, string> = { 'Content-Type': 'application/json', Vary: 'Accept-Encoding' };
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (opts.etag) {
     const tag = `W/"${createHash('sha1').update(buf).digest('base64url').slice(0, 27)}"`;
     headers.ETag = tag;
     headers['Cache-Control'] = 'private, no-cache';
     if ((req.headers.get('if-none-match') ?? '').split(',').some((t) => t.trim() === tag)) return new Response(null, { status: 304, headers });
-  }
-  if (buf.length > 1024 && /\bgzip\b/.test(req.headers.get('accept-encoding') ?? '')) {
-    headers['Content-Encoding'] = 'gzip';
-    return new Response(new Uint8Array(gzipSync(buf, { level: 6 })), { status: opts.status ?? 200, headers });
   }
   return new Response(new Uint8Array(buf), { status: opts.status ?? 200, headers });
 }

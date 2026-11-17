@@ -109,11 +109,11 @@ The Korvex name and logo are trademarks of Korvex (see README).
 | @napi-rs/canvas-linux-arm64-musl | 1.1.0 | MIT | https://www.npmjs.com/package/@napi-rs/canvas-linux-arm64-musl |
 | @napi-rs/canvas-linux-x64-gnu | 1.1.0 | MIT | https://github.com/Brooooooklyn/canvas |
 | @napi-rs/canvas-linux-x64-musl | 1.1.0 | MIT | https://github.com/Brooooooklyn/canvas |
-| @next/env | 16.4.3 | MIT | https://github.com/vercel/next.js |
-| @next/swc-linux-arm64-gnu | 16.4.3 | MIT | https://www.npmjs.com/package/@next/swc-linux-arm64-gnu |
-| @next/swc-linux-arm64-musl | 16.4.3 | MIT | https://www.npmjs.com/package/@next/swc-linux-arm64-musl |
-| @next/swc-linux-x64-gnu | 16.4.3 | MIT | https://github.com/vercel/next.js |
-| @next/swc-linux-x64-musl | 16.4.3 | MIT | https://github.com/vercel/next.js |
+| @next/env | 16.4.6 | MIT | https://github.com/vercel/next.js |
+| @next/swc-linux-arm64-gnu | 16.4.6 | MIT | https://www.npmjs.com/package/@next/swc-linux-arm64-gnu |
+| @next/swc-linux-arm64-musl | 16.4.6 | MIT | https://www.npmjs.com/package/@next/swc-linux-arm64-musl |
+| @next/swc-linux-x64-gnu | 16.4.6 | MIT | https://github.com/vercel/next.js |
+| @next/swc-linux-x64-musl | 16.4.6 | MIT | https://github.com/vercel/next.js |
 | @node-rs/argon2 | 2.2.2 | MIT | https://github.com/napi-rs/node-rs |
 | @node-rs/argon2-linux-arm64-gnu | 2.2.2 | MIT | https://www.npmjs.com/package/@node-rs/argon2-linux-arm64-gnu |
 | @node-rs/argon2-linux-arm64-musl | 2.2.2 | MIT | https://www.npmjs.com/package/@node-rs/argon2-linux-arm64-musl |
@@ -313,7 +313,7 @@ The Korvex name and logo are trademarks of Korvex (see README).
 | ms | 2.1.3 | MIT | https://github.com/vercel/ms |
 | nanoid | 3.3.20 | MIT | https://github.com/ai/nanoid |
 | napi-build-utils | 2.0.0 | MIT | https://github.com/inspiredware/napi-build-utils |
-| next | 16.4.3 | MIT | https://github.com/vercel/next.js |
+| next | 16.4.6 | MIT | https://github.com/vercel/next.js |
 | node-abi | 3.101.0 | MIT | https://github.com/electron/node-abi |
 | node-int64 | 0.4.0 | MIT | https://github.com/broofa/node-int64 |
 | normalize-path | 3.0.0 | MIT | https://github.com/jonschlinkert/normalize-path |

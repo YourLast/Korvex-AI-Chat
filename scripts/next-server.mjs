@@ -24,6 +24,9 @@ let draining = false;
 let inflight = 0;
 const lc = () => globalThis.__kxLifecycle;
 
+const compression = require('next/dist/compiled/compression');
+const gz = compression({ threshold: 1024, filter: (_req, res) => /^application\/json\b/i.test(String(res.getHeader('Content-Type') || '')) });
+
 function serve(req, res) {
   inflight++;
   let done = false;
@@ -31,7 +34,7 @@ function serve(req, res) {
   res.on('close', end);
   res.on('finish', end);
   if (draining) res.setHeader('Connection', 'close');
-  handle(req, res);
+  gz(req, res, () => handle(req, res));
 }
 
 const pub = http.createServer(serve);
