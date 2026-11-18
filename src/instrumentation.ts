@@ -1,5 +1,6 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    (await import('./lib/logTime')).stampConsole();
     const inst = await import('./lib/instance');
     try { inst.startInstance({ adminPort: Number(process.env.KX_ADMIN_PORT) || null }); } catch (e) { console.error('[instance] start', (e as Error).message); }
     process.once('exit', () => inst.markGone());

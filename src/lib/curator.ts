@@ -136,14 +136,16 @@ export function curatorMessages(inp: CuratorInput, lang: 'ru' | 'en' = 'ru'): { 
 }
 
 export type Op = { op: 'add' | 'update' | 'delete'; id: string; section: string; key: string; text: string; sensitive: string; asked: boolean; sure?: boolean };
-export function parseOps(raw: string): Op[] {
+export type ParseFail = 'empty' | 'no_json' | 'bad_json' | 'no_ops';
+export function parseOpsEx(raw: string): { ops: Op[]; fail: ParseFail | null } {
   let s = raw.replace(/<think>[\s\S]*?(<\/think>|$)/gi, '').trim();
+  if (!s) return { ops: [], fail: 'empty' };
   const a = s.indexOf('{'), b = s.lastIndexOf('}');
-  if (a < 0 || b < a) return [];
+  if (a < 0 || b < a) return { ops: [], fail: 'no_json' };
   s = s.slice(a, b + 1);
   let j: { ops?: unknown };
-  try { j = JSON.parse(s); } catch { return []; }
-  if (!Array.isArray(j.ops)) return [];
+  try { j = JSON.parse(s); } catch { return { ops: [], fail: 'bad_json' }; }
+  if (!j || typeof j !== 'object' || !Array.isArray(j.ops)) return { ops: [], fail: 'no_ops' };
   const out: Op[] = [];
   for (const o of j.ops.slice(0, 6)) {
     if (!o || typeof o !== 'object') continue;
@@ -151,8 +153,9 @@ export function parseOps(raw: string): Op[] {
     if (x.op !== 'add' && x.op !== 'update' && x.op !== 'delete') continue;
     out.push({ op: x.op, id: String(x.id ?? ''), section: String(x.section ?? 'facts'), key: String(x.key ?? 'none'), text: String(x.text ?? ''), sensitive: String(x.sensitive ?? 'no'), asked: x.asked === true, sure: x.sure !== false });
   }
-  return out;
+  return { ops: out, fail: null };
 }
+export function parseOps(raw: string): Op[] { return parseOpsEx(raw).ops; }
 
 export type Applied = { op: 'add' | 'update' | 'delete'; text: string; sensitive: boolean; id?: string; maybe?: boolean; confirmed?: boolean; fix?: boolean; section?: string; prev?: { text: string; section: string; sure: number; key?: string | null; origin?: string } | null };
 export type Skipped = { op: string; why: string };
@@ -202,9 +205,9 @@ export function applyOps(userId: string, ops: Op[], refs: Map<string, string>, c
 }
 
 type Task = { key: string; userId: string; threadId: string; messageId: string; userMessageId: string; annotate: string; intro: boolean; tries: number; busy: number; notBefore: number };
-type St = { on: boolean; running: boolean; tasks: Task[]; timer: NodeJS.Timeout | null; done: Set<string>; gateDownUntil: number; stats: { runs: number; changed: number; none: number; fail: number; busy: number; skipped: number; rescued: number } };
+type St = { on: boolean; running: boolean; tasks: Task[]; timer: NodeJS.Timeout | null; done: Set<string>; gateDownUntil: number; stats: { runs: number; changed: number; none: number; fail: number; busy: number; skipped: number; rescued: number; parseFail: number } };
 const g = globalThis as unknown as { __kxCurator?: St };
-const S = (): St => (g.__kxCurator ??= { on: false, running: false, tasks: [], timer: null, done: new Set(), gateDownUntil: 0, stats: { runs: 0, changed: 0, none: 0, fail: 0, busy: 0, skipped: 0, rescued: 0 } });
+const S = (): St => (g.__kxCurator ??= { on: false, running: false, tasks: [], timer: null, done: new Set(), gateDownUntil: 0, stats: { runs: 0, changed: 0, none: 0, fail: 0, busy: 0, skipped: 0, rescued: 0, parseFail: 0 } });
 
 const MODEL = () => process.env.KX_MEMORY_ENGINE_MODEL || gateModel();
 export function curatorUrl(): string {
@@ -288,7 +291,8 @@ async function runTask(t: Task, url: string): Promise<'ok' | 'none' | 'skip' | '
   const t0 = Date.now();
   try {
     const raw = await ask(url, curatorMessages({ rows: inRows, ...turn, profile: profileName(t.userId) }, userLang(t.userId) === 'ru' ? 'ru' : 'en'), ac.signal);
-    const ops = parseOps(raw);
+    const { ops, fail: pf } = parseOpsEx(raw);
+    if (pf) s.stats.parseFail = (s.stats.parseFail || 0) + 1;
     const th2 = db.select({ temporary: schema.threads.temporary }).from(schema.threads).where(eq(schema.threads.id, t.threadId)).get();
     if (!th2 || !memoryAllowed(t.userId, th2)) return 'skip';
     const { applied, skipped } = applyOps(t.userId, ops, refs, { user: turn.user, auto: auto(), threadId: t.threadId, messageId: t.messageId });
@@ -296,7 +300,7 @@ async function runTask(t: Task, url: string): Promise<'ok' | 'none' | 'skip' | '
     if (memoryPrefs(t.userId).auto) { try { refreshWritingProfile(t.userId); } catch {  } }
     s.stats.skipped += skipped.length;
     const maybe = applied.filter((a) => a.maybe).length;
-    console.log(`[memory] chat=${t.threadId} ms=${Date.now() - t0} ops=${ops.length} applied=${applied.length}${maybe ? ` maybe=${maybe}` : ''}${t.intro ? ' intro' : ''}${skipped.length ? ` skipped=${skipped.map((x) => x.why).join(',')}` : ''}`);
+    console.log(`[memory] chat=${t.threadId} ms=${Date.now() - t0} ops=${ops.length} applied=${applied.length}${pf ? ` parse_fail=${pf} (${s.stats.parseFail} из ${s.stats.runs + 1})` : ''}${maybe ? ` maybe=${maybe}` : ''}${t.intro ? ' intro' : ''}${skipped.length ? ` skipped=${skipped.map((x) => x.why).join(',')}` : ''}`);
     if (!applied.length) return 'none';
     const items = itemsOf(t.userId, applied);
     const msg = db.select({ meta: schema.messages.meta }).from(schema.messages).where(eq(schema.messages.id, t.annotate)).get();

@@ -24,6 +24,9 @@ if (!/^https?:\/\/[^\s/]+/.test(base) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(admi
   process.exit(2);
 }
 const root = path.join(path.dirname(new URL(import.meta.url).pathname), '..');
+for (const k of ['DATA_DIR', 'DATABASE_PATH']) {
+  if (process.env[k] && !path.isAbsolute(process.env[k])) { console.error(`${k} — только абсолютный путь (сейчас: ${process.env[k]}); проще: webctl.sh setup …`); process.exit(2); }
+}
 const dir = process.env.DATA_DIR || path.join(root, 'data');
 const file = process.env.DATABASE_PATH || path.join(dir, 'korvex.db');
 fs.mkdirSync(path.dirname(file), { recursive: true });

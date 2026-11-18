@@ -7,4 +7,4 @@
 | [coolify/](coolify/) | Coolify (Docker Compose Empty) | The same stack as CasaOS |
 
 Steps: [docs/DEPLOY.md](../docs/DEPLOY.md#home-servers-casaos-zimaos-unraid-coolify).
-The image tag in these files is the version of this release (`ghcr.io/yourlast/korvex-ai-chat:0.1.18`); Unraid uses `latest`.
+The image tag in these files is the version of this release (`ghcr.io/yourlast/korvex-ai-chat:0.1.19`); Unraid uses `latest`.

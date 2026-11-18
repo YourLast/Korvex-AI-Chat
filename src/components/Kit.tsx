@@ -168,8 +168,29 @@ export function ReadField({ label, value, testId }: { label: ReactNode; value: R
 }
 
 export function Seg<T extends string | number>({ value, options, onChange, label, testId, block }: { value: T; options: Opt<T>[]; onChange: (v: T) => void; label: string; testId?: string; block?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const mark = () => {
+      const l = el.scrollLeft > 2, r = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
+      const v = (l ? 'l' : '') + (r ? 'r' : '');
+      if (v) el.dataset.more = v; else delete el.dataset.more;
+    };
+    mark();
+    el.addEventListener('scroll', mark, { passive: true });
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(mark) : null;
+    ro?.observe(el);
+    return () => { el.removeEventListener('scroll', mark); ro?.disconnect(); };
+  }, []);
+  useEffect(() => {
+    const el = ref.current, b = el?.querySelector<HTMLElement>('[aria-checked="true"]');
+    if (!el || !b || el.scrollWidth <= el.clientWidth) return;
+    const x = b.offsetLeft - (el.clientWidth - b.offsetWidth) / 2;
+    el.scrollTo({ left: Math.max(0, x) });
+  }, [value]);
   return (
-    <div className={`k-seg${block ? ' k-seg--block' : ''}`} role="radiogroup" aria-label={label} data-testid={testId}>
+    <div ref={ref} className={`k-seg${block ? ' k-seg--block' : ''}`} role="radiogroup" aria-label={label} data-testid={testId}>
       {options.map((o) => (
         <button type="button" key={String(o.value)} role="radio" aria-checked={o.value === value} onClick={() => o.value !== value && onChange(o.value)} data-testid={o.testId}>{o.label}</button>
       ))}

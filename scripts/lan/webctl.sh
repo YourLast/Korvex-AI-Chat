@@ -7,6 +7,9 @@
 #   webctl.sh start | ensure                      поднять current, если процесса нет (ensure — для сторожа cron; молчит, когда всё живо)
 #   webctl.sh stop                                SIGTERM процессу (аварийно: идущие ходы сохраняются частично)
 #   webctl.sh status                              версия, pid, здоровье
+#   webctl.sh setup --base http://<адрес> --admin <почта> [--rotate] [--admin-days N]
+#                                                 админ и ссылки (scripts/lan-setup.mjs текущей версии) на БД shared/data; ссылки —
+#                                                 только в secrets/links.txt (0600), в вывод не попадают
 # Раскладка ($KX_WEB_HOME, по умолчанию — папка, где лежит этот webctl.sh; запуск из rel/<sha>/ — на две папки выше): node/ (bin/node), rel/<sha>/, current|prev -> rel/<sha>, shared/{.env.local,
 # models.config.json,web.env,data/}, logs/, run/. Ничего не удаляет (удалять — только решением владельца машины) — старые
 # rel/<sha>, журналы и бэкапы БД копятся; лишнее убирает человек. Процессы снимает только по точному PID из run/.
@@ -98,6 +101,12 @@ case "${1:-status}" in
     echo "$new" > "$R/web.pid"; echo "$ap" > "$R/web.admin_port"
     echo "$(date -u +%FT%TZ) $1 $(basename "$d") pid $new" >> "$L/deploys.log"
     say "поднята $(basename "$d"): pid $new, журнал $log" ;;
+  setup)
+    # путь к БД — абсолютный: node берёт относительный DATA_DIR от физической папки rel/<sha> (не от ссылки current) — БД ушла бы в rel/shared
+    [ -L "$W/current" ] || die "нет current (сначала install + switch)"
+    shift; ex=(--out "$W/secrets/links.txt"); for a in "$@"; do [ "$a" = --out ] && ex=(); done
+    mkdir -p "$W/secrets"; chmod 700 "$W/secrets"
+    ( cd "$(readlink -f "$W/current")" && DATA_DIR="$SH/data" exec "$NODE" scripts/lan-setup.mjs "$@" "${ex[@]}" ) ;;
   stop)
     p=$(cur_pid); alive "$p" || { say "не работает"; exit 0; }
     kill -TERM "$p"; say "SIGTERM $p" ;;
