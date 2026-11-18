@@ -16,6 +16,7 @@ import { SrcChip, WebChips } from './SrcChip';
 import { SRC_MARKER, parseMarker } from '@/lib/srcmark';
 import { WEB_MARKER, outsideCode, webTargets } from '@/lib/webmark';
 import { OUT_PREFIX } from '@/ext/client';
+import { copyText } from '@/lib/clipboard';
 
 const DL_RE = /📎\s*\[([^\]]+)\]\(([^)\s]+)\)(?:\s*\(([^)]+)\))?/g;
 const IMG_MD_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
@@ -118,7 +119,7 @@ function CopyBtn({ text }: { text: string }) {
   const tx = useT();
   const [ok, setOk] = useState(false);
   return (
-    <button type="button" className="icon-btn" aria-label={tx('md.copyCode')} onClick={() => { navigator.clipboard?.writeText(text).then(() => { setOk(true); setTimeout(() => setOk(false), 1200); }); }}>
+    <button type="button" className="icon-btn" aria-label={tx('md.copyCode')} onClick={() => { copyText(text).then((ok) => { if (ok) setOk(true); setTimeout(() => setOk(false), 1200); }); }}>
       <Icon n={ok ? 'check' : 'copy'} sm />
     </button>
   );

@@ -59,6 +59,7 @@ export default {
   'comp.drop': ['Отпустите, чтобы прикрепить файл или картинку', 'Release to attach a file or an image', 'Otpustite da priložite fajl ili sliku'],
   'comp.resend': ['Отправить ещё раз', 'Send again', 'Pošalji ponovo'],
   'comp.rerecord': ['Записать снова', 'Record again', 'Snimi ponovo'],
+  'comp.voiceFile': ['Выбрать аудиофайл', 'Choose an audio file', 'Izaberi audio fajl'],
   'comp.uploading': ['загружаю…', 'uploading…', 'otpremam…'],
   'comp.reading': ['читаю файл…', 'reading the file…', 'čitam fajl…'],
   'comp.tokens': [' · ~{n} ток', ' · ~{n} tokens', ' · ~{n} tokena'],

@@ -31,6 +31,7 @@ import { VOICE_MARKER } from '@/lib/voiceLogic';
 const M = VOICE_MARKER;
 let replies: Array<{ status: number; body: unknown }> = [];
 let calls = 0;
+let lastForm: FormData | null = null;
 const sent: Array<{ text: string }> = [];
 
 function mount() {
@@ -44,8 +45,9 @@ beforeEach(() => {
   ctl.level = { raw: -30, out: -20, gain: 6 }; ctl.fail = null; ctl.started = ctl.stopped = ctl.cancelled = 0;
   replies = []; calls = 0; sent.length = 0;
   localStorage.clear();
-  vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+  vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
     calls++;
+    lastForm = init?.body instanceof FormData ? init.body : null;
     expect(url).toBe('/api/transcribe');
     const r = replies.shift() ?? { status: 200, body: { text: M + 'Сколько позиций на складе?' } };
     return { status: r.status, ok: r.status < 400, json: async () => r.body } as Response;
@@ -262,5 +264,30 @@ describe('ошибки', () => {
     fireEvent.click(screen.getByTestId('voice-retry'));
     await tick(10);
     expect(screen.getByTestId('rec').dataset.phase).toBe('rec');
+  });
+  it('сайт по http: микрофона нет — понятная подсказка и «Выбрать аудиофайл»; файл распознаётся, текст встаёт в поле', async () => {
+    Object.defineProperty(window, 'isSecureContext', { configurable: true, get: () => false });
+    ctl.fail = { name: 'SecurityError' };
+    try {
+      mount();
+      await tapMic();
+      const e = screen.getByTestId('voice-err');
+      expect(e.dataset.kind).toBe('insecure');
+      expect(e.textContent).toContain('Сайт открыт по http');
+      expect(e.textContent).toContain('выберите файл');
+      expect(screen.getByTestId('voice-file').textContent).toBe('Выбрать аудиофайл');
+      expect(screen.queryByTestId('voice-retry')).toBeNull();
+      const inp = screen.getByTestId('voice-file-input') as HTMLInputElement;
+      expect(inp.accept).toContain('audio/*');
+      const f = new File([new Uint8Array(3000)], 'Запись 12.mp3', { type: 'audio/mpeg' });
+      fireEvent.change(inp, { target: { files: [f] } });
+      await tick(800);
+      expect(calls).toBe(1);
+      expect((lastForm?.get('audio') as File).name).toBe('Запись 12.mp3');
+      expect(ctl.started).toBe(0);
+      expect(screen.queryByTestId('voice-err')).toBeNull();
+      expect(input().value).toContain('позиций');
+      expect(sent).toHaveLength(0);
+    } finally { Object.defineProperty(window, 'isSecureContext', { configurable: true, get: () => true }); }
   });
 });

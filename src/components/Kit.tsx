@@ -11,6 +11,7 @@ import { useT } from '@/lib/i18n/react';
 import '@/styles/kit.css';
 import { useBrand } from './BrandCtx';
 import { FOOTER_LINK } from '@/ext/client';
+import { copyText } from '@/lib/clipboard';
 
 
 export function KPage({ title, sub, heading, desc, action, topTools, testId, children }: {
@@ -241,15 +242,11 @@ export function CopyButton({ text, label: label0, testId, kind = 'secondary', bl
   const label = label0 ?? t('common.copy');
   const [ok, setOk] = useState(false);
   const copy = async () => {
-    try { await navigator.clipboard.writeText(text); } catch { fallbackCopy(text); }
+    await copyText(text);
     setOk(true); onCopied?.(); setTimeout(() => setOk(false), 1600);
   };
   if (iconOnly) return <button type="button" className="k-icon-btn" aria-label={ok ? t('common.copied') : label} title={ok ? t('common.copied') : label} onClick={(e) => { e.stopPropagation(); void copy(); }} data-testid={testId}><Icon n={ok ? 'check' : 'copy'} sm /></button>;
   return <Button kind={kind} size={size} block={block} icon={ok ? 'check' : 'copy'} onClick={copy} testId={testId}>{ok ? t('common.copied') : label}</Button>;
-}
-function fallbackCopy(text: string) {
-  const t = document.createElement('textarea'); t.value = text; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select();
-  try { document.execCommand('copy'); } catch {  } t.remove();
 }
 
 

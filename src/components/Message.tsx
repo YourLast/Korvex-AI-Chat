@@ -34,6 +34,7 @@ import { openFile } from '@/lib/fileView';
 import { tokText, useFileTok } from '@/lib/fileTokens';
 import { baseName, dirName, groupByFolder } from '@/lib/upload/paths';
 import { BRAND_WORDS, OUT_PREFIX } from '@/ext/client';
+import { copyText } from '@/lib/clipboard';
 
 export function userError(e: string, lang: Lang = 'ru'): string {
   if (/^\d{3}:/.test(e) || /[a-z]{4,}/i.test(e.replace(BRAND_WORDS, ''))) return tr(lang, 'msg.noReply');
@@ -158,7 +159,7 @@ export function UserTurn({ m, busy, onEdit, onSwitch, onEditStart, marked }: { m
       {!editing && real && (
         <div className="u-acts">
           {onSwitch && <Versions s={m.siblings} onSwitch={onSwitch} />}
-          <button type="button" className="icon-btn" aria-label={tx('msg.copy')} onClick={() => { navigator.clipboard?.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1200); }); }}><Icon n={copied ? 'check' : 'copy'} sm /></button>
+          <button type="button" className="icon-btn" aria-label={tx('msg.copy')} onClick={() => { copyText(text).then((ok) => { if (ok) setCopied(true); setTimeout(() => setCopied(false), 1200); }); }}><Icon n={copied ? 'check' : 'copy'} sm /></button>
           {onEdit && <button type="button" className="icon-btn" aria-label={tx('msg.edit')} disabled={busy} data-testid="edit" onClick={() => { if (onEditStart) { onEditStart(); return; } setDraft(text); setEditing(true); }}><Icon n="edit" sm /></button>}
         </div>
       )}
@@ -283,7 +284,7 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
               <button type="button" className="btn btn--ghost" data-testid="continue" onClick={onContinue}>{tx('msg.continue')}</button>
             )}
             {onSwitch && <Versions s={m.siblings} onSwitch={onSwitch} />}
-            <button type="button" className="icon-btn" aria-label={tx('msg.copy')} onClick={() => { navigator.clipboard?.writeText(stripWebMarks(stripMarkers(m.content, 'plain', tx.lang))).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1200); }); }}>
+            <button type="button" className="icon-btn" aria-label={tx('msg.copy')} onClick={() => { copyText(stripWebMarks(stripMarkers(m.content, 'plain', tx.lang))).then((ok) => { if (ok) setCopied(true); setTimeout(() => setCopied(false), 1200); }); }}>
               <Icon n={copied ? 'check' : 'copy'} sm />
             </button>
             {!readOnly && last && canRegen && <button type="button" className="icon-btn" aria-label={tx('msg.regen')} onClick={onRegenerate} data-testid="regen"><Icon n="retry" sm /></button>}

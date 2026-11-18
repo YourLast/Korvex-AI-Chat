@@ -7,6 +7,7 @@ import { Icon } from './Icon';
 import { InstallGuide } from './InstallGuide';
 import { toast } from './Kit';
 import '@/styles/install.css';
+import { copyText } from '@/lib/clipboard';
 
 const load = (): InstallState => { try { return readInstall(localStorage.getItem(INSTALL_KEY)); } catch { return readInstall(null); } };
 const save = (st: InstallState) => { try { localStorage.setItem(INSTALL_KEY, JSON.stringify(st)); } catch {  } };
@@ -104,7 +105,7 @@ export function InstallPrompt() {
   if (!view || !env) return null;
   const waitOn = left > 0;
   const copyLink = async () => {
-    try { await navigator.clipboard.writeText(window.location.origin + '/'); toast(t('install.copiedLink')); } catch {  }
+    if (await copyText(window.location.origin + '/')) toast(t('install.copiedLink'));
   };
 
   return (

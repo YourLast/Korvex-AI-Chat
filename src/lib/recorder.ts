@@ -1,7 +1,7 @@
 import { Leveler, pickMime, rmsDb } from './voiceLogic';
 
 export type Levels = { raw: number; out: number; gain: number };
-export type Take = { blob: Blob; mime: string; ms: number; rawMax: number; processed: boolean };
+export type Take = { blob: Blob; mime: string; ms: number; rawMax: number; processed: boolean; name?: string  };
 export type Recorder = {
   mime: string;
   processed: boolean;

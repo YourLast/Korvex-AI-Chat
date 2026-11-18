@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState, type PointerEvent as RPointerEvent, type MouseEvent as RMouseEvent } from 'react';
 import { useT } from '@/lib/i18n/react';
 import { buzz, prepareAudio, startRecorder, type Recorder, type Take } from '@/lib/recorder';
-import { CANCEL_PX, HOLD_MS, LAND_MS, MIN_REC_MS, TAIL_MS, envOf, holdState, micError, recError, sttError, type VoiceErr } from '@/lib/voiceLogic';
+import { CANCEL_PX, HOLD_MS, LAND_MS, MIN_REC_MS, TAIL_MS, envOf, holdState, micError, recError, sttError, type VoiceErr, type VoiceAct } from '@/lib/voiceLogic';
 
 export type Phase = 'idle' | 'starting' | 'rec' | 'stt';
 export type Mode = 'pending' | 'tap' | 'hold';
@@ -60,7 +60,7 @@ export function useVoice({ onHeard, getHeight }: { onHeard: (text: string) => vo
     let status = 0, code: string | undefined, text = '';
     try {
       const fd = new FormData();
-      fd.append('audio', t.blob, `voice.${ext(t.mime)}`);
+      fd.append('audio', t.blob, t.name || `voice.${ext(t.mime)}`);
       const r = await fetch('/api/transcribe', { method: 'POST', body: fd, signal: ac.signal });
       status = r.status;
       const j = (await r.json().catch(() => ({}))) as { text?: string; code?: string };
@@ -124,10 +124,19 @@ export function useVoice({ onHeard, getHeight }: { onHeard: (text: string) => vo
     });
   }, [getHeight, reset]);
 
-  const retry = useCallback((a: 'record' | 'resend') => {
+  const retry = useCallback((a: Exclude<VoiceAct, 'file'>) => {
     if (a === 'resend' && take.current) { setErr(null); setLockH(getHeight()); const g = ++gen.current; void send(take.current, g); return; }
     start('tap');
   }, [getHeight, send, start]);
+
+  const sendFile = useCallback((f: File) => {
+    if (phaseR.current !== 'idle') return;
+    setErr(null); setDx(0); setLockH(getHeight());
+    const t: Take = { blob: f, mime: f.type, ms: 0, rawMax: 0, processed: false, name: f.name };
+    take.current = t;
+    const g = ++gen.current;
+    void send(t, g);
+  }, [getHeight, send]);
 
   const cancelR = useRef(cancel); cancelR.current = cancel;
   const ptr = useRef<null | { move: (e: PointerEvent) => void; up: (e: PointerEvent) => void; pc: (e: PointerEvent) => void; end: () => void }>(null);
@@ -209,6 +218,6 @@ export function useVoice({ onHeard, getHeight }: { onHeard: (text: string) => vo
     return () => window.removeEventListener('keydown', k);
   }, [phase, cancel]);
 
-  return { phase, mode, dx, err, setErr, lockH, startedAt, landing, rec, start, finish, cancel, retry, micProps, byKey, cancelPx: CANCEL_PX };
+  return { phase, mode, dx, err, setErr, lockH, startedAt, landing, rec, start, finish, cancel, retry, sendFile, micProps, byKey, cancelPx: CANCEL_PX };
 }
 export type Voice = ReturnType<typeof useVoice>;

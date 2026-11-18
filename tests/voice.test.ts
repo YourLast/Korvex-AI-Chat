@@ -102,7 +102,7 @@ describe('ошибки по-человечески', () => {
   it('нет микрофона, занят, не https, нет записи в браузере', () => {
     expect(micError({ name: 'NotFoundError' }, desk).kind).toBe('mic-missing');
     expect(micError({ name: 'NotReadableError' }, desk).title).toBe('Микрофон занят');
-    expect(micError({ name: 'NotAllowedError' }, { ...desk, secure: false }).kind).toBe('insecure');
+    expect(micError({ name: 'NotAllowedError' }, { ...desk, secure: false })).toMatchObject({ kind: 'insecure', action: 'file' });
     expect(micError({ name: 'NoMediaRecorder' }, desk).kind).toBe('unsupported');
     expect(micError(new Error('?'), desk).action).toBe('record');
   });

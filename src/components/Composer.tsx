@@ -222,6 +222,7 @@ export const Composer = forwardRef<ComposerHandle, {
     landed.current = true;
   }, [onSend]);
   const v = useVoice({ onHeard, getHeight: () => box.current?.offsetHeight ?? 0 });
+  const audioIn = useRef<HTMLInputElement>(null);
   const voice = v.phase !== 'idle';
   const revealing = !!reveal && reveal.full === text && !voice;
   useEffect(() => { if (voice) setReveal(null); }, [voice]);
@@ -328,11 +329,17 @@ export const Composer = forwardRef<ComposerHandle, {
         <div className="err-box vx-err" role="alert" data-testid="voice-err" data-kind={v.err.kind}>
           <Icon n="alert" sm />
           <span className="vx-err-t"><b>{v.err.title}</b>{v.err.hint && <small>{v.err.hint}</small>}</span>
-          {v.err.action && (
-            <button type="button" className="btn vx-err-act" data-testid="voice-retry" onClick={() => { const a = v.err!.action!; v.retry(a); }}>
+          {v.err.action === 'file' ? (
+            <button type="button" className="btn vx-err-act" data-testid="voice-file" onClick={() => audioIn.current?.click()}>
+              <Icon n="clip" sm />{tx('comp.voiceFile')}
+            </button>
+          ) : v.err.action && (
+            <button type="button" className="btn vx-err-act" data-testid="voice-retry" onClick={() => { const a = v.err!.action as 'record' | 'resend'; v.retry(a); }}>
               <Icon n={v.err.action === 'resend' ? 'retry' : 'mic'} sm />{v.err.action === 'resend' ? tx('comp.resend') : tx('comp.rerecord')}
             </button>
           )}
+          {}
+          {v.err.action === 'file' && <input ref={audioIn} type="file" hidden accept="audio/*,.mp3,.m4a,.ogg,.opus,.oga,.wav,.webm,.flac,.aac,.amr" data-testid="voice-file-input" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) v.sendFile(f); }} />}
           <button type="button" className="icon-btn vx-err-x" aria-label={tx('common.close')} onClick={() => v.setErr(null)}><Icon n="x" sm /></button>
         </div>
       )}

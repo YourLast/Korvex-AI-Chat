@@ -138,7 +138,8 @@ export function holdProgress(dx: number, cancelPx = CANCEL_PX): number {
 }
 
 export type VoiceErrKind = 'mic-denied' | 'mic-missing' | 'mic-busy' | 'insecure' | 'unsupported' | 'stt-down' | 'stt-bad' | 'empty' | 'too-short' | 'too-big' | 'no-audio';
-export type VoiceErr = { kind: VoiceErrKind; title: string; hint?: string; action?: 'record' | 'resend' };
+export type VoiceErr = { kind: VoiceErrKind; title: string; hint?: string; action?: VoiceAct };
+export type VoiceAct = 'record' | 'resend' | 'file';
 export type Env = { ios: boolean; standalone: boolean; secure: boolean; mac?: boolean };
 
 export function envOf(ua: string, standalone: boolean, secure: boolean, touchMac = false): Env {
@@ -148,7 +149,7 @@ export function envOf(ua: string, standalone: boolean, secure: boolean, touchMac
 export function micError(e: unknown, env: Env, lang: Lang = 'ru'): VoiceErr {
   const name = (e as { name?: string } | null)?.name ?? '';
   const t = (k: string) => tr(lang, dk(`tools.voice.${k}`));
-  if (!env.secure) return { kind: 'insecure', title: t('insecure') };
+  if (!env.secure) return { kind: 'insecure', title: t('insecure'), hint: t('insecureHint'), action: 'file' };
   if (name === 'NotAllowedError' || name === 'PermissionDeniedError' || name === 'SecurityError') {
     const hint = env.ios
       ? env.standalone ? t('deniedIosApp') : t('deniedIosTab')

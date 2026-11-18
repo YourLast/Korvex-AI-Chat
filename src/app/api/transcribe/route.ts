@@ -13,6 +13,14 @@ const MAX_BYTES = 40 * 1024 * 1024;
 const err = (status: number, code: string, message: string) => json({ error: message, code }, status);
 const log = (s: string) => console.log(`[stt] ${s}`);
 
+const KNOWN = new Set(['webm', 'ogg', 'oga', 'opus', 'm4a', 'mp4', 'mp3', 'wav', 'flac', 'aac', 'amr', 'mpga', 'mpeg']);
+function audioExt(f: Blob): string {
+  const n = f instanceof File ? (f.name.split('.').pop() ?? '').toLowerCase() : '';
+  if (KNOWN.has(n)) return n;
+  const t = f.type;
+  return t.includes('mp4') || t.includes('m4a') ? 'm4a' : t.includes('ogg') ? 'ogg' : t.includes('mpeg') || t.includes('mp3') ? 'mp3' : t.includes('wav') ? 'wav' : t.includes('flac') ? 'flac' : 'webm';
+}
+
 export async function POST(req: Request) {
   const a = await authed(req, true);
   if ('res' in a) return a.res;
@@ -33,7 +41,7 @@ export async function POST(req: Request) {
     }
   }
   const fd = new FormData();
-  const ext = f.type.includes('mp4') ? 'm4a' : f.type.includes('ogg') ? 'ogg' : 'webm';
+  const ext = audioExt(f);
   fd.append('file', f, `voice.${ext}`);
   fd.append('model', cfg('STT_MODEL', 'whisper-1'));
   const lang = cfg('STT_LANGUAGE');
