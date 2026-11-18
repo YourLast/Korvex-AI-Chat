@@ -1,3 +1,4 @@
+import { MIN_MEANINGFUL, stripService } from '../placeholders';
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
@@ -371,9 +372,18 @@ registerTool<{ chat?: string; query?: string; limit?: number }>({
     const shown = all.slice(0, limit);
     ctx.emit({ detail: step(ctx.userId, 'step.filesN', { n: all.length }) });
     if (L === 'en') {
+      if (!shown.length && a.query && !a.chat) {
+        const here = up.filter((f) => f.threadId === ctx.threadId);
+        if (here.length) return { content: `Nothing matches ${q(a.query, L)} in file names. Files of this chat:\n` + here.map((f) => `- ${f.name}: ${kb(f.size, L)}, ${SRC_EN[f.source]}, ${fmtDate(f.at, L)} (id ${f.id})`).join('\n') };
+      }
       if (!shown.length) return { content: a.chat || a.query ? 'No such files.' : 'The user\'s chats have no files.' };
       return { content: `Files (${shown.length}${all.length > shown.length ? ` of ${all.length}` : ''}, newest first):\n` + shown.map((f) =>
         `- ${f.name}: ${kb(f.size, L)}, ${SRC_EN[f.source]}, ${f.threadId ? `chat ${q(titles.get(f.threadId) ?? '?', L)}` : 'organization library'}${f.threadId === ctx.threadId ? ' (this chat)' : ''}, ${fmtDate(f.at, L)} (id ${f.id})`).join('\n') };
+    }
+    if (!shown.length && a.query && !a.chat) {
+      const here = up.filter((f) => f.threadId === ctx.threadId);
+      console.log(`[tools] files_list: по словам ничего, файлов этого чата ${here.length}`);
+      if (here.length) return { content: `По словам ${q(a.query)} в именах файлов ничего нет. Файлы этого чата:\n` + here.map((f) => `- ${f.name} — ${kb(f.size)}, ${SRC[f.source]}, ${fmtDate(f.at)} (id ${f.id})`).join('\n') };
     }
     if (!shown.length) return { content: a.chat || a.query ? 'Таких файлов нет.' : 'В чатах пользователя файлов нет.' };
     return { content: `Файлы (${shown.length}${all.length > shown.length ? ` из ${all.length}` : ''}, новые первыми):\n` + shown.map((f) =>
@@ -404,6 +414,31 @@ function cloudFile(userId: string, id: string): { name: string; mime: string; si
   return { name: f.name, mime: f.mime, size: f.size, threadId: f.threadId, data, text: async () => f.text, row: f };
 }
 
+export function resolveFileRef(userId: string, threadId: string | null, ref0: string): string | null {
+  const ref = ref0.trim().replace(/^["'«]|["'»]$/g, '');
+  if (!ref) return null;
+  if (ref.startsWith('out:') || cloudFile(userId, ref)) return ref;
+  const db = getDb();
+  const mine = db.select({ id: schema.files.id, name: schema.files.name, threadId: schema.files.threadId, at: schema.files.createdAt }).from(schema.files).where(eq(schema.files.userId, userId)).all();
+  const here = threadId ? mine.filter((f) => f.threadId === threadId) : [];
+  const n = /^(?:source\s*|файл\s*|#)?(\d{1,2})$/iu.exec(ref);
+  if (n && threadId) {
+    const msgs = db.select({ meta: schema.messages.meta, seq: schema.messages.seq }).from(schema.messages).where(and(eq(schema.messages.threadId, threadId), eq(schema.messages.role, 'user'))).all()
+      .sort((a, b) => b.seq - a.seq);
+    for (const m of msgs) {
+      const ids = (m.meta as { fileIds?: string[] } | null)?.fileIds ?? [];
+      if (ids.length) { const id = ids[Number(n[1]) - 1]; return id && here.some((f) => f.id === id) ? id : null; }
+    }
+  }
+  const low = (x: string) => x.toLowerCase().replace(/ё/g, 'е').trim();
+  const stem = (x: string) => low(x).replace(/\.[a-z0-9]{1,5}$/i, '');
+  for (const pool of [here, mine.sort((a, b) => b.at - a.at)]) {
+    const hit = pool.find((f) => f.name === ref) ?? pool.find((f) => low(f.name) === low(ref)) ?? pool.find((f) => stem(f.name) === stem(ref));
+    if (hit) return hit.id;
+  }
+  return null;
+}
+
 registerTool<{ id: string; part?: number; attach?: boolean }>({
   name: 'files_get', kind: 'file',
   description: 'Get a file by id: text (part=N if long) and a copy attached here — give its link, do not recreate the file.',
@@ -412,8 +447,15 @@ registerTool<{ id: string; part?: number; attach?: boolean }>({
   title: (a, c) => { const f = c ? cloudFile(c.userId, String(a.id ?? '').trim()) : null; return f ? step(c?.userId, 'step.fileTake', { q: f.name }) : step(c?.userId, 'step.fileTakeCloud'); },
   run: async (a, ctx) => {
     const L = mLang(ctx.userId);
-    const f = cloudFile(ctx.userId, String(a.id ?? '').trim());
-    if (!f) return { content: m(L, `Файла с id ${q(String(a.id))} нет. Посмотри files_list.`, `There is no file with id ${q(String(a.id), L)}. See files_list.`), error: true };
+    const rid = resolveFileRef(ctx.userId, ctx.threadId, String(a.id ?? ''));
+    const f = rid ? cloudFile(ctx.userId, rid) : null;
+    if (rid && rid !== String(a.id ?? '').trim()) console.log(`[tools] files_get: ссылка не id — нашёл по ${/^\D*\d{1,2}$/.test(String(a.id)) ? 'номеру источника' : 'имени'}`);
+    if (!f) {
+      console.log(`[tools] files_get: файл не найден (ссылка ${/^[0-9a-f-]{36}$/.test(String(a.id ?? '')) ? 'uuid' : `не uuid, ${String(a.id ?? '').length} зн.`})`);
+      const here = getDb().select({ id: schema.files.id, name: schema.files.name }).from(schema.files).where(and(eq(schema.files.userId, ctx.userId), eq(schema.files.threadId, ctx.threadId))).all();
+      const list = here.map((x) => `${x.name} (id ${x.id})`).join('; ');
+      return { content: m(L, `Файла с id ${q(String(a.id))} нет.${list ? ` Файлы этого чата: ${list}.` : ' Посмотри files_list.'}`, `There is no file with id ${q(String(a.id), L)}.${list ? ` Files of this chat: ${list}.` : ' See files_list.'}`), error: true };
+    }
     ctx.emit({ title: step(ctx.userId, 'step.fileTake', { q: f.name }) });
     const attach = a.attach ?? f.threadId !== ctx.threadId;
     const atts = [];
@@ -432,7 +474,10 @@ registerTool<{ id: string; part?: number; attach?: boolean }>({
     const chunk = text.slice((part - 1) * FILE_PART, part * FILE_PART);
     const ul = uiLang(ctx.userId) === 'ru' ? 'ru' : 'en';
     ctx.emit({ detail: !text ? step(ctx.userId, 'step.noText') : parts > 1 ? step(ctx.userId, 'step.textPart', { size: kb(Buffer.byteLength(text), ul), p: part, n: parts }) : step(ctx.userId, 'step.textSize', { size: kb(Buffer.byteLength(text), ul) }) });
-    if (L === 'en') return { content: `File ${q(f.name, L)}, ${kb(f.size, L)}.${link}\n${text ? `${parts > 1 ? `Part ${part} of ${parts}:\n` : 'Text:\n'}${chunk}` : 'No text was extracted from the file.'}`, attachments: atts };
-    return { content: `Файл ${q(f.name)}, ${kb(f.size)}.${link}\n${text ? `${parts > 1 ? `Часть ${part} из ${parts}:\n` : 'Текст:\n'}${chunk}` : 'Текст из файла не извлечён.'}`, attachments: atts };
+    const bare = !text.trim() || (/не распознан|не прочитан|без текстового слоя|ожидает распознавания|рисунок не описан/u.test(text) && (stripService(text).match(/[\p{L}\p{N}]/gu) ?? []).length < MIN_MEANINGFUL);
+    const inMsg = bare && !!f.row && f.threadId === ctx.threadId;
+    if (inMsg) console.log('[tools] files_get: текста у инструмента нет — файл в сообщении этого чата');
+    if (L === 'en') return { content: `File ${q(f.name, L)}, ${kb(f.size, L)}.${link}\n${inMsg ? 'The tool keeps no text of this file (scans or images). It is attached to a message of this chat: its content is in the request above, as the server read it; rely on that.' : text ? `${parts > 1 ? `Part ${part} of ${parts}:\n` : 'Text:\n'}${chunk}` : 'No text was extracted from the file.'}`, attachments: atts };
+    return { content: `Файл ${q(f.name)}, ${kb(f.size)}.${link}\n${inMsg ? 'Текста этого файла у инструмента нет (сканы или картинки). Файл приложен к сообщению этого чата: его содержимое — в запросе выше, как прочитал серв; опирайся на него.' : text ? `${parts > 1 ? `Часть ${part} из ${parts}:\n` : 'Текст:\n'}${chunk}` : 'Текст из файла не извлечён.'}`, attachments: atts };
   },
 });
