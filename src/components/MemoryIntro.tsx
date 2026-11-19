@@ -108,7 +108,7 @@ export function MemoryIntro({ open, onClose, again = false }: { open: boolean; o
     <div className="mi-list" ref={setList} onScroll={onScroll} data-testid="intro-list">
       <div className="mi-feed">
         {off ? <p className="mi-note">{t('tools.memset.introOff')}</p> : null}
-        {!off && !done && prog && msgs.length > 0 && (prog.tail || prog.left > 0) && <div className="mi-prog" data-testid="intro-progress" aria-live="polite">{prog.tail ? t('tools.memset.introTail') : prog.left === 1 ? t('tools.memset.introLast') : t('tools.memset.introLeft', { n: prog.left })}</div>}
+        {!off && !done && prog && msgs.length > 0 && (prog.tail || prog.left > 0) && <div className="mi-prog-bar"><div className="mi-prog" key={prog.tail ? 'tail' : prog.left} data-testid="intro-progress" aria-live="polite">{prog.tail ? t('tools.memset.introTail') : prog.left === 1 ? t('tools.memset.introLast') : t('tools.memset.introLeft', { n: prog.left })}</div></div>}
         {msgs.map((m) => m.role === 'user' ? (
           <div key={m.id} className="mi-u" data-testid="intro-user">
             <UserTurn m={m} />

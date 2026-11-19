@@ -768,5 +768,11 @@ a.acct-item { text-decoration: none; }
 
 .md .lnk-act { display: inline-flex; align-items: center; gap: 2px; padding: 1px 6px 1px 10px; margin: 0 1px; border: 1px solid var(--line-3); border-radius: 999px;
   background: var(--surface-2, rgba(255,255,255,.06)); color: var(--text-strong); font-weight: var(--fw-medium, 500); text-decoration: none; line-height: 1.5; white-space: nowrap; vertical-align: baseline; }
+.md .lnk-act { transition: background-color 150ms var(--ease), border-color 150ms var(--ease), transform 150ms var(--ease-out); animation: iiv-swap 260ms var(--ease-out) both; }
 .md .lnk-act:hover { background: var(--surface-3, rgba(255,255,255,.1)); border-color: var(--text-2); }
+.md .lnk-act:active { transform: scale(.97); }
+.md .lnk-act .i { transition: transform 150ms var(--ease-out); }
+@media (hover: hover) { .md .lnk-act:hover .i { transform: translateX(2px); } }
+@keyframes iiv-swap { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .md .lnk-act, .md .lnk-act .i { transition: none; animation: none; } .md .lnk-act:active { transform: none; } }
 .md .lnk-act:focus-visible { outline: 2px solid var(--focus, var(--text-strong)); outline-offset: 2px; }

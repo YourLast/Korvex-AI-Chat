@@ -528,7 +528,7 @@ export function WorkFeed({ m, onLive, onDecide, askInBar }: { m: WorkMsg; onLive
   const sum = summaryLine(items, ms, (x) => fmtDur(x, t.lang), t.lang);
   const low = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
   const open = view !== 'line';
-  const endPose: HmPose | null = working ? null : failed ? 'error' : stopped ? 'stop' : errs ? 'error' : 'check';
+  const endPose: HmPose | null = working ? null : failed ? 'error' : stopped ? 'stop' : errs ? 'error' : null;
   return (
     <section ref={sec} className={`wk${working ? ' wk--live' : ''}${open ? ' is-open' : ''}${view === 'window' ? ' is-win' : ''}`} data-testid="reasoning" data-work="" data-view={view} aria-label={t('work.title')}>
       <button type="button" className="wk-sum" aria-expanded={open} onClick={tap} data-testid="work-summary">

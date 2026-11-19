@@ -21,18 +21,18 @@ describe('знак Korvex в шапке ответа', () => {
     expect(h).toMatch(/<b class="wk-shim">Думает<\/b>/);
     expect(h).not.toContain('class="wk-dot"');
   });
-  it('мысли кончились, идёт ответ / ответ готов: знак не live, блика нет; поза хода — галочка (и со шагами тоже: знак тот же, без отдельной иконки)', () => {
+  it('мысли кончились, идёт ответ / ответ готов: знак не live, блика нет; удачный ход — без позы, просто блик (и со шагами тоже: знак тот же, без отдельной иконки)', () => {
     const answering = html(msg({ streaming: true, content: 'Вот', phase: 'answer' }));
     expect(answering).toContain('class="tm hm"');
     expect(answering).not.toContain('is-live');
     expect(answering).not.toContain('wk-shim');
-    expect(answering).toContain('data-end="check"');
+    expect(answering).not.toContain('data-end=');
     const done = html(msg({ content: 'Готово.' }));
     expect(done).toContain('class="tm hm"');
     expect(done).not.toContain('is-live');
     const steps = html(msg({ content: 'Готово.', reasoning: 'Сделаю файл.\n\n▸ bash: ls -la\n    итого\n[найдено: 3 источника]\n' }));
     expect(steps).toContain('class="tm hm"');
-    expect(steps).toContain('data-end="check"');
+    expect(steps).not.toContain('data-end=');
     expect(steps).not.toContain('#i-check');
   });
   it('ошибка и «остановлено» — свои позы (знак тот же; разметка с сервера — искра, позу проигрывает клиент на конце хода)', () => {

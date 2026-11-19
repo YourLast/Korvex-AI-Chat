@@ -122,7 +122,7 @@ describe('отрисовка: сводка и строка шага', () => {
     const stopped = sum(done({ meta: { durationMs: 41000, stopped: true } }));
     expect(stopped).toContain('Остановлено');
     expect(stopped).toContain('data-end="stop"');
-    expect(sum(done())).toContain('data-end="check"');
+    expect(sum(done())).not.toContain('data-end=');
   });
   it('строка упавшего и потом удавшегося шага: приглушённая пометка, не красная, без слова «ошибка»', () => {
     const [bad] = allSteps(buildFeed(FAILED_THEN_OK, [], false, true, 'ru', true));
