@@ -125,6 +125,30 @@ describe('запоминание по моделям (localStorage в try/catch)
     st.raw.set(PREF_KEY, JSON.stringify({ model: 'nope', levels: { beta: 'max', alpha: 7, ghost: 'on' } }));
     expect(readPrefs(models, st)).toEqual({ model: 'alpha', levels: { beta: 'on' } });
   });
+  it('сброс 19.11: запомненный medium у Alpha (старое значение по умолчанию) убирается один раз, берется xhigh', () => {
+    expect(alpha.defaultLevel).toBe('xhigh');
+    const st = mem();
+    st.raw.set(PREF_KEY, JSON.stringify({ model: 'alpha', levels: { alpha: 'medium', beta: 'on' } }));
+    const p = readPrefs(models, st);
+    expect(p.levels).toEqual({ beta: 'on' });
+    expect(selFromPrefs(models, p)).toEqual({ modelId: 'alpha', levelId: 'xhigh' });
+    expect(JSON.parse(st.raw.get(PREF_KEY)!).reset).toBe(1);
+    rememberLevel(models, { modelId: 'alpha', levelId: 'medium' }, true, st);
+    expect(selFromPrefs(models, readPrefs(models, st))).toEqual({ modelId: 'alpha', levelId: 'medium' });
+    expect(selFromPrefs(models, readPrefs(models, st))).toEqual({ modelId: 'alpha', levelId: 'medium' });
+  });
+  it('сброс 19.11 не трогает выбранные человеком low/off/max и другие модели', () => {
+    for (const lv of ['low', 'off', 'max']) {
+      const st = mem();
+      st.raw.set(PREF_KEY, JSON.stringify({ model: 'alpha', levels: { alpha: lv } }));
+      expect(selFromPrefs(models, readPrefs(models, st))).toEqual({ modelId: 'alpha', levelId: lv });
+    }
+    const st = mem();
+    st.raw.set(PREF_KEY, JSON.stringify({ model: 'alpha', levels: { alpha: 'medium' }, reset: 1 }));
+    expect(readPrefs(models, st).levels).toEqual({ alpha: 'medium' });
+    rememberLevel(models.map(({ levelReset, ...m }) => (void levelReset, m)), { modelId: 'beta', levelId: 'on' }, false, st);
+    expect(readPrefs(models, st).levels).toEqual({ alpha: 'medium', beta: 'on' });
+  });
   it('старый ключ kx.sel переносится', () => {
     const st = mem();
     st.raw.set('kx.sel', JSON.stringify({ modelId: 'beta', levelId: 'on' }));

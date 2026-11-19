@@ -19,6 +19,7 @@ export type ModelCfg = {
   baseUrl: string;
   maxConcurrent: number;
   defaultLevel: string;
+  levelReset?: { n: number; from: string };
   levels: Level[];
   systemPromptFile?: string;
   extract?: boolean;
@@ -42,7 +43,7 @@ export type ModelCfg = {
   roles?: string[];
 };
 export type QueueCfg = { maxConcurrent: number };
-export type PublicModel = Pick<ModelCfg, 'id' | 'name' | 'fullName' | 'blurb' | 'tagline' | 'images' | 'defaultLevel' | 'variantOf' | 'variantName' | 'variantHint'> & { levels: Pick<Level, 'id' | 'label' | 'hint'>[] };
+export type PublicModel = Pick<ModelCfg, 'id' | 'name' | 'fullName' | 'blurb' | 'tagline' | 'images' | 'defaultLevel' | 'levelReset' | 'variantOf' | 'variantName' | 'variantHint'> & { levels: Pick<Level, 'id' | 'label' | 'hint'>[] };
 
 let cache: ModelCfg[] | null = null;
 let queuesCache: Record<string, QueueCfg> = {};
@@ -155,6 +156,7 @@ export function publicModels(role: string = 'user', lang?: Lang, access?: string
     tagline: loc(lang, `model.tag.${m.id}`, m.tagline),
     images: m.images !== false,
     defaultLevel: m.defaultLevel,
+    ...(m.levelReset ? { levelReset: m.levelReset } : {}),
     ...(m.variantOf ? { variantOf: m.variantOf } : {}),
     ...(m.variantName ? { variantName: loc(lang, `model.variant.${m.id}`, m.variantName) } : {}),
     ...(m.variantHint ? { variantHint: loc(lang, `model.variantHint.${m.id}`, m.variantHint) } : {}),

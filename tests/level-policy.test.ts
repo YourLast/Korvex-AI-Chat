@@ -72,10 +72,11 @@ describe('чистые правила уровней', () => {
 });
 
 describe('конфигурация и выбор', () => {
-  it('уровень Alpha по умолчанию — medium; новый выбор берёт его', () => {
+  it('уровень Alpha по умолчанию — xhigh; новый выбор берёт его', () => {
     const e = M.getModel('alpha')!;
-    expect(e.defaultLevel).toBe('medium');
-    expect(normalizeSel(M.publicModels(), null)).toEqual({ modelId: 'alpha', levelId: 'medium' });
+    expect(e.defaultLevel).toBe('xhigh');
+    expect(normalizeSel(M.publicModels(), null)).toEqual({ modelId: 'alpha', levelId: 'xhigh' });
+    expect(M.publicModels().find((m) => m.id === 'alpha')!.levelReset).toEqual({ n: 1, from: 'medium' });
   });
   it('обычному пользователю max не отдаётся в список; администратору — отдаётся', () => {
     expect(P.modelsFor('user').find((m) => m.id === 'alpha')!.levels.map((l) => l.id)).toEqual(['off', 'low', 'medium', 'xhigh']);

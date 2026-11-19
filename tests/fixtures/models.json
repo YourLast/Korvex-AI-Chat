@@ -16,7 +16,11 @@
       "extractTimeoutSec": 900,
       "unavailableText": "Alpha временно недоступна, попробуйте чуть позже.",
       "maxConcurrent": 5,
-      "defaultLevel": "medium",
+      "defaultLevel": "xhigh",
+      "levelReset": {
+        "n": 1,
+        "from": "medium"
+      },
       "levels": [
         {
           "id": "off",

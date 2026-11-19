@@ -1,6 +1,7 @@
 
 export type LevelLite = { id: string; label: string; hint?: string };
-export type ModelLite = { id: string; name: string; defaultLevel: string; levels: LevelLite[]; variantOf?: string; variantName?: string };
+export type ModelLite = { id: string; name: string; defaultLevel: string; levels: LevelLite[]; variantOf?: string; variantName?: string; levelReset?: LevelReset };
+export type LevelReset = { n: number; from: string };
 export type Sel = { modelId: string; levelId: string };
 
 const RANK: Record<string, number> = { off: 0, none: 0, minimal: 0, low: 1, medium: 2, on: 3, high: 3, xhigh: 3, max: 4 };
@@ -118,6 +119,11 @@ const OLD_KEY = 'kx.sel';
 export type Prefs = { model: string; levels: Record<string, string>; fam?: Record<string, string> };
 type Store = Pick<Storage, 'getItem' | 'setItem'>;
 
+const resetN = (models: ModelLite[]) => Math.max(0, ...models.map((m) => m.levelReset?.n ?? 0));
+function applyResets(models: ModelLite[], levels: Record<string, string>, done: number) {
+  for (const m of models) if (m.levelReset && m.levelReset.n > done && levels[m.id] === m.levelReset.from) delete levels[m.id];
+}
+
 function store(): Store | null {
   try { return typeof window === 'undefined' ? null : window.localStorage; } catch { return null; }
 }
@@ -140,16 +146,24 @@ export function readPrefs(models: ModelLite[], st: Store | null = store()): Pref
     if (fm && typeof fm === 'object') {
       for (const [k, v] of Object.entries(fm as Record<string, unknown>)) if (typeof v === 'string' && familyOf(models, v) === k) (out.fam ??= {})[k] = v;
     }
+    const done = (raw as { reset?: unknown }).reset;
+    if (typeof done !== 'number' || done < resetN(models)) { applyResets(models, out.levels, typeof done === 'number' ? done : 0); writePrefs(out, st, models); }
   } else if (old && typeof old === 'object') {
     const o = old as { modelId?: unknown; levelId?: unknown };
     const m = models.find((x) => x.id === o.modelId);
     if (m && typeof o.levelId === 'string') { out.model = m.id; out.levels[m.id] = hasLevel(m, o.levelId) ? o.levelId : nearestLevel(m, o.levelId); }
+    applyResets(models, out.levels, 0);
   }
   return out;
 }
 
-export function writePrefs(p: Prefs, st: Store | null = store()) {
-  try { st?.setItem(PREF_KEY, JSON.stringify(p)); } catch {  }
+export function writePrefs(p: Prefs, st: Store | null = store(), models?: ModelLite[]) {
+  try {
+    let had = 0;
+    try { const r = JSON.parse(st?.getItem(PREF_KEY) || 'null')?.reset; if (typeof r === 'number') had = r; } catch {  }
+    const n = Math.max(had, models ? resetN(models) : 0);
+    st?.setItem(PREF_KEY, JSON.stringify(n ? { ...p, reset: n } : p));
+  } catch {  }
 }
 
 export function rememberLevel(models: ModelLite[], s: Sel, asCurrent: boolean, st: Store | null = store()): Prefs {
@@ -157,7 +171,7 @@ export function rememberLevel(models: ModelLite[], s: Sel, asCurrent: boolean, s
   const next: Prefs = { model: asCurrent ? s.modelId : p.model, levels: { ...p.levels, [s.modelId]: s.levelId } };
   const f = familyOf(models, s.modelId);
   if (p.fam || families(models).find((x) => x.id === f)!.variants.length > 1) next.fam = { ...p.fam, [f]: s.modelId };
-  writePrefs(next, st);
+  writePrefs(next, st, models);
   return next;
 }
 
