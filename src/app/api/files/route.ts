@@ -8,6 +8,7 @@ import { cleanRelPath, isJunkPath, rootOf, type Origin } from '@/lib/upload/path
 import { consumeStaged, stagedFile, sweepStaging } from '@/lib/upload/staging';
 import { FEATURE_OFF, featureFor } from '@/lib/features';
 import { readForm } from '@/lib/formData';
+import { closeUpload, openUpload } from '@/lib/uploadProgress';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -55,10 +56,13 @@ export async function POST(req: Request) {
   const w = Number(form.get('w')) || undefined, h = Number(form.get('h')) || undefined;
   const model = form.get('model');
   const modelId = typeof model === 'string' ? model.slice(0, 64) : null;
+  const uploadId = sniffImage(buf) ? null : openUpload(form.get('pid'), a.user.id);
   const run = async () => {
-    const r = await storeUpload({ userId: a.user.id, name, buf, mime, origin, folderId, modelId, w, h });
-    if (r.status === 200 && staged) consumeStaged(staged.sid, staged.n);
-    return r;
+    try {
+      const r = await storeUpload({ userId: a.user.id, name, buf, mime, origin, folderId, modelId, w, h, uploadId });
+      if (r.status === 200 && staged) consumeStaged(staged.sid, staged.n);
+      return r;
+    } finally { closeUpload(uploadId); }
   };
   if (buf.length === 0 || buf.length > MAX_BYTES || sniffImage(buf)) { const r = await run(); return json(r.body, r.status); }
   return lateJson(run);

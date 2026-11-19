@@ -17,6 +17,7 @@ export type StoreIn = {
   folderId?: string | null;
   modelId?: string | null;
   w?: number; h?: number;
+  uploadId?: string | null;
   extraInfo?: Record<string, unknown>;
 };
 export type StoreOut = { status: number; body: Record<string, unknown> & { id?: string; error?: string; docType?: string } };
@@ -41,7 +42,7 @@ export async function storeUpload(p: StoreIn): Promise<StoreOut> {
   }
   const ext = path.extname(name).toLowerCase();
   const safeExt = /^\.[a-z0-9]{1,10}$/.test(ext) ? ext : '';
-  const ex = await ingestDocument(buf, name, p.modelId ?? null);
+  const ex = await ingestDocument(buf, name, p.modelId ?? null, p.uploadId ? { uploadId: p.uploadId } : undefined);
   let text: string, info: Record<string, unknown>;
   if (ex.ok) { text = ex.text; info = ex.info; }
   else if (!OK_EXT.has(ext)) {

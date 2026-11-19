@@ -19,6 +19,7 @@ import { holdState, heldFiles, failedNote, fileErrKind, type FileErrKind, type H
 import type { HeldView } from './HeldTurn';
 import { useFeatures } from './FeaturesCtx';
 import { FootNote } from './FootNote';
+import { newPid, pollProgress } from '@/lib/upload/progress';
 
 export type ComposerHandle = { focus: () => void; setText: (t: string) => void;  cancelHold: (id: string) => void;
    addFiles: (chips: FileChip[]) => void };
@@ -170,10 +171,12 @@ export const Composer = forwardRef<ComposerHandle, {
           fd.append('file', p.blob, p.name); fd.append('w', String(p.w)); fd.append('h', String(p.h));
           patchUp(tmp, (x) => ({ ...x, name: p.name, size: p.blob.size, preview, w: p.w, h: p.h }));
         } else { fd.append('file', f0); if (modelId) fd.append('model', modelId); }
+        let stopProg: (() => void) | null = null;
+        if (!isImg) { const pid = newPid(); fd.append('pid', pid); stopProg = pollProgress(pid, (p) => patchUp(tmp, (x) => (x.status === 'uploading' ? { ...x, prog: p } : x))); }
         let kind: FileErrKind = 'net';
         try {
-          const r = await fetch('/api/files', { method: 'POST', body: fd });
-          const j = await r.json().catch(() => ({} as { error?: string }));
+          const r = await fetch('/api/files', { method: 'POST', body: fd }).catch((e) => { stopProg?.(); throw e; });
+          const j = await r.json().catch(() => ({} as { error?: string })).finally(() => stopProg?.());
           if (!r.ok || j.error) { kind = fileErrKind(r.status, String(j.error ?? '')); throw new Error(j.error ? errText(tx.lang, j.error) : `HTTP ${r.status}`); }
           patchUp(tmp, (x) => ({ ...x, status: 'ready', chip: { id: j.id, name: j.name, size: j.size, mime: j.mime, tokens: j.tokens, info: j.info } }));
         } catch (e) {

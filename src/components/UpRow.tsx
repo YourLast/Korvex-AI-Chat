@@ -11,9 +11,11 @@ import { openFile } from '@/lib/fileView';
 import { tokText, useFileTok } from '@/lib/fileTokens';
 import { viewKind } from '@/lib/viewKind';
 import { groupByFolder } from '@/lib/upload/paths';
+import { progText, type UpProgress } from '@/lib/upload/progress';
 
 export type Up = { tmp: string; name: string; size: number; status: 'uploading' | 'ready' | 'error'; chip?: FileChip; error?: string; preview?: string; edit?: boolean; img?: boolean; w?: number; h?: number;
    started?: boolean;
+   prog?: UpProgress;
    errKind?: import('@/lib/upload/errKind').FileErrKind };
 
 export function viewSrc(u: Up): string | undefined {
@@ -54,12 +56,13 @@ function DocChip({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
   const kind = u.status === 'ready' && u.chip ? previewKind(u.name) : null;
   const tok = useFileTok({ name: u.name, tokens: u.chip?.tokens, mime: u.chip?.mime, info: u.chip?.info });
   const parts = u.status === 'ready' ? [fmtBytes(u.size, tx.lang), tok ? tokText(tx.lang, tok) : ''].filter(Boolean) : [fmtBytes(u.size, tx.lang)];
-  const meta = u.status === 'uploading' ? tx('comp.reading') : u.status === 'error' ? u.error
-    : parts.map((x, i) => <span key={i}>{i > 0 ? ' ' : ''}<span className="fm-nb">{x}{i < parts.length - 1 ? '\u00a0·' : ''}</span></span>);
+  const prog = u.status === 'uploading' ? progText(tx, u.prog) : null;
+  const pieces = (xs: string[]) => xs.map((x, i) => <span key={i}>{i > 0 ? ' ' : ''}<span className="fm-nb">{x}{i < xs.length - 1 ? '\u00a0·' : ''}</span></span>);
+  const meta = prog ? pieces(prog.split(' · ')) : u.status === 'uploading' ? tx('comp.reading') : u.status === 'error' ? u.error : pieces(parts);
   const body = (
     <>
       <span className="ficon"><Icon n={u.status === 'error' ? 'alert' : kind === 'slides' ? 'slides' : 'file-text'} sm /></span>
-      <span className="fmeta"><b>{u.name}</b><small className={u.status === 'ready' ? 'fm-wrap' : undefined} title={u.status === 'error' ? u.error : undefined}>{meta}</small></span>
+      <span className="fmeta"><b>{u.name}</b><small className={u.status === 'ready' || prog ? 'fm-wrap' : undefined} title={u.status === 'error' ? u.error : prog ?? undefined} data-testid={prog ? 'up-prog' : undefined}>{meta}</small></span>
     </>
   );
   return (
