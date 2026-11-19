@@ -87,7 +87,7 @@ export function mountGlint(svg: SVGSVGElement, { live = true, preset = 'calm', v
     const { d, glow, scale } = glintPath((now - t0) / 1000, amt, P, S);
     path.setAttribute('d', d);
     svg.style.transform = scale !== 1 ? `scale(${scale.toFixed(3)})` : '';
-    svg.style.filter = glow > 0.02 ? `drop-shadow(0 0 ${(1 + 3 * glow).toFixed(2)}px rgba(255,255,255,${Math.min(0.95, 0.55 * glow).toFixed(2)}))` : '';
+    svg.style.filter = glow > 0.02 ? `drop-shadow(0 0 ${(1 + 3 * glow).toFixed(2)}px rgba(var(--glint-rgb), calc(${Math.min(0.95, 0.55 * glow).toFixed(2)} * var(--glint-k))))` : '';
     if (on || amt > 0.002) return true;
     amt = 0; settle();
     return false;

@@ -9,6 +9,8 @@ import { GithubSettings } from '@/components/GithubSettings';
 import { canAgents } from '@/lib/roles';
 import { weekView } from '@/lib/week';
 import { LimitsRowLink } from '@/components/LimitsSettings';
+import { cookies } from 'next/headers';
+import { pickTheme, THEME_COOKIE } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,5 +18,6 @@ export default async function SettingsPage() {
   const me = await currentUser();
   if (!me) redirect('/login');
   const wk = weekView(me);
-  return <SettingsClient me={{ name: me.name, email: me.email, timezone: me.timezone, role: me.role }}><MemoryRowLink on={memoryPrefs(me.id).on} count={memoryCount(me.id)} /><LimitsRowLink limited={wk.limited} pct={wk.pct} /><NotifySettings quiet={me.notifyQuiet ?? null} timezone={me.timezone} /><VoiceSettings />{canAgents(me.role) && <GithubSettings />}</SettingsClient>;
+  const theme = pickTheme({ user: me.theme, cookie: (await cookies()).get(THEME_COOKIE)?.value });
+  return <SettingsClient me={{ name: me.name, email: me.email, timezone: me.timezone, role: me.role, theme }}><MemoryRowLink on={memoryPrefs(me.id).on} count={memoryCount(me.id)} /><LimitsRowLink limited={wk.limited} pct={wk.pct} /><NotifySettings quiet={me.notifyQuiet ?? null} timezone={me.timezone} /><VoiceSettings />{canAgents(me.role) && <GithubSettings />}</SettingsClient>;
 }

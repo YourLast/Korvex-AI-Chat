@@ -12,8 +12,8 @@ html.sb-collapsed { --sb-cur: 0px; }
 @media (min-width: 761px) and (max-width: 840px) { .fv { width: auto; left: 0; border-left: 0; } .fv-resize, .fv-fullbtn { display: none; } }
 .fv-resize { position: absolute; z-index: 8; left: -5px; top: 0; bottom: 0; width: 10px; cursor: col-resize; touch-action: none; outline: none; }
 .fv-resize::before { content: ""; position: absolute; left: 4px; top: 0; bottom: 0; width: 2px; background: transparent; transition: background-color var(--dur-fast) linear; }
-.fv-resize::after { content: ""; position: absolute; left: 2px; top: 50%; width: 6px; height: 44px; margin-top: -22px; border-radius: 3px; background: rgba(255, 255, 255, .3); opacity: 0; transition: opacity var(--dur-fast) linear; }
-.fv-resize:hover::before, .fv-resize:focus-visible::before { background: rgba(255, 255, 255, .5); }
+.fv-resize::after { content: ""; position: absolute; left: 2px; top: 50%; width: 6px; height: 44px; margin-top: -22px; border-radius: 3px; background: rgba(var(--ink), .3); opacity: 0; transition: opacity var(--dur-fast) linear; }
+.fv-resize:hover::before, .fv-resize:focus-visible::before { background: rgba(var(--ink), .5); }
 .fv-resize:hover::after, .fv-resize:focus-visible::after { opacity: 1; }
 html.fv-resizing, html.fv-resizing * { cursor: col-resize !important; user-select: none !important; }
 html.fv-resizing .main, html.fv-resizing .fv, html.fv-resizing .app { transition: none !important; animation: none !important; }
@@ -52,8 +52,8 @@ html.fv-full .fv-resize { display: none; }
 .fv-pos { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (max-width: 760px) { .fv-pos .fv-pos-b { display: none; } }
 .fv-cnt { color: var(--text-1); font-weight: var(--fw-medium); font-size: var(--fs-ui); }
-.fv-badge { display: inline-block; min-width: 18px; margin-left: var(--s-2); padding: 0 5px; border-radius: var(--r-full); background: var(--neg); color: #000; font-size: 11px; line-height: 18px; text-align: center; }
-.btn--primary .fv-badge { background: #000; color: var(--neg); }
+.fv-badge { display: inline-block; min-width: 18px; margin-left: var(--s-2); padding: 0 5px; border-radius: var(--r-full); background: var(--neg); color: var(--on-accent); font-size: 11px; line-height: 18px; text-align: center; }
+.btn--primary .fv-badge { background: var(--bg); color: var(--neg); }
 
 .fv-grid, .fv-text, .fv-pdf, .fv-cmp { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .xl { --xl-paper: #fff; --xl-ink: #1c1c1e; --xl-grid: #dedede; --xl-head: #f3f3f3; --xl-head-ink: #5a5a5a; --xl-head-line: #cfcfcf; --xl-sel: #107c41; --xl-mark: var(--neg); }
@@ -112,7 +112,7 @@ html.fv-full .fv-resize { display: none; }
 .fv-ln { position: sticky; left: 0; flex: none; box-sizing: content-box; padding: 0 var(--s-2); background: var(--bg); color: var(--text-4); text-align: right; border-right: 1px solid var(--line-1); user-select: none; }
 .fv-lt { padding: 0 var(--s-3); }
 .fv-line.is-mark, .fv-line.is-hit { background: color-mix(in srgb, var(--neg) 24%, transparent); box-shadow: inset 3px 0 0 var(--neg); }
-.fv-line.is-mark .fv-ln { background: color-mix(in srgb, var(--neg) 60%, #000); color: #fff; }
+.fv-line.is-mark .fv-ln { background: color-mix(in srgb, var(--neg) 60%, var(--bg)); color: var(--text-strong); }
 .fv-md { flex: 1; min-height: 0; overflow: auto; padding: var(--s-4); }
 
 .fv-pg { display: inline-flex; align-items: center; gap: var(--s-1); color: var(--text-2); font-size: var(--fs-ui); }
@@ -121,9 +121,9 @@ html.fv-full .fv-resize { display: none; }
 .fv-marks { display: flex; gap: var(--s-1); flex: none; padding: var(--s-2) var(--s-3); overflow-x: auto; border-bottom: 1px solid var(--line-1); scrollbar-width: none; }
 .fv-marks::-webkit-scrollbar { display: none; }
 .fv-mchip { flex: none; min-height: 28px; padding: 0 var(--s-3); border: 1px solid color-mix(in srgb, var(--neg) 50%, transparent); border-radius: var(--r-full); background: color-mix(in srgb, var(--neg) 12%, transparent); color: var(--text-1); font: inherit; font-size: var(--fs-cap); cursor: pointer; }
-.fv-mchip.is-on { background: color-mix(in srgb, var(--neg) 35%, transparent); color: #fff; }
+.fv-mchip.is-on { background: color-mix(in srgb, var(--neg) 35%, transparent); color: var(--text-strong); }
 .fv-pwrap { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.fv-pages { flex: 1; min-height: 0; overflow: auto; background: #111; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; overflow-anchor: none; }
+.fv-pages { flex: 1; min-height: 0; overflow: auto; background: var(--surface-well); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; overflow-anchor: none; }
 .fv-pdf[data-hold] .fv-pages { visibility: hidden; }
 .fv-hold { position: absolute; inset: 0; }
 .fv-delay { opacity: 0; animation: fv-appear 1ms linear 240ms forwards; }
@@ -205,7 +205,7 @@ a.src-web { text-decoration: none; }
 .src-web.is-plain:hover, .src-web.is-plain:active { background: color-mix(in srgb, var(--text-1) 7%, transparent); color: var(--text-2); }
 @media (pointer: coarse) { .src-web.is-plain::after { content: none; } }
 .src-cmp { display: inline-flex; margin: var(--s-2) 0 0; }
-.peek { position: fixed; z-index: var(--z-pop); max-height: 60vh; overflow: auto; padding: var(--s-3); border: 1px solid var(--line-pop); border-radius: var(--r-3); background: var(--surface-pop); box-shadow: 0 10px 36px rgba(0, 0, 0, .65); animation: peek-in 120ms var(--ease-out); }
+.peek { position: fixed; z-index: var(--z-pop); max-height: 60vh; overflow: auto; padding: var(--s-3); border: 1px solid var(--line-pop); border-radius: var(--r-3); background: var(--surface-pop); box-shadow: 0 10px 36px rgba(0, 0, 0, calc(.65 * var(--shadow-k))); animation: peek-in 120ms var(--ease-out); }
 @keyframes peek-in { from { opacity: 0; transform: translateY(3px); } }
 @media (prefers-reduced-motion: reduce) { .peek { animation: none; } }
 .peek > header { display: flex; align-items: baseline; gap: var(--s-2); margin-bottom: var(--s-2); font-size: var(--fs-cap); line-height: var(--lh-cap); color: var(--text-3); }

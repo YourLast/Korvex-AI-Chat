@@ -7,9 +7,11 @@ import { LANGS, LANG_NAMES } from '@/lib/i18n/core';
 import { errText } from '@/lib/i18n/errors';
 import { useSetLang, useT } from '@/lib/i18n/react';
 import { useCanInstall } from './InstallPrompt';
-import { Button, Confirm, Field, Group, KPage, PickerRow, ReadField, Row, SelectRow, toast } from './Kit';
+import { Button, Confirm, Field, Group, KPage, PickerRow, ReadField, Row, Seg, SelectRow, toast } from './Kit';
+import { THEMES, type Theme } from '@/lib/theme';
+import { saveTheme } from '@/lib/themeClient';
 
-type Me = { name: string; email: string; timezone: string; role: string };
+type Me = { name: string; email: string; timezone: string; role: string; theme?: Theme };
 
 const FALLBACK_TZ = ['Europe/Moscow', 'Europe/Kaliningrad', 'Europe/Samara', 'Asia/Yekaterinburg', 'Asia/Omsk', 'Asia/Novosibirsk', 'Asia/Krasnoyarsk', 'Asia/Irkutsk', 'Asia/Yakutsk', 'Asia/Vladivostok', 'Asia/Magadan', 'Asia/Kamchatka', 'Europe/Minsk', 'Asia/Almaty', 'Asia/Dubai', 'Europe/Belgrade', 'Europe/Berlin', 'Europe/London', 'UTC'];
 export const tzLabel = (z: string) => z.replace(/_/g, ' ');
@@ -25,6 +27,8 @@ export function SettingsClient({ me, children }: { me: Me; children?: ReactNode 
   const [busy, setBusy] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [ask, setAsk] = useState(false);
+  const [theme, setTheme] = useState<Theme>(me.theme ?? 'system');
+  const pickTheme = (v: Theme) => { setTheme(v); void saveTheme(v, true).then((ok) => { if (!ok) toast(t('set.notSaved'), 'error'); }); };
   const zones = useMemo(() => {
     let list: string[] = FALLBACK_TZ;
     try { list = (Intl as unknown as { supportedValuesOf?: (k: string) => string[] }).supportedValuesOf?.('timeZone') ?? FALLBACK_TZ; } catch {  }
@@ -69,6 +73,11 @@ export function SettingsClient({ me, children }: { me: Me; children?: ReactNode 
           <Button kind="primary" onClick={save} busy={busy} disabled={!name.trim()} testId="set-save">{t('common.save')}</Button>
         </div>
       )}
+
+      <Group title={t('theme.setting')} foot={t('theme.sub')} testId="set-theme-group">
+        <div className="set-theme"><Seg block label={t('theme.label')} value={theme} onChange={pickTheme} testId="set-theme"
+          options={THEMES.map((v) => ({ value: v, label: t(`theme.${v}` as const), testId: `set-theme-${v}` }))} /></div>
+      </Group>
 
       <Group title={t('lang.setting')} foot={t('lang.settingSub')} testId="set-lang-group">
         <PickerRow title={t('lang.pick')} value={t.lang} testId="set-lang" onChange={(l) => { void setLang(l); }}

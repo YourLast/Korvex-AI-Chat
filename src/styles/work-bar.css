@@ -5,16 +5,16 @@ html.wbar-shown .wk-list .wk-dot { animation: none; opacity: .7; }
 .wbar { position: absolute; left: var(--s-6); right: var(--s-6); bottom: 100%; margin-bottom: var(--s-2); z-index: 2; display: flex; justify-content: center; pointer-events: none; }
 .wbar > * { pointer-events: auto; }
 .wbar-pill { display: flex; align-items: center; gap: var(--s-2); width: min(480px, 100%); min-width: 0; height: var(--hit); padding: 0 var(--s-3) 0 var(--s-3);
-  border: 1px solid rgba(255, 255, 255, .14); border-radius: var(--r-full); background: rgba(10, 10, 10, .86); -webkit-backdrop-filter: blur(20px) saturate(1.2); backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid rgba(var(--ink), .14); border-radius: var(--r-full); background: var(--glass-bar); -webkit-backdrop-filter: blur(20px) saturate(1.2); backdrop-filter: blur(20px) saturate(1.2);
   color: var(--text-1); font: inherit; font-size: var(--fs-ui); line-height: var(--lh-ui); letter-spacing: var(--ls-ui); text-align: left; cursor: pointer; touch-action: none;
   -webkit-tap-highlight-color: transparent; transition: border-color var(--dur-fast) var(--ease), transform var(--dur-fast) var(--ease);
   animation: wbar-in 240ms var(--ease-out); }
-@media (hover: hover) { .wbar-pill:hover { border-color: rgba(255, 255, 255, .24); } }
+@media (hover: hover) { .wbar-pill:hover { border-color: rgba(var(--ink), .24); } }
 .wbar-pill:active { transform: scale(.98); }
 .wbar-pill:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 .wbar-ic { position: relative; flex: none; display: inline-grid; place-items: center; width: var(--icon-sm); height: var(--icon-sm); color: var(--text-1); }
 .wbar-ic--mark { width: auto; height: auto; }
-.wbar-ic .wk-dot { position: absolute; right: -3px; top: -3px; width: 6px; height: 6px; box-shadow: 0 0 0 1.5px rgba(10, 10, 10, .9); }
+.wbar-ic .wk-dot { position: absolute; right: -3px; top: -3px; width: 6px; height: 6px; box-shadow: 0 0 0 1.5px var(--bg); }
 .wbar-now { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; animation: wk-swap 180ms var(--ease-out); }
 .wbar-now b { font-weight: var(--fw-medium); }
 .wbar-sub { color: var(--text-2); }
@@ -26,7 +26,7 @@ html.wbar-shown .wk-list .wk-dot { animation: none; opacity: .7; }
 .wbar--done .wbar-pill { animation: wbar-in 240ms var(--ease-out), wbar-out 200ms var(--ease-in) 1000ms forwards; }
 
 .wbar--ask { left: var(--s-6); right: var(--s-6); }
-.wbar-ask { width: 100%; max-width: 560px; padding: var(--s-4); border: 1px solid rgba(255, 255, 255, .42); border-radius: var(--r-4); background: var(--surface-pop);
+.wbar-ask { width: 100%; max-width: 560px; padding: var(--s-4); border: 1px solid rgba(var(--ink), .42); border-radius: var(--r-4); background: var(--surface-pop);
   animation: wbar-ask-in 260ms var(--ease-out); }
 .wbar-ask-q { display: flex; align-items: flex-start; gap: var(--s-2); margin: 0 0 var(--s-3); color: var(--text-strong); font-size: var(--fs-body); line-height: var(--lh-body); overflow-wrap: anywhere; }
 .wbar-ask-q .i { flex: none; margin-top: 4px; color: var(--text-2); }

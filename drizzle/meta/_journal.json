@@ -232,6 +232,13 @@
       "when": 1794900000000,
       "tag": "0032_invite_email",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1795000000000,
+      "tag": "0033_user_theme",
+      "breakpoints": true
     }
   ]
 }

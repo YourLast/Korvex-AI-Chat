@@ -105,7 +105,7 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
   val.append(valL, valH);
   const pow = svg('svg', { class: 'kxe-pow', viewBox: VB, 'aria-hidden': 'true', focusable: 'false' });
   const powG = svg('linearGradient', { id: `${uid}-ps`, gradientUnits: 'userSpaceOnUse', x1: '0', y1: '0', x2: '0', y2: '0' });
-  powG.append(svg('stop', { offset: '0', 'stop-color': '#fff', 'stop-opacity': '0' }), svg('stop', { offset: '.5', 'stop-color': '#fff', 'stop-opacity': '1' }), svg('stop', { offset: '1', 'stop-color': '#fff', 'stop-opacity': '0' }));
+  powG.append(svg('stop', { offset: '0', style: 'stop-color: var(--text-strong)', 'stop-opacity': '0' }), svg('stop', { offset: '.5', style: 'stop-color: var(--text-strong)', 'stop-opacity': '1' }), svg('stop', { offset: '1', style: 'stop-color: var(--text-strong)', 'stop-opacity': '0' }));
   const powClip = svg('clipPath', { id: `${uid}-pc` });
   const powClipP = svg('path', { d: '' });
   powClip.append(powClipP);
@@ -217,7 +217,7 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
     powP.setAttribute('d', d);
     pow.style.opacity = f2(0.38 + 0.62 * smooth(pw * 4));
     pow.style.transform = S.x === 1 ? '' : `scale(${f2(S.x)})`;
-    pow.style.filter = mx > 0.01 ? `drop-shadow(0 0 ${f2(3.5 * mx)}px rgba(255,255,255,${f2(0.42 * mx)}))` : '';
+    pow.style.filter = mx > 0.01 ? `drop-shadow(0 0 ${f2(3.5 * mx)}px rgba(var(--glint-rgb), calc(${f2(0.42 * mx)} * var(--glint-k))))` : '';
     if (sweepT >= 0) {
       powClipP.setAttribute('d', d);
       const c = lerp(-430, 430, ease(sweepT)), ux = Math.cos((62 * Math.PI) / 180), uy = -Math.sin((62 * Math.PI) / 180);

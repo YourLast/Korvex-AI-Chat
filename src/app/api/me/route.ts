@@ -9,10 +9,11 @@ export const runtime = 'nodejs';
 export async function PATCH(req: Request) {
   const a = await authed(req, true);
   if ('res' in a) return a.res;
-  const p = z.object({ timezone: z.string().max(64).optional(), name: z.string().max(80).optional(), notifyQuiet: z.string().regex(/^([01]?\d|2[0-3]):[0-5]\d-([01]?\d|2[0-3]):[0-5]\d$/).nullable().optional(), lang: z.enum(['ru', 'en', 'sr']).optional() }).safeParse(await req.json().catch(() => null));
+  const p = z.object({ timezone: z.string().max(64).optional(), name: z.string().max(80).optional(), notifyQuiet: z.string().regex(/^([01]?\d|2[0-3]):[0-5]\d-([01]?\d|2[0-3]):[0-5]\d$/).nullable().optional(), lang: z.enum(['ru', 'en', 'sr']).optional(), theme: z.enum(['system', 'light', 'dark']).optional() }).safeParse(await req.json().catch(() => null));
   if (!p.success) return fail(400, 'bad body');
-  const set: { timezone?: string; name?: string; notifyQuiet?: string | null; lang?: string } = {};
+  const set: { timezone?: string; name?: string; notifyQuiet?: string | null; lang?: string; theme?: string } = {};
   if (p.data.lang !== undefined) set.lang = p.data.lang;
+  if (p.data.theme !== undefined) set.theme = p.data.theme;
   if (p.data.notifyQuiet !== undefined) set.notifyQuiet = p.data.notifyQuiet;
   if (p.data.timezone !== undefined) {
     try { new Intl.DateTimeFormat('ru-RU', { timeZone: p.data.timezone }); } catch { return fail(400, 'Неизвестный часовой пояс'); }

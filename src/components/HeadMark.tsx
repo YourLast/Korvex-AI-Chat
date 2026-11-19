@@ -44,7 +44,7 @@ export function mountHead(svg: SVGSVGElement, init: HmProps, { play = false, cal
       const f = glintAt(tms, dt, ph === 'think' ? (quiet ? CALM_AMT : 1) : 0);
       attr(g, 'd', f.d); attr(g, 'transform', scaleAbout(f.scale)); attr(g, 'opacity', '');
       attr(p, 'd', ''); attr(p, 'transform', ''); attr(p, 'opacity', ''); setDot(0);
-      svg.style.filter = f.glow > 0.02 && !instant ? `drop-shadow(0 0 ${(1 + 3 * f.glow).toFixed(2)}px rgba(255,255,255,${Math.min(0.95, 0.55 * f.glow).toFixed(2)}))` : '';
+      svg.style.filter = f.glow > 0.02 && !instant ? `drop-shadow(0 0 ${(1 + 3 * f.glow).toFixed(2)}px rgba(var(--glint-rgb), calc(${Math.min(0.95, 0.55 * f.glow).toFixed(2)} * var(--glint-k))))` : '';
       return;
     }
     svg.style.filter = '';

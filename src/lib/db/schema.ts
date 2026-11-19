@@ -14,6 +14,7 @@ export const users = sqliteTable('users', {
   memoryAuto: integer('memory_auto').notNull().default(1),
   memoryMeta: text('memory_meta', { mode: 'json' }).$type<MemoryMeta>(),
   lang: text('lang').notNull().default(''),
+  theme: text('theme').notNull().default(''),
   blockKind: text('block_kind').notNull().default(''),
   blockReason: text('block_reason').notNull().default(''),
   blockedAt: integer('blocked_at'),

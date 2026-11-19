@@ -1,39 +1,5 @@
 
 :root {
-  color-scheme: dark;
-
-  --bg:        #000000;
-  --surface-1: #000000;
-  --surface-2: rgba(255, 255, 255, .04);
-  --surface-3: rgba(255, 255, 255, .06);
-  --surface-press: rgba(255, 255, 255, .08);
-  --surface-pop: #070707;
-
-  --line-1: rgba(255, 255, 255, .06);
-  --line-2: rgba(255, 255, 255, .10);
-  --line-3: rgba(255, 255, 255, .16);
-  --line-pop: rgba(255, 255, 255, .14);
-  --line-pop-hover: rgba(255, 255, 255, .24);
-  --line-focus: rgba(255, 255, 255, .42);
-
-  --text-strong: #ffffff;
-  --text-1:      #ededed;
-  --text-2:      #a1a1a1;
-  --text-3:      #7a7a7a;
-  --text-4:      #606060;
-
-  --accent:         #ffffff;
-  --accent-hover:   #e6e6e6;
-  --accent-active:  #cfcfcf;
-  --on-accent:      #000000;
-
-  --max-from: #dbeafe;
-  --max-via:  #93c5fd;
-  --max-to:   #60a5fa;
-  --max-gradient: linear-gradient(90deg, var(--max-from), var(--max-via), var(--max-to));
-  --effort-slate: rgba(100, 116, 139, .30);
-  --effort-glow: rgba(96, 165, 250, .6);
-  --effort-spark: #dbeafe;
 
   --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --fw-regular: 400;
@@ -69,14 +35,8 @@
   --tick-pitch: 4px;
   --tick-h: 8px;
   --tick-h-major: 12px;
-  --tick-off: rgba(255, 255, 255, .16);
-  --tick-off-major: rgba(255, 255, 255, .28);
-  --tick-on: #ffffff;
 
-  --shadow-pop: 0 0 0 1px var(--line-pop);
-  --shadow-sheet: 0 -1px 0 var(--line-3);
-  --shadow-focus: 0 0 0 4px rgba(255, 255, 255, .06);
-  --focus-ring: 2px solid rgba(255, 255, 255, .72);
+
   --focus-offset: 2px;
   --edge-light: 0 0 0 0 transparent;
 
@@ -93,9 +53,6 @@
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-l: env(safe-area-inset-left, 0px);
   --safe-r: env(safe-area-inset-right, 0px);
-  --pos: #5fb08a;
-  --neg: #d9776e;
-  --warn: #c49a50;
 }
 
 @media (max-width: 760px) {
