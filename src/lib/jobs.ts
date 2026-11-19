@@ -28,7 +28,8 @@ import { orgHeader } from './orgCard';
 import { agentHistory, chatToOai, folderInstruction, transcriptForMeta, withExtra } from './agentHistory';
 import type { StepEvent } from './tools/types';
 import type { MemoryInfo } from './types';
-import { INTRO, memoryBlockInfo } from './memory';
+import { INTRO, memoryAllowed, memoryBlockInfo, memoryMeta, setMemoryMeta } from './memory';
+import { turnNotes } from './introInvite';
 import { runClaude } from './anthropic/run';
 import { isClaudeUsage, sumClaudeUsage } from './anthropic/price';
 import type { ClaudeRecord } from './anthropic/history';
@@ -225,6 +226,7 @@ export type SubmitInput = Omit<TurnInput, 'signal'> & { kind?: JobKind; apiKeyId
 export type Submitted = { jobId: string; userMessageId: string | null; assistantMessageId: string; title?: string; fileIds: string[] };
 
 export const userBusy = (userId: string): boolean => liveCount(userId) > 0;
+export function liveTotal(): number { let n = 0; for (const j of ex().live.values()) if (j.status === 'queued' || j.status === 'running') n++; return n; }
 function liveCount(userId: string) { let n = 0; for (const j of ex().live.values()) if (j.userId === userId && (j.status === 'queued' || j.status === 'running')) n++; return n; }
 
 function newLive(p: Partial<Live> & Pick<Live, 'id' | 'userId' | 'modelId' | 'levelId' | 'kind' | 'mode'>): Live {
@@ -481,9 +483,11 @@ function historyOf(j: Live, model: ModelCfg, tz: string): { messages: ChatMsg[];
   const all = allMessages(j.threadId!);
   const th = getDb().select({ id: schema.threads.id, temporary: schema.threads.temporary, createdAt: schema.threads.createdAt }).from(schema.threads).where(eq(schema.threads.id, j.threadId!)).get();
   let mem: string | null = null;
+  let lastMemInfo: ReturnType<typeof memoryBlockInfo> | null = null;
   let note: string | null = null;
   try {
     const mi = memoryBlockInfo(j.userId, th);
+    lastMemInfo = mi;
     mem = mi.text;
     note = mi.note ?? null;
     console.log(`[memory] block chat=${j.threadId} job=${j.id} ${mi.why}${mi.stats ? ` items=${mi.stats.used} dropped=${mi.stats.dropped} blocked=${mi.stats.blocked} tok≈${mi.stats.tokens}` : ''}`);
@@ -491,6 +495,14 @@ function historyOf(j: Live, model: ModelCfg, tz: string): { messages: ChatMsg[];
   const me = all.find((m) => m.id === j.messageId);
   if (!me) throw new TurnError(404, 'Сообщение удалено');
   const path: Message[] = activePath(all, j.mode === 'continue' ? me.id : me.parentId);
+  try {
+    if (th?.temporary === INTRO && mem !== null) { const mi2 = lastMemInfo; if (mi2?.end) { const now = Date.now(); setMemoryMeta(j.userId, { introEnd: now, rules: { ...(memoryMeta(j.userId).rules ?? {}), pending: now } }); } }
+    else if (th && !th.temporary && j.kind === 'chat' && !j.lane && j.mode === 'send' && memoryAllowed(j.userId, th)) {
+      const u = path.at(-1);
+      const extra = turnNotes(j.userId, u?.role === 'user' ? u : null, path.at(-2)?.role === 'assistant' ? path.at(-2)!.content : null, j.levelId);
+      if (extra.length) note = [note, ...extra].filter(Boolean).join('\n\n');
+    }
+  } catch (e) { console.error('[invite]', (e as Error).message); }
   const folderSys = folderInstruction(j.folderId, j.userId);
   if (j.lane) {
     const hist = laneView(all, path, j.lane);

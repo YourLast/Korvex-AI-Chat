@@ -1,6 +1,7 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useRouter } from 'next/navigation';
+import { IntroInvite } from './IntroInvite';
 import dynamic from 'next/dynamic';
 import type { PublicModel } from '@/lib/models';
 import { isImage, type CompareState, type FileChip, type MsgView, type PairView } from '@/lib/types';
@@ -654,7 +655,7 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
       {}
       <Composer ref={comp} busy={busy} onHolds={setHeld}
         docsSlot={shell.orgMode && docOrg ? <DocsButton org={docOrg} orgName={docOrgName} onAdd={(c, text) => { comp.current?.addFiles(c); if (text) { comp.current?.setText(text); comp.current?.focus(); } }} /> : undefined}
-        overlay={!preview && working ? <WorkBar m={working} offscreen={offscreen} onDecide={workJob ? (st, allow) => { void workActions.decide(workJob, st, allow); } : undefined} onShowFeed={showFeed} onLive={(st, all) => workActions.openLive({ step: st, all })} /> : null}
+        overlay={!preview && working ? <WorkBar m={working} offscreen={offscreen} onDecide={workJob ? (st, allow) => { void workActions.decide(workJob, st, allow); } : undefined} onShowFeed={showFeed} onLive={(st, all) => workActions.openLive({ step: st, all })} /> : !preview && !temp && !busy && !cmpOn && !codeMode ? <IntroInvite /> : null}
         onSteer={!preview && working && !cmpOn ? onSteer : undefined} placeholder={cmpOn ? (many ? tx('chat.phCmpMany') : tx('chat.phCmpOne')) : codeMode || code.st ? (narrow ? tx('chat.phCodeShort') : tx('chat.phCode')) : empty ? tx('chat.phEmpty') : tx('chat.phNext')} modelSlot={slot} onStop={stop}
         onSend={(t, f, o) => (editRef.current ? sendEdit(t, f) : doSend(t, f, o?.holdId ? { holdId: o.holdId } : undefined))} edit={editView} onEditCancel={cancelEdit}
         acceptImages={imgOk} modelId={cmpOn && cmp ? cmp.a.modelId : sel.modelId} footNote={tx('chat.footNote')} />

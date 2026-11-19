@@ -17,6 +17,7 @@ export default {
   'srv.trainAll': ['Идёт дообучение моделей — ответы могут приходить медленнее', 'The models are being fine-tuned — answers may be slower', 'Modeli se dodatno obučavaju — odgovori mogu stizati sporije'],
   'srv.trainSome': ['Идёт дообучение {models} — ответы могут приходить медленнее', '{models} is being fine-tuned — answers may be slower', 'Model {models} se dodatno obučava — odgovori mogu stizati sporije'],
   'srv.busy': ['Сейчас высокая нагрузка — ответы могут задерживаться{wait}. Сообщения обрабатываются по очереди, место в очереди видно в чате.', 'Heavy load right now — answers may be delayed{wait}. Messages are handled in order, and your place in the queue is shown in the chat.', 'Trenutno je veliko opterećenje — odgovori mogu kasniti{wait}. Poruke se obrađuju redom, a mesto u redu vidi se u čatu.'],
+  'srv.works': ['Идут технические работы: сайт может отвечать медленнее, часть функций может быть временно недоступна.', 'Maintenance in progress: the site may respond more slowly, and some features may be temporarily unavailable.', 'U toku su tehnički radovi: sajt može sporije da odgovara, a neke funkcije mogu biti privremeno nedostupne.'],
   'srv.busyWait': [' (~{n} мин)', ' (~{n} min)', ' (~{n} min)'],
 
   'srv.bothDown': ['{a} и {b} сейчас недоступны', '{a} and {b} are unavailable right now', '{a} i {b} trenutno nisu dostupni'],

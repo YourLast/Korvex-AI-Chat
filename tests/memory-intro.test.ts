@@ -137,20 +137,46 @@ describe('знакомство — постоянный разговор', () =>
     expect(J.jobOfThread(v2.threadId!)).toBeNull();
   });
 
-  it('всё известное уже спросили — заметка «спросить больше не о чем», модель вопросы не придумывает; не ответил — не переспрашивает', async () => {
+  it('всё известное уже спросили — знакомство закончено («Спасибо, мне хватит»), модель вопросы не придумывает; не ответил — не переспрашивает; бухгалтер — свой блок', async () => {
     const M = await import('@/lib/memory');
     const rows = (over: Partial<Record<string, string>>) => [
       ['who', 'name', 'Зовут Мила'], ['work', 'role', 'Дизайнер'], ['interests', null, 'велосипед'], ['style', 'length', 'Коротко'],
       ['style', 'address', 'На «ты»'], ['style', 'tone', 'С юмором'], ['who', 'city', 'Казань'],
     ].filter(([, k]) => !(k && over[k] === 'skip')).map(([section, key, text], i) => ({ id: `x${i}`, userId: 'z', section, key, text, origin: 'auto', sure: 1, threadId: null, messageId: null, createdAt: 1, updatedAt: 1 }));
-    const all = M.introNote(rows({}) as never, new Set(), []);
-    expect(all).toContain('Спросить больше не о чем');
+    const Q = ['С какими задачами чаще всего будешь приходить?', 'В чём работаешь — какие программы и инструменты?', 'Что тебе важнее всего проверять в ответе?'];
+    const all = M.introNote(rows({}) as never, new Set(), Q);
+    expect(all).toContain('Знакомство закончено');
+    expect(all).toContain('Спасибо, мне хватит. Вот что я запомнила:');
+    expect(all).toContain('только из узнанного в этом разговоре');
     expect(all).not.toContain('Ещё не знаешь');
-    const city = M.introNote(rows({ city: 'skip' }) as never, new Set(), ['Здорово! А где ты живёшь, в каком городе?']);
-    expect(city).toContain('Спросить больше не о чем (о «где живёт (можно не отвечать)» он отвечать не стал — не переспрашивай)');
-    expect(M.introNote(rows({ city: 'skip' }) as never, new Set(), [])).toContain('Ещё не знаешь (по порядку): где живёт');
-    expect(M.INTRO_RULES).toContain('новых вопросов не придумывай: поблагодари одной фразой и скажи, что продолжить можно позже');
-    expect(M.introNote([] as never, new Set(), [])).toContain('Это начало знакомства: поздоровайся одной короткой фразой');
+    const adr = M.introNote(rows({ address: 'skip' }) as never, new Set(), [...Q, 'Тебе удобнее на «ты» или на «вы»?']);
+    expect(adr).toContain('Знакомство закончено (о «на «ты» или на «вы»» он отвечать не стал — не переспрашивай)');
+    const left = M.introNote(rows({}) as never, new Set(), []);
+    expect(left).toContain('Ещё не знаешь (по порядку): с какими задачами чаще всего будет приходить');
+    expect(left).toContain('Осталось 3 вопроса вместе с этим');
+    expect(M.introNote(rows({}) as never, new Set(), Q.slice(0, 2))).toContain('Это последний вопрос');
+    expect(left.split('Ещё не знаешь')[1]).not.toMatch(/город|интересно|юмор/);
+    expect(M.INTRO_RULES).toContain('«Спасибо, мне хватит. Вот что я запомнила:»');
+    expect(M.INTRO_RULES).toContain('вопросом не заканчивай');
+    expect(M.INTRO_RULES).toContain('я скажу, когда хватит');
+    expect(M.INTRO_RULES).toContain('без канцелярита');
+    expect(M.introNote(rows({}) as never, new Set(), Q, 'ru', [], true)).toContain('знакомство уже закончено');
+    const acc = [{ id: 'a1', userId: 'z', section: 'work', key: 'role', text: 'Главный бухгалтер на аутсорсе', origin: 'auto', sure: 1, threadId: null, messageId: null, createdAt: 1, updatedAt: 1 }];
+    const an = M.introNote(acc as never, new Set(), []);
+    expect(an).toContain('на каких режимах');
+    expect(an).toContain('1С');
+    expect(an).not.toContain('с какими задачами чаще всего');
+    expect(an).not.toContain('в какой сфере');
+    const accQ = ['На каких режимах клиенты — УСН, ОСНО?', 'В какой 1С работаете?', 'Что чаще всего считаете?', 'Как удобнее получать ответ — коротко или подробно?', 'На «ты» или на «вы»?'];
+    const eager = ['веду учёт пятнадцати ООО на упрощёнке', 'в основном торговля и пара производств'];
+    const tail = M.introNote(acc as never, new Set(), accQ, 'ru', eager);
+    expect(tail).toContain('что постоянно проверяет и где');
+    expect(tail).toContain('главное я знаю');
+    expect(M.introNote(acc as never, new Set(), accQ, 'ru', ['да', 'нет'])).toContain('Знакомство закончено');
+    expect(M.isAccountant([] as never, ['я бухгалтер, веду пять ООО'])).toBe(true);
+    expect(M.isAccountant([] as never, ['я программист'])).toBe(false);
+    expect(M.introProgress(acc as never, ['На каких режимах клиенты — УСН, ОСНО?'])).toEqual({ left: 4, tail: false, end: false });
+    expect(M.introNote([] as never, new Set(), [])).toContain('Это начало знакомства: поздоровайся одной короткой фразой, скажи, что вопросов несколько');
     expect(M.introNote([] as never, new Set(), ['Привет! Как к тебе обращаться?'])).not.toContain('Это начало знакомства');
   });
 
@@ -190,7 +216,7 @@ describe('стаж в Korvex — строкой в конце системной
     getDb().insert(schema.threads).values([th('b5', now - 864e5), th('b5', now - 864e5 + 1000)]).run();
     const n = M.tenureText(M.tenureOf('b5', now))!;
     expect(n).toMatch(/^Стаж в Korvex: новый — второй день \(зарегистрирован \d{1,2} [а-я]+ \d{4}\), несколько чатов, знакомства ещё не было\./);
-    expect(n).toContain('[Познакомиться](/settings/memory#intro)');
+    expect(n).not.toContain('Познакомиться');
     expect(n).toContain('что умеет Korvex');
     expect(n).toContain('Стаж не упоминай');
     expect(n).not.toMatch(/\d+\s*(дн|дня|день|чат)/);

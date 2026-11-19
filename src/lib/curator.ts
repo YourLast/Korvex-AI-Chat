@@ -3,7 +3,8 @@ import { getDb, schema } from './db';
 import { publish } from './bus';
 import { onJobFinished, type FinishedJob } from './jobs';
 import { gateModel, gateUrl } from './titles';
-import { addMemory, askedToForget, asksName, CURATOR_KEYS, dedupeMemory, workData, askedToRemember, deleteMemory, isIntro, isSecret, isSection, KEYS, listMemory, memoryAllowed, memoryMeta, memoryPrefs, profileName, refreshWritingProfile, refutesMemory, REFUTE_MAX_DELETES, ruleConflict, SECTIONS, sensitiveTopic, setMemoryMeta, stripHedge, sweepMaybe, updateMemory, type Section } from './memory';
+import { bgDown, bgTarget, modelFor } from './bgEngine';
+import { addMemory, personalTopic, askedToForget, asksName, CURATOR_KEYS, dedupeMemory, workData, askedToRemember, deleteMemory, isIntro, isSecret, isSection, KEYS, listMemory, memoryAllowed, memoryMeta, memoryPrefs, profileName, refreshWritingProfile, refutesMemory, REFUTE_MAX_DELETES, ruleConflict, SECTIONS, sensitiveTopic, setMemoryMeta, stripHedge, sweepMaybe, updateMemory, type Section } from './memory';
 import { MARKER } from './turn';
 import { plainText } from './textsearch';
 import { registerBusy } from './instance';
@@ -25,11 +26,13 @@ const SYSTEM = [
   '— «…спасибо! Иван» (подпись в конце его сообщения), «это Иван, привет», «Иван опять всё забыл, помоги» (о себе в третьем лице) → who/name: «Зовут Иван», sure=true;',
   '— «перешли письмо: «Здравствуйте, Иван Петрович…»», текст договора, цитата → имена из пересланных писем, документов и чужих текстов — НЕ его, ничего;',
   '— «отвечай короче, без воды» → style/length: «Отвечать коротко, без воды», sure=true; «не расспрашивай меня» → style/curious: «Не расспрашивать о личном», sure=true;',
+  '— ответ о налоговом режиме: «у нас ОСНО, НДС платим», «УСН 15 % доходы минус расходы, лимит не превышаем», «клиенты в основном на упрощёнке» → work: «ОСНО, платит НДС» / «Клиенты в основном на УСН», sure=true (режим и НДС бухгалтера или предпринимателя — работа, не личные деньги);',
+  '— ответ о проверках, источниках и терминах: «ставки сверяю по Консультанту, сроки — по календарю ФНС», «"отгрузка" у нас — это машина целиком» → rules: «Ставки сверяет по Консультанту, сроки — по календарю ФНС», rules: «"Отгрузка" — машина целиком», sure=true (даже если о работе уже есть записи — это новое);',
   '— «подскажи крем от прыщей», «как взять кредит» → ничего (здоровье и деньги по догадке — никогда);',
   '— «какой курс доллара?», «сколько времени в Токио?», «спасибо, понял», «напиши тост на свадьбу брата» → ничего (разовое);',
   '— «что такое фотосинтез?», «объясни разницу TCP и UDP», «сколько будет 17×23» → ничего (справочный вопрос — не интерес; интерес — когда видно, что он сам этим занимается, увлекается или следит).',
   'Уверенность: sure=true — сказал о себе прямо («я», «мой», «у меня»), ответил на вопрос ассистента о себе или подтвердил; sure=false — догадка по одной детали. Догадка повторилась — запиши её снова тем же текстом (система сама поймёт, что это повтор); сказал прямо — update этой записи по id с sure=true.',
-  'Разделы: who — имя, город, язык; work — работа, должность, компания, бизнес, проекты, учёба, рабочие инструменты; interests — увлечения, спорт, хобби, темы, которые ему интересны (коротко, сама тема: «баскетбол», «стрижки»); style — как он хочет, чтобы ему отвечали: длина, тон, юмор, «ты»/«вы», формат, «не расспрашивай»; facts — прочее о нём самом (важные даты; о других людях — только по просьбе).',
+  'Разделы: who — имя, город, язык; work — работа, должность, компания, бизнес, проекты, учёба, рабочие инструменты; interests — увлечения, спорт, хобби, темы, которые ему интересны (коротко, сама тема: «баскетбол», «стрижки»); style — как он хочет, чтобы ему отвечали: длина, тон, юмор, «ты»/«вы», формат, «не расспрашивай»; rules — как с ним работать: что он всегда проверяет и на какие источники опирается, что значат его термины («закрыть месяц» = …), какие проверки делать всегда — только с его слов; knowledge — полезная находка этого хода для его работы: действующая норма, ставка, срок, порядок проверки или правило работы с документом, которую ответ нашёл в источнике со ссылкой (есть в «Источниках ответа»), коротко и с доменом источника, — только если он на неё опирается (спросил по своей работе, поблагодарил, пошёл дальше); общие справки и данные его клиентов (ИНН, суммы, контрагенты) — никогда; facts — прочее о нём самом (важные даты; о других людях — только по просьбе).',
   'Как он пишет сам (длина сообщений, эмодзи, сленг) система считает сама — не записывай.',
   'Имя — только имя самого пользователя: «меня зовут …», «я …», «это …» в начале его сообщения, подпись в конце, ник, которым он себя называет, рассказ о себе в третьем лице, ответ на вопрос «как тебя зовут?». Имена из пересланных писем, документов, цитат и имена других людей — не его. Имя из профиля аккаунта (если дано ниже) — только подсказка: совпало с подписью — записывай.',
   'Чувствительное — здоровье, политика, религия, личная жизнь и отношения, деньги (доходы, долги, кредиты) — только если пользователь прямо попросил запомнить; по догадке — никогда. Пароли, ключи, коды, номера карт — никогда.',
@@ -61,11 +64,13 @@ const SYSTEM_EN = [
   '— "…thanks! John" (a signature at the end of their message), "it\'s John, hi", "John forgot everything again, help" (about themselves in the third person) → who/name: "Name is John", sure=true;',
   '— "forward this: \'Dear Mr. Smith…\'", a contract text, a quote → names from forwarded letters, documents and other people\'s texts are NOT theirs: nothing;',
   '— "answer shorter, no fluff" → style/length: "Answer briefly, no fluff", sure=true; "don\'t ask me personal questions" → style/curious: "Do not ask about personal things", sure=true;',
+  '— an answer about their tax regime: "we are on the general regime and pay VAT", "most clients use the simplified regime" → work: "General regime, pays VAT" / "Clients mostly on the simplified regime", sure=true (an accountant\'s or business owner\'s tax regime is work, not personal money);',
+  '— an answer about checks, sources and terms: "I check rates in the tax code, deadlines in the tax office calendar", "for us a \'shipment\' is a full truck" → rules: "Checks rates in the tax code, deadlines in the tax calendar", rules: "\'Shipment\' = a full truck", sure=true (new even if work notes already exist);',
   '— "recommend an acne cream", "how do I get a loan" → nothing (health and money by guess: never);',
   '— "what is the dollar rate?", "what time is it in Tokyo?", "thanks, got it", "write a toast for my brother\'s wedding" → nothing (one-off);',
   '— "what is photosynthesis?", "explain TCP vs UDP", "what is 17×23" → nothing (a reference question is not an interest; an interest is when you see they do it, enjoy it or follow it).',
   'Confidence: sure=true — they said it about themselves directly ("I", "my", "I have"), answered the assistant\'s question about themselves, or confirmed it; sure=false — a guess from one detail. A guess repeated — write it again with the same text (the system will see it is a repeat); said directly — update that note by id with sure=true.',
-  'Sections: who — name, city, language; work — job, position, company, business, projects, studies, work tools; interests — hobbies, sports, topics they care about (short, just the topic: "basketball", "beard grooming"); style — how they want to be answered: length, tone, humor, formality, format, "don\'t ask"; facts — other things about them (important dates; about other people only on request).',
+  'Sections: who — name, city, language; work — job, position, company, business, projects, studies, work tools; interests — hobbies, sports, topics they care about (short, just the topic: "basketball", "beard grooming"); style — how they want to be answered: length, tone, humor, formality, format, "don\'t ask"; rules — how to work with them: what they always check and which sources they rely on, what their terms mean, which checks to always do — only from their words; knowledge — a useful finding of this turn for their work: a current norm, rate, deadline, checking procedure or document rule that the answer found in a linked source (listed in "Answer sources"), short and with the source domain, only if they rely on it; never general trivia or their clients\' data; facts — other things about them (important dates; about other people only on request).',
   'How they write themselves (message length, emoji, slang) the system measures itself: do not note it.',
   'Name — only the user\'s own name: "my name is …", "I\'m …", "it\'s …" at the start of their message, a signature at the end, a nickname they call themselves, talking about themselves in the third person, an answer to "what is your name?". Names from forwarded letters, documents, quotes and other people\'s names are not theirs. The name from the account profile (if given below) is only a hint: write it when it matches a signature.',
   'Sensitive — health, politics, religion, private life and relationships, money (income, debts, loans) — only when the user directly asked to remember it; by guess — never. Passwords, keys, codes, card numbers — never.',
@@ -110,6 +115,13 @@ const clip = (s: string, n: number) => { const t = plainText(s.split(MARKER).joi
 const tail = (s: string, n: number) => { const t = plainText(s.split(MARKER).join('')); return t.length > n ? '…' + t.slice(t.length - n).replace(/^\S*\s+/, '') : t; };
 
 export type CuratorInput = { rows: { ref: string; section: string; key: string | null; text: string; sure?: number }[]; prevAnswer: string; user: string; answer: string; profile?: string | null };
+export function answerSources(answer: string): string[] {
+  const out: string[] = [];
+  for (const m of answer.matchAll(/https?:\/\/[^\s)\]>"'»]+/g)) { const u = m[0].replace(/[.,;:]+$/, ''); if (!out.includes(u)) out.push(u); if (out.length >= 5) break; }
+  return out;
+}
+const CLIENT_DATA = /(ИНН|КПП|ОГРН|р\/с|расч[её]тн\S*\s+сч[её]т|(?<!\d)\d{10}(?!\d)|(?<!\d)\d{12}(?!\d)|ООО\s*[«"]|ИП\s+[А-ЯЁ][а-яё]+\s+[А-ЯЁ])/u;
+const hostOf = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
 export function curatorMessages(inp: CuratorInput, lang: 'ru' | 'en' = 'ru'): { role: 'system' | 'user'; content: string }[] {
   if (lang === 'en') {
     const en = ['Memory notes:'];
@@ -120,6 +132,7 @@ export function curatorMessages(inp: CuratorInput, lang: 'ru' | 'en' = 'ru'): { 
     if (inp.prevAnswer.trim()) en.push(`Assistant (before that): ${tail(inp.prevAnswer, 400)}`);
     en.push(`User: ${clip(inp.user, 1500) || '(no text)'}`);
     if (inp.answer.trim()) en.push(`Assistant: ${clip(inp.answer, 400)}`);
+    const srcE = answerSources(inp.answer); if (srcE.length) en.push(`Answer sources: ${srcE.join(' ; ')}`);
     en.push('', 'Memory changes (JSON):');
     return [{ role: 'system', content: SYSTEM_EN }, { role: 'user', content: en.join('\n') }];
   }
@@ -131,6 +144,7 @@ export function curatorMessages(inp: CuratorInput, lang: 'ru' | 'en' = 'ru'): { 
   if (inp.prevAnswer.trim()) lines.push(`Ассистент (перед этим): ${tail(inp.prevAnswer, 400)}`);
   lines.push(`Пользователь: ${clip(inp.user, 1500) || '(без текста)'}`);
   if (inp.answer.trim()) lines.push(`Ассистент: ${clip(inp.answer, 400)}`);
+  const src = answerSources(inp.answer); if (src.length) lines.push(`Источники ответа: ${src.join(' ; ')}`);
   lines.push('', 'Изменения памяти (JSON):');
   return [{ role: 'system', content: SYSTEM }, { role: 'user', content: lines.join('\n') }];
 }
@@ -159,7 +173,7 @@ export function parseOps(raw: string): Op[] { return parseOpsEx(raw).ops; }
 
 export type Applied = { op: 'add' | 'update' | 'delete'; text: string; sensitive: boolean; id?: string; maybe?: boolean; confirmed?: boolean; fix?: boolean; section?: string; prev?: { text: string; section: string; sure: number; key?: string | null; origin?: string } | null };
 export type Skipped = { op: string; why: string };
-export function applyOps(userId: string, ops: Op[], refs: Map<string, string>, ctx: { user: string; auto: boolean; threadId: string | null; messageId: string | null }): { applied: Applied[]; skipped: Skipped[] } {
+export function applyOps(userId: string, ops: Op[], refs: Map<string, string>, ctx: { user: string; auto: boolean; threadId: string | null; messageId: string | null; answer?: string; now?: number }): { applied: Applied[]; skipped: Skipped[] } {
   const applied: Applied[] = [], skipped: Skipped[] = [];
   const remember = askedToRemember(ctx.user), forget = askedToForget(ctx.user);
   let fixDeletes = 0;
@@ -179,17 +193,25 @@ export function applyOps(userId: string, ops: Op[], refs: Map<string, string>, c
       continue;
     }
     const sure = o.sure !== false || (remember && o.asked);
-    const text = (sure ? o.text : stripHedge(o.text)).trim();
+    let text = (sure ? o.text : stripHedge(o.text)).trim();
     if (!text) { skipped.push({ op: o.op, why: 'empty' }); continue; }
     if (isSecret(text)) { skipped.push({ op: o.op, why: 'secret' }); continue; }
     if (o.sensitive === 'secret') { skipped.push({ op: o.op, why: 'secret-model' }); continue; }
     if (ruleConflict(text)) { skipped.push({ op: o.op, why: 'rules' }); continue; }
-    if (workData(text)) { skipped.push({ op: o.op, why: 'workdata' }); continue; }
-    const topic = sensitiveTopic(text) ?? (o.sensitive && o.sensitive !== 'no' ? o.sensitive : null);
+    const knowledge = o.section === 'knowledge' && !(o.key && o.key !== 'none');
+    const term = o.section === 'rules' && /[—=]|(?<![\p{L}])(это|означает|значит|считаем|считать)(?![\p{L}])/iu.test(text);
+    if (knowledge || term ? CLIENT_DATA.test(text) : workData(text)) { skipped.push({ op: o.op, why: 'workdata' }); continue; }
+    const topic = knowledge || o.section === 'rules' ? personalTopic(text) : sensitiveTopic(text) ?? (o.sensitive && o.sensitive !== 'no' ? o.sensitive : null);
     if (topic && (!remember || !sure)) { skipped.push({ op: o.op, why: 'sensitive' }); continue; }
     const origin = remember && o.asked ? 'asked' as const : 'auto' as const;
     const key = o.key && o.key !== 'none' && KEYS[o.key] && o.key !== 'writes' ? o.key : null;
     const section: Section = key ? KEYS[key] : isSection(o.section) ? o.section : 'facts';
+    if (section === 'knowledge') {
+      const hosts = answerSources(ctx.answer ?? '').map(hostOf).filter(Boolean);
+      const host = hosts.find((h) => text.toLowerCase().includes(h.toLowerCase()) || text.toLowerCase().includes(h.split('.').slice(-2).join('.')));
+      if (!host) { skipped.push({ op: o.op, why: 'nosource' }); continue; }
+      if (!/\d{2}\.\d{2}\.\d{4}/.test(text)) text = `${text.replace(/[.\s]+$/, '')} (сверено ${new Date(ctx.now ?? Date.now()).toLocaleDateString('ru-RU', { timeZone: 'Europe/Moscow' })})`;
+    }
     const id = o.op === 'update' ? refs.get(o.id.trim()) : undefined;
     const cur = id ? listMemory(userId).find((r) => r.id === id) : undefined;
     const r = id && cur && (sure || cur.sure === 1)
@@ -209,8 +231,10 @@ type St = { on: boolean; running: boolean; tasks: Task[]; timer: NodeJS.Timeout 
 const g = globalThis as unknown as { __kxCurator?: St };
 const S = (): St => (g.__kxCurator ??= { on: false, running: false, tasks: [], timer: null, done: new Set(), gateDownUntil: 0, stats: { runs: 0, changed: 0, none: 0, fail: 0, busy: 0, skipped: 0, rescued: 0, parseFail: 0 } });
 
-const MODEL = () => process.env.KX_MEMORY_ENGINE_MODEL || gateModel();
+export const MODEL = () => process.env.KX_MEMORY_ENGINE_MODEL || gateModel();
 export function curatorUrl(): string {
+  const bg = bgTarget();
+  if (bg) return bg.url;
   const env = process.env.KX_MEMORY_ENGINE_URL;
   if (env !== undefined) return env.trim().replace(/\/+$/, '');
   return gateUrl();
@@ -233,7 +257,7 @@ export function curatorRequest(messages: ReturnType<typeof curatorMessages>) {
 }
 
 async function ask(url: string, messages: ReturnType<typeof curatorMessages>, signal: AbortSignal): Promise<string> {
-  const body = curatorRequest(messages);
+  const body = { ...curatorRequest(messages), model: modelFor(url, MODEL()) };
   let r: Response;
   try { r = await fetch(url + '/chat/completions', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   catch (e) { if (signal.aborted) throw new AskError('busy', 'timeout'); const c = netCode(e); throw new AskError(DOWN.has(c) ? 'down' : 'busy', c || (e as Error).message); }
@@ -295,7 +319,7 @@ async function runTask(t: Task, url: string): Promise<'ok' | 'none' | 'skip' | '
     if (pf) s.stats.parseFail = (s.stats.parseFail || 0) + 1;
     const th2 = db.select({ temporary: schema.threads.temporary }).from(schema.threads).where(eq(schema.threads.id, t.threadId)).get();
     if (!th2 || !memoryAllowed(t.userId, th2)) return 'skip';
-    const { applied, skipped } = applyOps(t.userId, ops, refs, { user: turn.user, auto: auto(), threadId: t.threadId, messageId: t.messageId });
+    const { applied, skipped } = applyOps(t.userId, ops, refs, { user: turn.user, auto: auto(), threadId: t.threadId, messageId: t.messageId, answer: turn.answer });
     if (applied.length) dedupeMemory(t.userId);
     if (memoryPrefs(t.userId).auto) { try { refreshWritingProfile(t.userId); } catch {  } }
     s.stats.skipped += skipped.length;
@@ -341,12 +365,13 @@ async function tick() {
   try { r = await runTask(t, url); } catch { r = 'error'; } finally { s.running = false; }
   s.stats.runs++;
   const drop = () => { s.tasks = s.tasks.filter((x) => x !== t); markCur(t.userMessageId); };
+  let fell = false;
   if (r === 'ok') { s.stats.changed++; drop(); }
   else if (r === 'none' || r === 'skip') { s.stats.none++; drop(); }
-  else if (r === 'down') { s.stats.busy++; if (++t.busy > 40) drop(); else s.gateDownUntil = Date.now() + downPause(); }
+  else if (r === 'down') { s.stats.busy++; if (++t.busy > 40) drop(); else if (!(fell = bgDown(url, 'куратор'))) s.gateDownUntil = Date.now() + downPause(); }
   else if (r === 'busy') { s.stats.busy++; if (++t.busy > 40) drop(); else t.notBefore = Date.now() + busyPause(t.intro); }
   else { s.stats.fail++; if (++t.tries >= 3) drop(); else t.notBefore = Date.now() + 15_000 * t.tries; }
-  if (s.tasks.length) schedule(r === 'down' ? downPause() : 300);
+  if (s.tasks.length) schedule(r === 'down' && !fell ? downPause() : 300);
 }
 
 function enqueue(t: Omit<Task, 'tries' | 'busy' | 'notBefore'>) {
@@ -434,6 +459,7 @@ export function registerCurator() {
   t.unref?.();
 }
 
+export function curatorBusy(): boolean { const s = S(); return s.running || s.tasks.length > 0; }
 export function curatorStats() { const s = S(); return { ...s.stats, queued: s.tasks.length, running: s.running }; }
 export async function curatorIdle(ms = 10_000) { const t0 = Date.now(); while ((S().tasks.length || S().running) && Date.now() - t0 < ms) await new Promise((r) => setTimeout(r, 20)); }
 export const _test = { S, tick, runTask, itemsOf };

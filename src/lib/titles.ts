@@ -13,6 +13,7 @@ import { cfg } from './cfg';
 import { localConf } from './localModel';
 import { envKey } from './models';
 import { userLang } from './userLang';
+import { bgDown, bgTarget, modelFor } from './bgEngine';
 
 const SYSTEM = [
   'Ты придумываешь название чата для списка чатов. Правила:',
@@ -105,6 +106,8 @@ const downPause = () => Number(process.env.KX_TITLE_DOWN_MS) || 60_000;
 const busyPause = () => Number(process.env.KX_TITLE_BUSY_MS) || 10_000 + Math.round(Math.random() * 20_000);
 
 function gateTarget(): { url: string; model: string } {
+  const bg = bgTarget();
+  if (bg) return { url: bg.url, model: bg.model || cfg('KX_TITLE_ENGINE_MODEL') };
   const env = process.env.KX_TITLE_ENGINE_URL;
   const model = cfg('KX_TITLE_ENGINE_MODEL');
   if (env !== undefined) return { url: env.trim().replace(/\/+$/, ''), model };
@@ -153,7 +156,7 @@ function netCode(e: unknown): string {
 }
 
 async function ask(url: string, messages: ReturnType<typeof titleMessages>, signal: AbortSignal): Promise<string> {
-  const body = { model: gateModel(), stream: false, max_tokens: 32, temperature: 0.3, chat_template_kwargs: { enable_thinking: false }, messages };
+  const body = { model: modelFor(url, gateModel()), stream: false, max_tokens: 32, temperature: 0.3, chat_template_kwargs: { enable_thinking: false }, messages };
   let r: Response;
   try { r = await fetch(url + '/chat/completions', { method: 'POST', signal, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   catch (e) {
@@ -264,14 +267,15 @@ async function step() {
   if (s.running) return;
   const r = await runTask(task, url).catch(() => 'error' as const);
   if (task.source === 'backfill') s.lastBackfill = Date.now();
-  if (r === 'down' && ++task.busy < BUSY_MAX) { s.gateDownUntil = Date.now() + downPause(); }
+  const fell = r === 'down' && bgDown(url, 'названия');
+  if (r === 'down' && ++task.busy < BUSY_MAX) { if (!fell) s.gateDownUntil = Date.now() + downPause(); }
   else if (r === 'busy' && ++task.busy < BUSY_MAX) { task.notBefore = Date.now() + busyPause(); }
   else if (r === 'error' && ++task.tries < 3) { task.notBefore = Date.now() + 30_000 * task.tries; }
   else {
     s.tasks.delete(task.key);
     if (r === 'error' || r === 'bad' || r === 'busy' || r === 'down') s.failed.set(task.key, Date.now());
   }
-  schedule(s.tasks.size ? (r === 'down' ? downPause() : 400) : idle);
+  schedule(s.tasks.size ? (r === 'down' && !fell ? downPause() : 400) : idle);
 }
 
 function enqueue(t: Omit<Task, 'tries' | 'busy' | 'notBefore' | 'added'>) {

@@ -18,7 +18,7 @@ import { useConfirm } from './Kit';
 import '@/styles/user-memory.css';
 import { INTRO_DRAFT as DRAFT } from '@/ext/client';
 
-type View = { threadId: string | null; messages: MsgView[]; busy: boolean; off?: boolean };
+type View = { threadId: string | null; messages: MsgView[]; busy: boolean; off?: boolean; progress?: { left: number; tail: boolean }; done?: boolean };
 
 export function MemoryIntro({ open, onClose }: { open: boolean; onClose: () => void }) {
   const t = useT();
@@ -26,6 +26,8 @@ export function MemoryIntro({ open, onClose }: { open: boolean; onClose: () => v
   const models = useShell()?.models ?? [];
   const [threadId, setThreadId] = useState<string | null>(null);
   const [off, setOff] = useState(false);
+  const [prog, setProg] = useState<{ left: number; tail: boolean } | null>(null);
+  const [done, setDone] = useState(false);
   const [err, setErr] = useState('');
   const { msgs, setMsgs, busy, send, stop } = useChatStream([], false, threadId, { quiet: true });
   const [confirmUi, ask] = useConfirm();
@@ -36,6 +38,7 @@ export function MemoryIntro({ open, onClose }: { open: boolean; onClose: () => v
 
   const take = useCallback((v: View) => {
     setOff(!!v.off);
+    setProg(v.progress ?? null); setDone(!!v.done);
     if (v.threadId) setThreadId(v.threadId);
     setMsgs(v.messages ?? []);
     stick.current = true;
@@ -59,6 +62,13 @@ export function MemoryIntro({ open, onClose }: { open: boolean; onClose: () => v
     })();
     return () => { gone = true; };
   }, [open, take]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!open || busy || !threadId) return;
+    let gone = false;
+    void fetch('/api/memory/intro', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((v: View | null) => { if (!gone && v) { setProg(v.progress ?? null); setDone(!!v.done); } }).catch(() => {});
+    return () => { gone = true; };
+  }, [open, busy, threadId, msgs.length]);
 
   useLive((e: LiveEv) => {
     if (!threadId || e.th !== threadId || e.t !== 'memupd') return;
@@ -95,6 +105,7 @@ export function MemoryIntro({ open, onClose }: { open: boolean; onClose: () => v
     <div className="mi-list" ref={setList} onScroll={onScroll} data-testid="intro-list">
       <div className="mi-feed">
         {off ? <p className="mi-note">{t('tools.memset.introOff')}</p> : null}
+        {!off && !done && prog && msgs.length > 0 && (prog.tail || prog.left > 0) && <div className="mi-prog" data-testid="intro-progress" aria-live="polite">{prog.tail ? t('tools.memset.introTail') : prog.left === 1 ? t('tools.memset.introLast') : t('tools.memset.introLeft', { n: prog.left })}</div>}
         {msgs.map((m) => m.role === 'user' ? (
           <div key={m.id} className="mi-u" data-testid="intro-user">
             <UserTurn m={m} />
@@ -107,6 +118,12 @@ export function MemoryIntro({ open, onClose }: { open: boolean; onClose: () => v
           </div>
         ))}
         {err && <p className="mi-note mi-note--err" role="alert">{err}</p>}
+        {done && !busy && (
+          <div className="mi-done" data-testid="intro-done">
+            <span>{t('tools.memset.introDone')}</span>
+            <button type="button" className="mi-restart-btn" onClick={onClose} data-testid="intro-fix"><Icon n="edit" sm />{t('tools.memset.introFix')}</button>
+          </div>
+        )}
         {answered && !busy && (
           <div className="mi-restart">
             <button type="button" className="mi-restart-btn" onClick={() => void restart()} disabled={restarting} data-testid="intro-restart">

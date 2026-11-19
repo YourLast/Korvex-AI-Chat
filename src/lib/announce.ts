@@ -12,7 +12,7 @@ export type ManualBanner = { enabled: boolean; text: string; level: BannerLevel;
 export type Probe = { ok: boolean; fails: number; at: number };
 export type ModelRef = { id: string; name: string };
 
-export type BannerView = { id: 'manual' | 'load' | 'busy' | 'local'; sig: string; level: BannerLevel; text: string };
+export type BannerView = { id: 'manual' | 'load' | 'busy' | 'local' | 'works'; sig: string; level: BannerLevel; text: string };
 export type ModelLive = { state: ModelState; until: number | null };
 export type StatusView = { now: number; banners: BannerView[]; models: Record<string, ModelLive> };
 
@@ -93,6 +93,14 @@ export function loadBanner(models: ModelRef[], load: LoadMap, probes: Record<str
 export function manualBanner(b: ManualBanner, now = Date.now()): BannerView | null {
   if (!b.enabled || !b.text.trim() || (b.until !== null && b.until <= now)) return null;
   return { id: 'manual', sig: 'm' + b.rev, level: b.level, text: b.text.trim() };
+}
+
+export type WorksFlag = { since: number; until: number };
+export function worksBanner(f: unknown, now = Date.now(), lang: Lang = 'ru'): BannerView | null {
+  const o = f as Partial<WorksFlag> | null;
+  if (!o || typeof o.until !== 'number' || !Number.isFinite(o.until) || o.until <= now) return null;
+  const since = typeof o.since === 'number' && Number.isFinite(o.since) ? o.since : 0;
+  return { id: 'works', sig: 'w' + since, level: 'info', text: tr(lang, 'srv.works') };
 }
 
 export function parseUntil(v: unknown, minutes?: unknown, now = Date.now()): number | null | undefined | 'bad' {

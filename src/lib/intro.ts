@@ -4,7 +4,7 @@ import { getDb, schema } from './db';
 import { cfg } from './cfg';
 import { getModels } from './models';
 import type { Thread } from './db/schema';
-import { INTRO, memoryAllowed, memoryMeta, setMemoryMeta } from './memory';
+import { INTRO, introProgress, isSecret, listMemory, memoryAllowed, memoryMeta, ruleConflict, setMemoryMeta, threadAnswers, threadUserTexts } from './memory';
 import { cancelThreadJobs, jobOfThread, submitTurn, type Submitted } from './jobs';
 import { considerIntro } from './curator';
 import { activePath, allMessages } from './tree';
@@ -33,14 +33,16 @@ function newThread(userId: string): Thread {
   return getDb().select().from(schema.threads).where(eq(schema.threads.id, t.id)).get()!;
 }
 
-export type IntroView = { threadId: string | null; messages: MsgView[]; busy: boolean; off?: boolean };
+export type IntroView = { threadId: string | null; messages: MsgView[]; busy: boolean; off?: boolean; progress?: { left: number; tail: boolean }; done?: boolean };
 
 export function introView(userId: string): IntroView {
   if (!memoryAllowed(userId, null)) return { threadId: null, messages: [], busy: false, off: true };
   const t = introThread(userId);
   if (!t) return { threadId: null, messages: [], busy: false };
   const v = loadThread(userId, t.id, { turns: 200 });
-  return { threadId: t.id, messages: v?.messages ?? [], busy: !!jobOfThread(t.id) };
+  const rows = listMemory(userId).filter((r) => !ruleConflict(r.text) && !isSecret(r.text));
+  const p = introProgress(rows, threadAnswers(t.id), threadUserTexts(t.id), true);
+  return { threadId: t.id, messages: v?.messages ?? [], busy: !!jobOfThread(t.id), progress: { left: p.left, tail: p.tail }, done: !!memoryMeta(userId).introEnd };
 }
 
 export function introTurn(userId: string, t: Thread, o: { text: string; mode?: 'send' | 'regenerate'; hidden?: boolean; timezone?: string }): Submitted {
@@ -90,6 +92,7 @@ export async function restartIntro(userId: string, o: { timezone?: string } = {}
     for (let i = 0; i < 100 && jobOfThread(old.id); i++) await new Promise((r) => setTimeout(r, 30));
   }
   const t = newThread(userId);
+  setMemoryMeta(userId, { introEnd: undefined });
   if (old) {
     const db = getDb();
     db.update(schema.userMemory).set({ threadId: t.id, messageId: null }).where(and(eq(schema.userMemory.userId, userId), eq(schema.userMemory.threadId, old.id))).run();

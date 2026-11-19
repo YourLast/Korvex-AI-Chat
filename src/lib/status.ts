@@ -8,7 +8,7 @@ import { standDefault } from './cfg';
 import { modelKey } from './providers';
 import { LOCAL_ID, localBanner, localReady } from './localModel';
 import {
-  ALL, BUSY_MODES, MAX_TEXT, PROBE_DOWN_AFTER, altModel, busyBanner, busyInit, busyOn, busyStep, downNotice, entryFor, loadBanner, manualBanner, modelLive,
+  ALL, BUSY_MODES, MAX_TEXT, PROBE_DOWN_AFTER, altModel, busyBanner, busyInit, busyOn, busyStep, downNotice, entryFor, loadBanner, manualBanner, modelLive, worksBanner,
   type BannerLevel, type BusyAuto, type BusyMode, type LoadMap, type LoadState, type ManualBanner, type ModelLive, type Probe, type StatusView,
 } from './announce';
 
@@ -134,6 +134,24 @@ export function busyView(now = Date.now()) {
   return { mode: s.store.busyMode, on: busyOn(s.store.busyMode, auto), auto, eta: s.busy.eta, since: s.busy.since, checkedAt: s.busy.at || null, now };
 }
 
+export const worksFile = () => process.env.KX_WORKS_FILE ?? path.join(dataDir(), 'works_banner.json');
+const wc: { key: string; val: unknown } = { key: '', val: null };
+export function worksState(now = Date.now()): { on: boolean; until: number | null } {
+  const o = readWorks() as { until?: unknown } | null;
+  const u = o && typeof o.until === 'number' && Number.isFinite(o.until) ? o.until : null;
+  return { on: u !== null && u > now, until: u };
+}
+function readWorks(): unknown {
+  const f = worksFile();
+  if (!f) return null;
+  try {
+    const st0 = fs.statSync(/*turbopackIgnore: true*/ f);
+    const key = `${f}:${st0.mtimeMs}:${st0.size}`;
+    if (key !== wc.key) { wc.val = JSON.parse(fs.readFileSync(/*turbopackIgnore: true*/ f, 'utf8')); wc.key = key; }
+    return wc.val;
+  } catch { wc.key = ''; wc.val = null; return null; }
+}
+
 export function modelStates(now = Date.now()): Record<string, ModelLive> {
   const s = st();
   return Object.fromEntries(refs().map((m) => [m.id, modelLive(m.id, s.store.load, s.probes.get(m.id), now)]));
@@ -143,7 +161,7 @@ export function statusFor(tz: string, now = Date.now(), lang: Lang = 'ru'): Stat
   const s = st();
   const busy = busyOn(s.store.busyMode, s.busy.on)
     ? busyBanner(s.busy.eta, s.store.busyMode === 'on' ? `bf${s.store.busyRev}` : `b${s.busy.since ?? 0}`, lang) : null;
-  const banners = [localBanner(lang), manualBanner(s.store.banner, now), loadBanner(shown(), s.store.load, probesObj(s), tz, now, lang), busy].filter((b): b is NonNullable<typeof b> => !!b);
+  const banners = [localBanner(lang), worksBanner(readWorks(), now, lang), manualBanner(s.store.banner, now), loadBanner(shown(), s.store.load, probesObj(s), tz, now, lang), busy].filter((b): b is NonNullable<typeof b> => !!b);
   return { now, banners, models: modelStates(now) };
 }
 

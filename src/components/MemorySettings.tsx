@@ -12,7 +12,7 @@ import { Icon } from './Icon';
 import { MemoryIntro } from './MemoryIntro';
 import '@/styles/user-memory.css';
 
-const SECTION_IDS = ['who', 'work', 'interests', 'style', 'facts'] as const;
+const SECTION_IDS = ['who', 'work', 'style', 'rules', 'knowledge', 'interests', 'facts'] as const;
 type SectionId = (typeof SECTION_IDS)[number];
 const sectionsOf = (t: T) => SECTION_IDS.map((id) => ({ id, title: t(`tools.memset.s.${id}`), hint: t(`tools.memset.s.${id}.hint`) }));
 const MAX = 200;

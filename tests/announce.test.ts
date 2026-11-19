@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { tmpData } from './helpers';
 import { ALL, entryFor, fmtUntil, loadBanner, manualBanner, modelLive, parseUntil, downNotice, type LoadMap } from '@/lib/announce';
@@ -185,6 +186,47 @@ describe('флаг нагрузки -> баннер и метки', () => {
     expect(S.statusFor('UTC').models.alpha.state).toBe('down');
     expect(S.statusFor('UTC', Date.now() + 6 * 60_000).models.alpha.state).toBe('ok');
     await loadRoute.POST(post('/api/admin/load-state', adminKey, { state: 'normal' }));
+  });
+});
+
+describe('технические работы: файл флага scripts/works_banner.sh', () => {
+  const sh = (...a: string[]) => execFileSync('bash', [path.join(process.cwd(), 'scripts/works_banner.sh'), ...a], { env: { ...process.env, KX_WORKS_FILE: S.worksFile() }, encoding: 'utf8' });
+  const works = (lang?: 'ru' | 'en' | 'sr', now?: number) => S.statusFor('UTC', now, lang).banners.find((b) => b.id === 'works');
+  it('on — полоса на языке интерфейса, info, не обслуживание движка; off — снята', () => {
+    expect(works()).toBeUndefined();
+    expect(sh('on', '180')).toMatch(/^works on до /);
+    expect(works()).toMatchObject({ level: 'info', text: 'Идут технические работы: сайт может отвечать медленнее, часть функций может быть временно недоступна.' });
+    expect(works('en')!.text).toBe('Maintenance in progress: the site may respond more slowly, and some features may be temporarily unavailable.');
+    expect(works('sr')!.text).toMatch(/^U toku su tehnički radovi/);
+    expect(S.maintenance('alpha')).toBeNull();
+    expect(sh('off')).toMatch(/off/);
+    expect(works()).toBeUndefined();
+  });
+  it('срок обязателен: гаснет сам, даже если файл остался', () => {
+    sh('on', '5');
+    expect(works(undefined, Date.now() + 6 * 60_000)).toBeUndefined();
+    fs.writeFileSync(S.worksFile(), '{"since":1}');
+    expect(works()).toBeUndefined();
+    fs.writeFileSync(S.worksFile(), 'не json');
+    expect(works()).toBeUndefined();
+    sh('off');
+  });
+  it('продление не возвращает закрытую полосу (подпись прежняя), новое включение — возвращает; срок не укорачивается', () => {
+    sh('on', '120');
+    const a = works()!.sig;
+    const u1 = JSON.parse(fs.readFileSync(S.worksFile(), 'utf8')).until;
+    sh('on', '30');
+    expect(works()!.sig).toBe(a);
+    expect(JSON.parse(fs.readFileSync(S.worksFile(), 'utf8')).until).toBe(u1);
+    sh('off');
+    sh('on', '30');
+    expect(works()!.sig).not.toBe(a);
+    sh('off');
+  });
+  it('минуты вне 1…1440 — отказ', () => {
+    expect(() => sh('on', '0')).toThrow();
+    expect(() => sh('on', '2000')).toThrow();
+    expect(() => sh('on', 'abc')).toThrow();
   });
 });
 

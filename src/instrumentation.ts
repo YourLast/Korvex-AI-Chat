@@ -24,6 +24,7 @@ export async function register() {
     try { (await import('./ext')).ext.boot?.(); } catch (e) { console.error('[ext] boot', (e as Error).message); }
     try { (await import('./lib/titles')).registerTitles(); } catch (e) { console.error('[titles]', (e as Error).message); }
     try { (await import('./lib/curator')).registerCurator(); } catch (e) { console.error('[memory]', (e as Error).message); }
+    try { (await import('./lib/memoryRules')).registerRules(); } catch (e) { console.error('[rules]', (e as Error).message); }
     try { (await import('./lib/code/janitor')).startJanitor(); } catch (e) { console.error('[code] janitor', (e as Error).message); }
     try { (await import('./lib/seat')).startSeatSweeper(); } catch (e) { console.error('[seat]', (e as Error).message); }
     if (process.env.KX_SCHEDULER !== '0') {
