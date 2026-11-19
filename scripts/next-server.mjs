@@ -65,6 +65,16 @@ if (adminPort) {
       res.end(JSON.stringify({ ok, instance: l?.id ?? null, pid: process.pid, draining, inflight, busy, rssMb: Math.round(process.memoryUsage().rss / 1048576), uptimeS: Math.round(process.uptime()) }));
       return;
     }
+    if ((req.url || '').startsWith('/__kx/ops/')) {
+      const ops = globalThis.__kxOps;
+      const u = new URL(req.url, 'http://127.0.0.1');
+      const name = u.pathname.slice('/__kx/ops/'.length);
+      const out = (code, o) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
+      if (!ops) return out(503, { error: 'приложение еще не готово' });
+      if (!ops.ok(req.headers['x-kx-ops'])) return out(401, { error: 'нужен ключ data/ops.key в X-KX-Ops' });
+      if (name === 'intro-end' && req.method !== 'POST') return out(405, { error: 'POST' });
+      try { const r = ops.run(name, u.searchParams); log(`ops ${name} → ${r.status}`); return out(r.status, r.body); } catch (e) { return out(500, { error: String(e?.message || e).slice(0, 200) }); }
+    }
     handle(req, res);
   });
   adm.listen(adminPort, '127.0.0.1', () => log(`служебный порт 127.0.0.1:${adminPort}`));

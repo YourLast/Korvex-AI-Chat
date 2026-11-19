@@ -146,8 +146,8 @@ describe('знакомство — постоянный разговор', () =>
     const Q = ['С какими задачами чаще всего будешь приходить?', 'В чём работаешь — какие программы и инструменты?', 'В каком виде тебе удобно получать ответы — таблицей или по шагам?', 'Что тебе важнее всего проверять в ответе?', 'Если удобно, прикрепи пример своего документа?'];
     const all = M.introNote(rows({}) as never, new Set(), Q);
     expect(all).toContain('Знакомство закончено');
-    expect(all).toContain('Спасибо, мне хватит. Вот что я запомнила:');
-    expect(all).toContain('только из узнанного в этом разговоре');
+    expect(all).toContain('«Спасибо, мне хватит.»');
+    expect(all).toContain('пунктов не перечисляй');
     expect(all).not.toContain('Ещё не знаешь');
     const adr = M.introNote(rows({ address: 'skip' }) as never, new Set(), [...Q, 'Тебе удобнее на «ты» или на «вы»?']);
     expect(adr).toContain('Знакомство закончено (о «на «ты» или на «вы»» он отвечать не стал — не переспрашивай)');
@@ -157,7 +157,8 @@ describe('знакомство — постоянный разговор', () =>
     expect(M.introNote(rows({}) as never, new Set(), Q.slice(0, 2))).toContain('Осталось 3 вопроса вместе с этим');
     expect(M.introNote(rows({}) as never, new Set(), Q.slice(0, 4))).toContain('Это последний вопрос');
     expect(left.split('Ещё не знаешь')[1]).not.toMatch(/город|интересно|юмор/);
-    expect(M.INTRO_RULES).toContain('«Спасибо, мне хватит. Вот что я запомнила:»');
+    expect(M.INTRO_RULES).toContain('«Спасибо, мне хватит.»');
+    expect(M.INTRO_RULES).toContain('пока заметка называет темы, знакомство не заканчивай');
     expect(M.INTRO_RULES).toContain('вопросом не заканчивай');
     expect(M.INTRO_RULES).toContain('я скажу, когда хватит');
     expect(M.INTRO_RULES).toContain('без канцелярита');

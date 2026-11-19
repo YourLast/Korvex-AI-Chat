@@ -63,7 +63,7 @@ export function MemorySettings({ initial }: { initial: MemoryState }) {
     if (r?.ok) { const j = (await r.json()) as MemoryState; setSt(j); setIntroDone(!!j.introDone); }
   }, []);
   useEffect(() => { if (window.location.hash === '#intro') { setIntro(true); window.history.replaceState(window.history.state, '', window.location.pathname); } }, []);
-  useLive((e) => { if (e.t === 'memory') void reload(); });
+  useLive((e) => { if (e.t === 'memory' && e.action !== 'rules-run') void reload(); });
   useEffect(() => {
     const id = window.location.hash.startsWith('#m-') ? window.location.hash.slice(3) : '';
     const it = id ? initial.items.find((x) => x.id === id) : undefined;

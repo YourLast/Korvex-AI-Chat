@@ -416,6 +416,8 @@ export const userMemory = sqliteTable('user_memory', {
 export type MemoryRow = typeof userMemory.$inferSelect;
 export type MemoryMeta = { askedName?: number; introAt?: number; introDone?: number;
   introEnd?: number;
+  introMarks?: { chat: string; done: string[]; skip: string[] };
+  endReason?: string;
   invite?: { start?: number; shown?: number; day?: string; later?: string; never?: number };
   rules?: { pending?: number; done?: number; n?: number; ids?: string[]; seen?: number; failed?: number; now?: number; later?: number; nowSeen?: number } };
 

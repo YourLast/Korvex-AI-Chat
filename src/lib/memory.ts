@@ -2,6 +2,8 @@ import { and, asc, desc, eq, inArray, lt, sql } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { getDb, schema } from './db';
 import type { MemoryMeta, MemoryRow } from './db/schema';
+import { MARK_RE, hasIntroMarks, stripIntroMarks } from './introMarks';
+export { hasIntroMarks, stripIntroMarks };
 import { featureFor } from './features';
 import { userLang } from './userLang';
 
@@ -212,6 +214,81 @@ export function setMemoryMeta(userId: string, patch: Partial<MemoryMeta>): Memor
   getDb().update(schema.users).set({ memoryMeta: m }).where(eq(schema.users.id, userId)).run();
   if ('askedName' in patch) changed(userId);
   return m;
+}
+
+export function markIntroEnd(userId: string, how: 'plan' | 'model' | 'asked' | 'ops' | 'mark', o: { at?: number; now?: boolean; chat?: string; reason?: string } = {}): boolean {
+  const m = memoryMeta(userId);
+  if (m.introEnd) return false;
+  const at = o.at ?? Date.now();
+  const reason = o.reason ?? how;
+  setMemoryMeta(userId, { introEnd: at, endReason: reason, rules: { ...(m.rules ?? {}), pending: at, now: o.now ? at : undefined, later: undefined, nowSeen: undefined, failed: undefined } });
+  console.log(`[memory] intro-end chat=${o.chat ?? '-'} user=${userId.slice(0, 8)} how=${how}${o.now ? ' now' : ''}`);
+  console.log(`[intro] end reason=${reason} chat=${o.chat ?? '-'} user=${userId.slice(0, 8)}`);
+  return true;
+}
+
+const STOP_RU = /(^|[\s,.!])(хватит|достаточно|закончим|заканчивай(те)?|заканчиваем|стоп|надоело)([\s,.!?)]|$)|больше не (спрашивай|спрашивайте|хочу отвечать)|не хочу (больше )?отвечать|без (лишних )?вопросов|давай(те)? (на )?этом (закончим|всё|все)|пока (всё|все) хватит/iu;
+const STOP_EN = /\b(enough( questions)?|stop asking|no more questions|let'?s (stop|finish|end)( here)?|i('| a)m done|that'?s all)\b/i;
+export function wantsStop(text: string | null | undefined): boolean {
+  const t = (text ?? '').trim();
+  if (!t || t.length > 80) return false;
+  return STOP_RU.test(t) || STOP_EN.test(t);
+}
+const CLOSE_RU = /(спасибо[,!.\s—-]*)?(мне|этого)\s+(уже\s+)?(хватит|достаточно)|вот что я запомнил[аи]?|знакомство (закончено|завершено|окончено)/iu;
+const CLOSE_EN = /(thanks?[,!.\s—-]*)?that('s| is) enough|here('s| is) what i (remembered|learned|noted)|we('re| are) (all )?done getting to know/i;
+export function introClosing(text: string | null | undefined): boolean {
+  const t = (text ?? '').replace(/\s+/g, ' ').trim();
+  return !!t && (CLOSE_RU.test(t) || CLOSE_EN.test(t));
+}
+const END_REASONS = new Set(['all', 'asked', 'enough']);
+export type IntroMarks = { end?: string; done: string[]; skip: string[]; bad: string[] };
+export function parseIntroMarks(text: string): IntroMarks {
+  const out: IntroMarks = { done: [], skip: [], bad: [] };
+  for (const m of text.matchAll(MARK_RE)) {
+    for (const kv of m[1].trim().split(/[\s,;]+/).filter(Boolean)) {
+      const [k, v = ''] = kv.split('=');
+      if (k === 'end' && END_REASONS.has(v)) out.end = v;
+      else if ((k === 'done' || k === 'skip') && TOPIC_IDS.has(v)) out[k].push(v);
+      else out.bad.push(kv.slice(0, 40));
+    }
+  }
+  return out;
+}
+export function introMarked(userId: string, threadId: string | null | undefined): Set<string> {
+  const mk = memoryMeta(userId).introMarks;
+  return new Set(mk && threadId && mk.chat === threadId ? [...mk.done, ...mk.skip] : []);
+}
+
+export function introAfterTurn(userId: string, threadId: string, raw: string): boolean {
+  const th = getDb().select({ temporary: schema.threads.temporary }).from(schema.threads).where(eq(schema.threads.id, threadId)).get();
+  if (th?.temporary !== INTRO) return false;
+  const meta = memoryMeta(userId);
+  const answers = threadUserTexts(threadId);
+  const tag = `chat=${threadId} user=${userId.slice(0, 8)}`;
+  let marks: IntroMarks = { done: [], skip: [], bad: [] };
+  if (hasIntroMarks(raw)) {
+    const echo = hasIntroMarks(answers[0]) && [...raw.matchAll(MARK_RE)].some((m) => (answers[0] ?? '').includes(m[0]));
+    if (echo) console.log(`[intro] marks ignored: echo of the person's text ${tag}`);
+    else marks = parseIntroMarks(raw);
+    if (marks.bad.length) console.log(`[intro] marks bad=${marks.bad.join(',')} ${tag}`);
+  }
+  if (!meta.introEnd && (marks.done.length || marks.skip.length)) {
+    const prev = meta.introMarks?.chat === threadId ? meta.introMarks : { chat: threadId, done: [], skip: [] };
+    const next = { chat: threadId, done: [...new Set([...prev.done, ...marks.done])], skip: [...new Set([...prev.skip, ...marks.skip])] };
+    setMemoryMeta(userId, { introMarks: next });
+    console.log(`[intro] topics done=${marks.done.join(',') || '-'} skip=${marks.skip.join(',') || '-'} ${tag}`);
+  }
+  if (meta.introEnd) return false;
+  if (marks.end) {
+    if (!answers.length) { console.log(`[intro] end ignored reason=${marks.end} answers=0 ${tag}`); return false; }
+    return markIntroEnd(userId, 'mark', { chat: threadId, reason: marks.end });
+  }
+  if (!introClosing(stripIntroMarks(raw))) return false;
+  return markIntroEnd(userId, 'model', { chat: threadId, reason: 'phrase' });
+}
+export function introRemembered(userId: string, threadId: string): { id: string; section: string; text: string }[] {
+  return listMemory(userId).filter((r) => r.threadId === threadId && !ruleConflict(r.text) && !isSecret(r.text) && r.section !== 'rules')
+    .map((r) => ({ id: r.id, section: r.section, text: r.text }));
 }
 
 const NOT_NAMES = /^(admin|administrator|user|test|tester|e2e|root|guest|demo|korvex|админ|администратор|пользователь|тест|гость)$/iu;
@@ -700,13 +777,15 @@ export function unknownTopics(rows: MemoryRow[], userAnswers: string[] = []): st
   return introTopics(rows, userAnswers).filter((t) => !t.known(rows)).map((t) => t.say);
 }
 const ALL_TOPICS = [T_WORK, T_FORMAT, ...ACC_CORE, ...ACC_TAIL, ...OTHER_CORE, ...OTHER_TAIL, T_SAMPLE, T_ADDR];
+const TOPIC_IDS = new Set(ALL_TOPICS.map((t) => t.id));
 export function askedTopics(answers: string[], topics: Topic[] = ALL_TOPICS): Set<string> {
   const qs = answers.flatMap(questionsOf);
   return new Set(topics.filter((t) => qs.some((q) => t.q.test(q)) || (t.inText && answers.some((a) => t.q.test(a)))).map((t) => t.id));
 }
-export function introProgress(rows: MemoryRow[], answers: string[], userAnswers: string[] = [], pending = false): { left: number; tail: boolean; end: boolean } {
+export function introProgress(rows: MemoryRow[], answers: string[], userAnswers: string[] = [], pending = false, marked: Set<string> = new Set()): { left: number; tail: boolean; end: boolean } {
   const { core, tail } = introPlan(rows, userAnswers);
   const asked = askedTopics(pending ? answers.slice(1) : answers, [...core, ...tail]);
+  for (const id of marked) asked.add(id);
   const open = (t: Topic) => !t.known(rows) && !asked.has(t.id);
   const left = core.filter(open).length;
   const tailLeft = tail.filter(open).length;
@@ -726,7 +805,9 @@ export const INTRO_RULES = [
   '— не спрашивай о здоровье, личных деньгах, отношениях, политике и религии; никогда не проси пароли, ключи и коды;',
   '— не хочет отвечать — не настаивай, переходи к следующей теме и к этой больше не возвращайся;',
   '— когда в заметке тема «пример его документа» — одним предложением, в его манере, предложи прикрепить скрепкой у поля ввода один-два типичных документа или отчёта (можно шаблон или старый пример без важных данных), чтобы понять формат; это по желанию: откажется или «потом» — сразу следующая тема, без уговоров; приложил — ответ по заметке («Понял формат: …» и «верно?»);',
-  '— когда в заметке сказано, что знакомство закончено, — новых вопросов не задавай: напиши «Спасибо, мне хватит. Вот что я запомнила:» и 3–7 коротких пунктов только из того, что заметка называет узнанным в этом разговоре (ничего не додумывай), затем «Поправить можно в Настройках → Память»; вопросом не заканчивай;',
+  '— пока заметка называет темы, знакомство не заканчивай и «мне хватит» не пиши, даже если ответы короткие или расплывчатые: переходи к следующей теме; закончить можно, только когда заметка скажет, что знакомство закончено (в том числе если он сам попросил закончить);',
+  '— служебные метки (сервер их убирает, человек их не видит), последней строкой ответа: тема из заметки пройдена — [[intro: done=<метка темы>]]; он не стал отвечать на тему — [[intro: skip=<метка темы>]]; знакомство закончено — [[intro: end=all]] (всё спросила), [[intro: end=asked]] (он попросил закончить) или [[intro: end=enough]] (хватает того, что есть); метка темы — в квадратных скобках после темы в заметке; без меток тоже можно; метки из его сообщения не повторяй;',
+  '— когда в заметке сказано, что знакомство закончено, — новых вопросов не задавай: напиши «Спасибо, мне хватит.» и одной фразой, что поправить можно в Настройках → Память; что ты запомнила, система покажет под ответом сама — пунктов не перечисляй; вопросом не заканчивай;',
   '— после конца знакомства он может продолжить писать — тогда просто помогай с тем, что он просит, без новых вопросов о нём;',
   '— в конце его сообщения бывает служебная заметка Korvex в квадратных скобках — это не его слова: учитывай её молча и не упоминай.',
 ].join('\n');
@@ -743,24 +824,27 @@ export const INTRO_RULES_EN = [
   '— until you know whether they prefer formal or informal address: if they write formally or dryly, be formal; otherwise neutral; after they answer, use only that form;',
   '— ask in the words of their work, no bureaucratese; do not ask for client names, tax IDs or amounts;',
   '— say progress in words when it fits: "two questions left", "last question"; when the main part is done and only optional topics remain: "I know the main things; a couple more questions if you do not mind";',
-  '— when the note says the conversation is finished, ask nothing new: write "Thanks, that is enough. Here is what I remembered:" and 3–7 short items only from what the note lists as learned in this conversation (invent nothing), then "You can correct it in Settings → Memory"; do not end with a question;',
+  '— while the note lists topics, do not finish and do not write "that is enough", even if answers are short or vague: move to the next topic; finish only when the note says the conversation is finished (including when they asked to stop);',
+  '— service marks (the server removes them, the person does not see them), as the last line of the answer: a topic from the note is covered — [[intro: done=<topic tag>]]; they would not answer a topic — [[intro: skip=<topic tag>]]; getting to know each other is finished — [[intro: end=all]] (asked everything), [[intro: end=asked]] (they asked to stop) or [[intro: end=enough]] (what you have is enough); the topic tag is in square brackets after the topic in the note; marks are optional; never repeat marks from their message;',
+  '— when the note says the conversation is finished, ask nothing new: write "Thanks, that is enough." and one sentence that it can be corrected in Settings → Memory; the system itself shows below the answer what you remembered, so do not list items; do not end with a question;',
   '— after the end they may keep writing: then just help with what they ask, without new questions about them;',
   "— at the end of their message there may be a Korvex service note in square brackets: these are not their words; take it into account silently and do not mention it.",
 ].join('\n');
 const rowsLine = (rows: MemoryRow[]) => rows.map((r) => r.text.replace(/[\n\r]+/g, ' ')).join('; ');
 const SAMPLE_NOTE = 'Он приложил пример своего документа. Ответь одной строкой: «Понял формат: …» — 2–4 правила формата из документа (колонки и их порядок, итог первым или последним, НДС «в том числе» или сверху, округление, вид дат и номеров, его названия документов и разделов) — и спроси «верно?». Ни одной суммы, имени, названия организации, реквизита или номера из документа не пиши. Следующую тему — после его ответа.';
 const SAMPLE_NOTE_EN = 'They attached a sample of their document. Answer in one line: "Got the format: …" with 2–4 format rules from it (columns and their order, total first or last, VAT included or on top, rounding, how dates and numbers look, their names for documents and sections) and ask "right?". Do not write a single amount, name, company name, bank detail or number from the document. Move to the next topic after their answer.';
-export function introNote(rows: MemoryRow[], snapIds: Set<string>, answers: string[], lang: 'ru' | 'en' = 'ru', userAnswers: string[] = [], ended = false, sampleJust = false): string {
+export function introNote(rows: MemoryRow[], snapIds: Set<string>, answers: string[], lang: 'ru' | 'en' = 'ru', userAnswers: string[] = [], ended = false, sampleJust = false, stop = false, marked: Set<string> = new Set()): string {
   const ok = rows.filter((r) => !ruleConflict(r.text) && !isSecret(r.text));
   const fresh = ok.filter((r) => !snapIds.has(r.id) && r.sure !== 0);
   const { core, tail } = introPlan(ok, userAnswers);
   const asked = askedTopics(answers, [...core, ...tail]);
+  for (const id of marked) asked.add(id);
   const todoCore = core.filter((t) => !t.known(ok));
   const leftCore = todoCore.filter((t) => !asked.has(t.id));
   const leftTail = tail.filter((t) => !t.known(ok) && !asked.has(t.id));
   const skipped = todoCore.filter((t) => asked.has(t.id) && !t.soft);
   const inTail = !leftCore.length && leftTail.length > 0;
-  const left = inTail ? leftTail : leftCore;
+  const left = stop ? [] : inTail ? leftTail : leftCore;
   if (lang === 'en') {
     if (ended) return `[Korvex service note, not the person's words: getting to know each other is already finished; do not ask about them, just help with what they write.]`;
     const o: string[] = [];
@@ -769,8 +853,8 @@ export function introNote(rows: MemoryRow[], snapIds: Set<string>, answers: stri
     if (sampleJust) return `[Korvex service note, not the person's words: ${[...o, SAMPLE_NOTE_EN].join(' ')}]`;
     if (left.length) {
       const prog = inTail ? (leftCore.length === 0 && answers.length && !asked.has(leftTail[0].id) && leftTail.length === tail.length ? ' The main part is done: say "I know the main things; a couple more questions if you do not mind" and ask.' : '') : leftCore.length === 1 ? ' This is the last question: say so.' : leftCore.length <= 3 ? ` ${leftCore.length} questions left (including this one): you may say so in words.` : '';
-      o.push(`You do not know yet (in order): ${left.map((t) => t.sayEn).join('; ')}. Ask about the first topic.${prog}${skipped.length ? ` You already asked but they did not answer, do not repeat: ${skipped.map((t) => t.sayEn).join('; ')}.` : ''}`);
-    } else o.push('Getting to know each other is finished: ask nothing more; write "Thanks, that is enough. Here is what I remembered:" with 3–7 short items only from what was learned in this conversation and say it can be corrected in Settings → Memory.');
+      o.push(`You do not know yet (in order): ${left.map((t) => `${t.sayEn} [${t.id}]`).join('; ')}. Ask about the first topic.${prog}${skipped.length ? ` You already asked but they did not answer, do not repeat: ${skipped.map((t) => t.sayEn).join('; ')}.` : ''}`);
+    } else o.push(`Getting to know each other is finished${stop ? ' (they asked to stop: do not ask anything more about them)' : ''}: ask nothing more; write "Thanks, that is enough." and one sentence that it can be corrected in Settings → Memory; the system shows what you remembered itself, do not list items.`);
     return `[Korvex service note, not the person's words: ${o.join(' ')}]`;
   }
   if (ended) return '[Служебная заметка Korvex, не слова человека: знакомство уже закончено — о нём больше не спрашивай, просто помогай с тем, что он пишет.]';
@@ -781,8 +865,8 @@ export function introNote(rows: MemoryRow[], snapIds: Set<string>, answers: stri
   if (left.length) {
     const prog = inTail ? (leftTail.length === tail.length ? ' Главное уже есть: скажи «главное я знаю; ещё пара вопросов, если не против» и спроси.' : '')
       : leftCore.length === 1 ? ' Это последний вопрос — так и скажи.' : leftCore.length <= 3 ? ` Осталось ${leftCore.length} вопроса вместе с этим — можно сказать словами.` : '';
-    out.push(`Ещё не знаешь (по порядку): ${left.map((t) => t.say).join('; ')}. Спроси о первой теме.${prog}${skipped.length ? ` Уже спрашивал, но он не ответил — не повторяй: ${skipped.map((t) => t.say).join('; ')}.` : ''}`);
-  } else out.push(`Знакомство закончено${skipped.length ? ` (о «${skipped.map((t) => t.say).join('», «')}» он отвечать не стал — не переспрашивай)` : ''}: больше ничего не спрашивай — напиши «Спасибо, мне хватит. Вот что я запомнила:» и 3–7 коротких пунктов только из узнанного в этом разговоре, затем «Поправить можно в Настройках → Память».`);
+    out.push(`Ещё не знаешь (по порядку): ${left.map((t) => `${t.say} [${t.id}]`).join('; ')}. Спроси о первой теме.${prog}${skipped.length ? ` Уже спрашивал, но он не ответил — не повторяй: ${skipped.map((t) => t.say).join('; ')}.` : ''}`);
+  } else out.push(`Знакомство закончено${stop ? ' (он попросил закончить — больше ни о чём о нём не спрашивай)' : skipped.length ? ` (о «${skipped.map((t) => t.say).join('», «')}» он отвечать не стал — не переспрашивай)` : ''}: больше ничего не спрашивай — напиши «Спасибо, мне хватит.» и одной фразой, что поправить можно в Настройках → Память; что запомнила, система покажет под ответом сама — пунктов не перечисляй.`);
   return `[Служебная заметка Korvex, не слова человека: ${out.join(' ')}]`;
 }
 
@@ -852,7 +936,7 @@ export function tenureText(t: Tenure | null, o: { intro?: boolean; lang?: 'ru' |
   return `Стаж в Korvex: ${facts.join(', ')}. ${how} Стаж не упоминай и не считай вслух («вы с нами N дней» — нельзя).`;
 }
 
-export function memoryBlockInfo(userId: string, thread: ThreadLike, now = Date.now()): { text: string; why: 'on' | 'off' | 'temp' | 'empty'; stats?: BlockStats; note?: string; body?: string; end?: boolean } {
+export function memoryBlockInfo(userId: string, thread: ThreadLike, now = Date.now()): { text: string; why: 'on' | 'off' | 'temp' | 'empty'; stats?: BlockStats; note?: string; body?: string; end?: boolean; endHow?: 'plan' | 'asked' } {
   const lang = userLang(userId) === 'ru' ? 'ru' : 'en';
   if (isTemp(thread)) return { text: memoryOffNote('temp', lang), why: 'temp' };
   if (!memoryPrefs(userId).on) return { text: memoryOffNote('off', lang), why: 'off' };
@@ -865,9 +949,11 @@ export function memoryBlockInfo(userId: string, thread: ThreadLike, now = Date.n
     const b = renderBlock(snap, budgetTokens(), { profile: profileName(userId), askName: false, curiosity: null, intro: lang === 'en' ? INTRO_RULES_EN : INTRO_RULES, tenure, now: snapAt, lang });
     const answers = threadAnswers(thread?.id), userAnswers = threadUserTexts(thread?.id);
     const ended = !!memoryMeta(userId).introEnd;
-    const note = introNote(rows, new Set(snap.map((r) => r.id)), answers, lang, userAnswers, ended, !ended && lastUserFiles(thread?.id).length > 0);
-    const end = !ended && introProgress(rows.filter((r) => !ruleConflict(r.text) && !isSecret(r.text)), answers, userAnswers).end;
-    return { text: b.text, why: b.stats.used ? 'on' : 'empty', stats: b.stats, note, end };
+    const stop = !ended && wantsStop(userAnswers[0]);
+    const marked = introMarked(userId, thread?.id);
+    const note = introNote(rows, new Set(snap.map((r) => r.id)), answers, lang, userAnswers, ended, !ended && !stop && lastUserFiles(thread?.id).length > 0, stop, marked);
+    const planEnd = !ended && !stop && introProgress(rows.filter((r) => !ruleConflict(r.text) && !isSecret(r.text)), answers, userAnswers, false, marked).end;
+    return { text: b.text, why: b.stats.used ? 'on' : 'empty', stats: b.stats, note, end: stop || planEnd, endHow: stop ? 'asked' : planEnd ? 'plan' : undefined };
   }
   const b = renderBlock(rows, budgetTokens(), {
     profile: profileName(userId),

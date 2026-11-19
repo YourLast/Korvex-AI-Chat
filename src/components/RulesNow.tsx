@@ -20,12 +20,12 @@ export function RulesNow({ bump = 0 }: { bump?: number }) {
   }, []);
   useEffect(() => { void load(); }, [load, bump]);
   useLive((e) => { if (e.t === 'memory') void load(); });
-  const live = v?.state === 'queued' || v?.state === 'running';
+  const every = v?.state === 'queued' || v?.state === 'running' ? POLL_MS : v?.state === 'offer' || v?.state === 'waiting' ? POLL_MS * 5 : 0;
   useEffect(() => {
-    if (!live) return;
-    const id = window.setInterval(() => { void load(); }, POLL_MS);
+    if (!every) return;
+    const id = window.setInterval(() => { void load(); }, every);
     return () => window.clearInterval(id);
-  }, [live, load]);
+  }, [every, load]);
   const act = async (action: 'now' | 'later' | 'seen') => {
     setBusy(true);
     try {
@@ -45,8 +45,9 @@ export function RulesNow({ bump = 0 }: { bump?: number }) {
     <Button kind="primary" busy={busy} disabled={busy} onClick={() => void act('now')} testId="rn-go">{t('tools.memset.rn.go')}</Button>
     <button type="button" className="iiv-never" disabled={busy} onClick={() => leave(() => void act('later'))} data-testid="rn-later">{t('tools.memset.rn.later')}</button>
   </>);
+  if (v.state === 'waiting') return box(t('tools.memset.rn.t'), t('tools.memset.rn.waitS'), <Button kind="secondary" busy={busy} disabled={busy} onClick={() => void act('now')} testId="rn-go">{t('tools.memset.rn.go')}</Button>);
   if (v.state === 'queued') return box(t('tools.memset.rn.queued'), t('tools.memset.rn.runS'), null, true);
-  if (v.state === 'running') return box(t('tools.memset.rn.run'), t('tools.memset.rn.runS'), null, true);
+  if (v.state === 'running') return box(t('tools.memset.rn.run'), t(v.auto ? 'tools.memset.rn.runAuto' : 'tools.memset.rn.runS'), null, true);
   if (v.state === 'failed') return box(t('tools.memset.rn.fail'), null, <Button kind="secondary" busy={busy} disabled={busy} onClick={() => void act('now')} testId="rn-retry">{t('tools.memset.rn.retry')}</Button>);
   return v.n > 0
     ? box(t('tools.memset.rn.done', { n: v.n }), t('tools.memset.rn.doneS'), <Button kind="primary" onClick={() => leave(() => void open())} testId="rn-open">{t('tools.memset.rn.open')}</Button>)

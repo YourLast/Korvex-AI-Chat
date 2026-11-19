@@ -4,7 +4,7 @@ import { getDb, schema } from './db';
 import { cfg } from './cfg';
 import { getModels } from './models';
 import type { Thread } from './db/schema';
-import { INTRO, introProgress, isSecret, listMemory, memoryAllowed, memoryMeta, ruleConflict, setMemoryMeta, threadAnswers, threadUserTexts } from './memory';
+import { INTRO, introMarked, introProgress, introRemembered, isSecret, listMemory, memoryAllowed, memoryMeta, ruleConflict, setMemoryMeta, threadAnswers, threadUserTexts } from './memory';
 import { cancelThreadJobs, jobOfThread, submitTurn, type Submitted } from './jobs';
 import { considerIntro } from './curator';
 import { activePath, allMessages } from './tree';
@@ -33,7 +33,8 @@ function newThread(userId: string): Thread {
   return getDb().select().from(schema.threads).where(eq(schema.threads.id, t.id)).get()!;
 }
 
-export type IntroView = { threadId: string | null; messages: MsgView[]; busy: boolean; off?: boolean; progress?: { left: number; tail: boolean }; done?: boolean };
+export type IntroView = { threadId: string | null; messages: MsgView[]; busy: boolean; off?: boolean; progress?: { left: number; tail: boolean }; done?: boolean;
+   remembered?: { id: string; text: string }[] };
 
 export function introView(userId: string): IntroView {
   if (!memoryAllowed(userId, null)) return { threadId: null, messages: [], busy: false, off: true };
@@ -41,8 +42,10 @@ export function introView(userId: string): IntroView {
   if (!t) return { threadId: null, messages: [], busy: false };
   const v = loadThread(userId, t.id, { turns: 200 });
   const rows = listMemory(userId).filter((r) => !ruleConflict(r.text) && !isSecret(r.text));
-  const p = introProgress(rows, threadAnswers(t.id), threadUserTexts(t.id), true);
-  return { threadId: t.id, messages: v?.messages ?? [], busy: !!jobOfThread(t.id), progress: { left: p.left, tail: p.tail }, done: !!memoryMeta(userId).introEnd };
+  const p = introProgress(rows, threadAnswers(t.id), threadUserTexts(t.id), true, introMarked(userId, t.id));
+  const done = !!memoryMeta(userId).introEnd;
+  return { threadId: t.id, messages: v?.messages ?? [], busy: !!jobOfThread(t.id), progress: { left: p.left, tail: p.tail }, done,
+    ...(done ? { remembered: introRemembered(userId, t.id).map((r) => ({ id: r.id, text: r.text })) } : {}) };
 }
 
 export function introTurn(userId: string, t: Thread, o: { text: string; mode?: 'send' | 'regenerate'; hidden?: boolean; timezone?: string; fileIds?: string[] }): Submitted {

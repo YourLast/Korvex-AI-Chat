@@ -148,6 +148,7 @@ export async function rulesTick(now = Date.now()): Promise<string | null> {
 async function runOne(userId: string, urgent: boolean): Promise<string | null> {
   const s = S();
   s.running = true; s.cur = userId; s.stats.runs++;
+  publish(userId, { t: 'memory', action: 'rules-run' });
   let r: Awaited<ReturnType<typeof runRules>> = 'skip';
   try {
     r = await runRules(userId, { now: urgent });
@@ -160,27 +161,27 @@ async function runOne(userId: string, urgent: boolean): Promise<string | null> {
 
 export const rulesNowOn = () => process.env.KX_RULES_NOW !== '0' && process.env.KX_MEMORY_RULES !== '0' && process.env.KX_MEMORY_CURATOR !== '0' && !!curatorUrl();
 
-export type RulesView = { state: 'none' | 'offer' | 'queued' | 'running' | 'done' | 'failed'; n: number; pos: number };
+export type RulesView = { state: 'none' | 'offer' | 'waiting' | 'queued' | 'running' | 'done' | 'failed'; n: number; pos: number; auto?: boolean };
 export function rulesView(userId: string): RulesView {
   const none: RulesView = { state: 'none', n: 0, pos: 0 };
   if (!rulesNowOn()) return none;
   const m = memoryMeta(userId), r = m.rules ?? {};
   if (!m.introEnd) return none;
   const s = S();
-  if (s.cur === userId) return { state: 'running', n: 0, pos: 0 };
+  if (s.cur === userId) return { state: 'running', n: 0, pos: 0, ...(r.now ? {} : { auto: true }) };
   if (r.pending) {
     if (r.now) { const q = nowQueue().filter((id) => id !== s.cur); const i = q.indexOf(userId); return { state: 'queued', n: 0, pos: (i < 0 ? q.length : i) + 1 + (s.running ? 1 : 0) }; }
-    return r.later ? none : { state: 'offer', n: 0, pos: 0 };
+    return { state: r.later ? 'waiting' : 'offer', n: 0, pos: 0 };
   }
-  if (r.now && r.failed && r.failed > (r.done ?? 0)) return { state: 'failed', n: 0, pos: 0 };
-  if (r.now && r.done && !r.nowSeen) return { state: 'done', n: r.n ?? 0, pos: 0 };
+  if (r.failed && r.failed > (r.done ?? 0)) return { state: 'failed', n: 0, pos: 0 };
+  if (r.done && r.done >= (m.introEnd ?? 0) && !(r.nowSeen && r.nowSeen >= r.done)) return { state: 'done', n: r.n ?? 0, pos: 0 };
   return none;
 }
 
 export function rulesAction(userId: string, action: 'now' | 'later' | 'seen', now = Date.now()): RulesView {
   const v = rulesView(userId);
   const r = memoryMeta(userId).rules ?? {};
-  if (action === 'now' && (v.state === 'offer' || v.state === 'failed')) {
+  if (action === 'now' && (v.state === 'offer' || v.state === 'waiting' || v.state === 'failed')) {
     setMemoryMeta(userId, { rules: { ...r, pending: r.pending ?? now, now, later: undefined, failed: undefined } });
     kickRules();
   } else if (action === 'later' && v.state === 'offer') setMemoryMeta(userId, { rules: { ...r, later: now } });

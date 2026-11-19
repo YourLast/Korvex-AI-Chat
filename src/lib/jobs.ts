@@ -28,7 +28,7 @@ import { orgHeader } from './orgCard';
 import { agentHistory, chatToOai, folderInstruction, transcriptForMeta, withExtra } from './agentHistory';
 import type { StepEvent } from './tools/types';
 import type { MemoryInfo } from './types';
-import { INTRO, memoryAllowed, memoryBlockInfo, memoryMeta, setMemoryMeta } from './memory';
+import { INTRO, hasIntroMarks, introAfterTurn, markIntroEnd, memoryAllowed, memoryBlockInfo, stripIntroMarks } from './memory';
 import { turnNotes } from './introInvite';
 import { runClaude } from './anthropic/run';
 import { isClaudeUsage, sumClaudeUsage } from './anthropic/price';
@@ -496,7 +496,7 @@ function historyOf(j: Live, model: ModelCfg, tz: string): { messages: ChatMsg[];
   if (!me) throw new TurnError(404, 'Сообщение удалено');
   const path: Message[] = activePath(all, j.mode === 'continue' ? me.id : me.parentId);
   try {
-    if (th?.temporary === INTRO && mem !== null) { const mi2 = lastMemInfo; if (mi2?.end) { const now = Date.now(); setMemoryMeta(j.userId, { introEnd: now, rules: { ...(memoryMeta(j.userId).rules ?? {}), pending: now, now: undefined, later: undefined, nowSeen: undefined, failed: undefined } }); } }
+    if (th?.temporary === INTRO && mem !== null) { if (lastMemInfo?.end) markIntroEnd(j.userId, lastMemInfo.endHow ?? 'plan', { chat: j.threadId! }); }
     else if (th && !th.temporary && j.kind === 'chat' && !j.lane && j.mode === 'send' && memoryAllowed(j.userId, th)) {
       const u = path.at(-1);
       const extra = turnNotes(j.userId, u?.role === 'user' ? u : null, path.at(-2)?.role === 'assistant' ? path.at(-2)!.content : null, j.levelId);
@@ -738,6 +738,11 @@ function finalize(j: Live, status: JobStatus) {
   j.status = status;
   const db = getDb();
   const stopped = status === 'cancelled';
+  let introRaw: string | null = null;
+  if (j.threadId && j.kind === 'chat' && !j.lane && hasIntroMarks(j.content)) {
+    const tt = db.select({ temporary: schema.threads.temporary }).from(schema.threads).where(eq(schema.threads.id, j.threadId)).get();
+    if (tt?.temporary === INTRO) { introRaw = j.content; j.content = stripIntroMarks(j.content); }
+  }
   const durationMs = j.base.durationMs + (j.durationMs || (j.startedAt ? Date.now() - j.startedAt : 0));
   try {
     if (j.messageId) {
@@ -786,6 +791,7 @@ function finalize(j: Live, status: JobStatus) {
   if (fin.pair?.waiting && (fin.notice === 'toast' || fin.notice === 'push')) fin.notice = 'quiet';
   const both = fin.pair && !fin.pair.waiting && fin.pair.both.length > 1
     ? ((names) => fin.pair!.both.map((x, i) => ({ model: names[i], status: x.status, lane: x.lane, m: x.messageId })))(pairNames(fin.pair.both)) : undefined;
+  if (status === 'done' && j.kind === 'chat' && j.threadId && !j.lane) { try { introAfterTurn(j.userId, j.threadId, introRaw ?? j.content); } catch (err) { console.error('[memory] intro-end', (err as Error).message); } }
   jobEvent(j, { error: j.error, title: j.title, preview: fin.preview, notice: fin.notice, autoName: j.autoName, ...(both ? { both } : {}), ...(fin.pair?.waiting ? { waiting: true } : {}) });
   j.listeners.forEach((f) => f({ t: 'state', status }));
   j.resolve({ assistantId: j.messageId ?? '', content: j.content, reasoning: j.reasoning, error: j.error, finish: j.finish, stopped, durationMs, status, usage: j.usage, memory: j.memory });

@@ -17,8 +17,9 @@ import { useShell } from './Shell';
 import { useConfirm } from './Kit';
 import '@/styles/user-memory.css';
 import { INTRO_DRAFT as DRAFT } from '@/ext/client';
+import { hasIntroMarks, stripIntroMarks } from '@/lib/introMarks';
 
-type View = { threadId: string | null; messages: MsgView[]; busy: boolean; off?: boolean; progress?: { left: number; tail: boolean }; done?: boolean };
+type View = { threadId: string | null; messages: MsgView[]; busy: boolean; off?: boolean; progress?: { left: number; tail: boolean }; done?: boolean; remembered?: { id: string; text: string }[] };
 
 export function MemoryIntro({ open, onClose, again = false }: { open: boolean; onClose: () => void; again?: boolean }) {
   const t = useT();
@@ -28,6 +29,7 @@ export function MemoryIntro({ open, onClose, again = false }: { open: boolean; o
   const [off, setOff] = useState(false);
   const [prog, setProg] = useState<{ left: number; tail: boolean } | null>(null);
   const [done, setDone] = useState(false);
+  const [mem, setMem] = useState<{ id: string; text: string }[]>([]);
   const [err, setErr] = useState('');
   const { msgs, setMsgs, busy, send, stop } = useChatStream([], false, threadId, { quiet: true });
   const [confirmUi, ask] = useConfirm();
@@ -38,7 +40,7 @@ export function MemoryIntro({ open, onClose, again = false }: { open: boolean; o
 
   const take = useCallback((v: View) => {
     setOff(!!v.off);
-    setProg(v.progress ?? null); setDone(!!v.done);
+    setProg(v.progress ?? null); setDone(!!v.done); setMem(v.remembered ?? []);
     if (v.threadId) setThreadId(v.threadId);
     setMsgs(v.messages ?? []);
     stick.current = true;
@@ -66,16 +68,29 @@ export function MemoryIntro({ open, onClose, again = false }: { open: boolean; o
   useEffect(() => {
     if (!open || busy || !threadId) return;
     let gone = false;
-    void fetch('/api/memory/intro', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((v: View | null) => { if (!gone && v) { setProg(v.progress ?? null); setDone(!!v.done); } }).catch(() => {});
+    void fetch('/api/memory/intro', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((v: View | null) => { if (!gone && v) { setProg(v.progress ?? null); setDone(!!v.done); setMem(v.remembered ?? []); } }).catch(() => {});
     return () => { gone = true; };
   }, [open, busy, threadId, msgs.length]);
+
+  const [memTick, setMemTick] = useState(0);
+  useEffect(() => {
+    if (!open || !done || busy) return;
+    let gone = false, n = 0;
+    const id = window.setInterval(() => {
+      if (++n > 12) { window.clearInterval(id); return; }
+      void fetch('/api/memory/intro', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((v: View | null) => { if (!gone && v) setMem(v.remembered ?? []); }).catch(() => {});
+    }, 5000);
+    return () => { gone = true; window.clearInterval(id); };
+  }, [open, done, busy, memTick]);
 
   useLive((e: LiveEv) => {
     if (!threadId || e.th !== threadId || e.t !== 'memupd') return;
     setMsgs((all) => all.map((m) => (m.id === e.m ? (m.role === 'user' ? { ...m, memUpd: e.items as MemUpdItem[] } : { ...m, meta: { ...(m.meta ?? {}), memUpd: e.items as MemUpdItem[] } }) : m)));
+    setMemTick((x) => x + 1);
   });
 
   const toEnd = useCallback(() => { const el = list.current; if (el && stick.current) el.scrollTop = el.scrollHeight; }, []);
+  useEffect(() => { if (done) requestAnimationFrame(toEnd); }, [done, mem.length, toEnd]);
   const setList = useCallback((el: HTMLDivElement | null) => {
     list.current = el;
     if (el) { stick.current = true; el.scrollTop = el.scrollHeight; requestAnimationFrame(() => { el.scrollTop = el.scrollHeight; }); }
@@ -116,13 +131,17 @@ export function MemoryIntro({ open, onClose, again = false }: { open: boolean; o
           </div>
         ) : (
           <div key={m.id} className="mi-a" data-testid="intro-assistant" data-done={!m.streaming && !!m.content.trim() || undefined}>
-            <AssistantMsg m={m} models={models} bare headSlot={<ModelMark id={m.meta?.modelId ?? DRAFT.modelId} models={models} />}
+            <AssistantMsg m={m.streaming || hasIntroMarks(m.content) ? { ...m, content: stripIntroMarks(m.content, !!m.streaming) } : m} models={models} bare headSlot={<ModelMark id={m.meta?.modelId ?? DRAFT.modelId} models={models} />}
               last={m === lastA} canRegen={!busy && !restarting} onRegenerate={() => { if (threadId) { stick.current = true; void send({ threadId, text: '', mode: 'regenerate', ...DRAFT }); } }} />
           </div>
         ))}
         {err && <p className="mi-note mi-note--err" role="alert">{err}</p>}
         {done && !busy && (
           <div className="mi-done" data-testid="intro-done">
+            <div className="mi-mem" data-testid="intro-remembered" data-n={mem.length}>
+              <b>{mem.length ? t('tools.memset.introMem') : t('tools.memset.introMemNone')}</b>
+              {mem.length > 0 && <ul>{mem.map((r) => <li key={r.id}>{r.text}</li>)}</ul>}
+            </div>
             <span>{t('tools.memset.introDone')}</span>
             <button type="button" className="mi-restart-btn" onClick={onClose} data-testid="intro-fix"><Icon n="edit" sm />{t('tools.memset.introFix')}</button>
           </div>

@@ -27,11 +27,11 @@ describe('виджет «Вывести правила сейчас?»', () => {
     expect(R.rulesView('n0').state).toBe('none');
   });
 
-  it('«Позже» — виджет скрыт, задача ждёт простоя как раньше', async () => {
+  it('«Позже» — задача ждёт простоя как раньше, виджет остаётся тихим «выведу сама» с кнопкой', async () => {
     const R = await import('@/lib/memoryRules');
     const M = await import('@/lib/memory');
     await ended('n1');
-    expect(R.rulesAction('n1', 'later').state).toBe('none');
+    expect(R.rulesAction('n1', 'later').state).toBe('waiting');
     expect(M.memoryMeta('n1').rules?.pending).toBeGreaterThan(0);
     expect(M.memoryMeta('n1').rules?.now).toBeUndefined();
     expect(await R.rulesTick()).toBeNull();
