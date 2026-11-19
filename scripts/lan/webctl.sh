@@ -7,6 +7,8 @@
 #   webctl.sh start | ensure                      поднять current, если процесса нет (ensure — для сторожа cron; молчит, когда всё живо)
 #   webctl.sh stop                                SIGTERM процессу (аварийно: идущие ходы сохраняются частично)
 #   webctl.sh status                              версия, pid, здоровье
+#   webctl.sh notice on [мин] | off | show        полоса «Идут технические работы…» на сайте (на время обновлений и проверок; по умолчанию 180 мин,
+#                                                 до 1440, гаснет сама по сроку): файл shared/data/works_banner.json, без перезапуска
 #   webctl.sh setup --base http://<адрес> --admin <почта> [--rotate] [--admin-days N]
 #                                                 админ и ссылки (scripts/lan-setup.mjs текущей версии) на БД shared/data; ссылки —
 #                                                 только в secrets/links.txt (0600), в вывод не попадают
@@ -107,6 +109,11 @@ case "${1:-status}" in
     shift; ex=(--out "$W/secrets/links.txt"); for a in "$@"; do [ "$a" = --out ] && ex=(); done
     mkdir -p "$W/secrets"; chmod 700 "$W/secrets"
     ( cd "$(readlink -f "$W/current")" && DATA_DIR="$SH/data" exec "$NODE" scripts/lan-setup.mjs "$@" "${ex[@]}" ) ;;
+  notice)
+    # тот же скрипт, что на monroe (scripts/works_banner.sh), — рядом с webctl.sh или в текущей версии; файл флага — в данных этой вебки
+    shift; s="$W/works_banner.sh"; [ -f "$s" ] || s="$(readlink -f "$W/current" 2>/dev/null)/works_banner.sh"
+    [ -f "$s" ] || die "нет works_banner.sh (положите рядом с webctl.sh или поставьте версию с ним)"
+    KX_WORKS_FILE="$SH/data/works_banner.json" exec bash "$s" "${@:-show}" ;;
   stop)
     p=$(cur_pid); alive "$p" || { say "не работает"; exit 0; }
     kill -TERM "$p"; say "SIGTERM $p" ;;

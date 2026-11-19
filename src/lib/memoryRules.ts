@@ -110,8 +110,16 @@ export async function runRules(userId: string, o: { fetchImpl?: typeof fetch; no
     if (yielded) { console.log(`[rules] user=${userId.slice(0, 8)} уступил ходу человека через ${Date.now() - t0} мс`); return 'yield'; }
     console.log(`[rules] user=${userId.slice(0, 8)} ошибка ${(e as Error).message.slice(0, 80)}`);
     if (!ac.signal.aborted && bgDown(url, 'правила')) return 'yield';
+    if (!ac.signal.aborted && netDown(e)) return 'yield';
     return ac.signal.aborted ? 'yield' : 'fail';
   } finally { clearInterval(watch); clearTimeout(timer); s.ac = null; }
+}
+
+const NET_DOWN = new Set(['ECONNREFUSED', 'ECONNRESET', 'ENOTFOUND', 'EHOSTUNREACH', 'ENETUNREACH', 'EAI_AGAIN', 'UND_ERR_SOCKET', 'UND_ERR_CONNECT_TIMEOUT']);
+function netDown(e: unknown): boolean {
+  let x = e as { code?: string; cause?: unknown } | undefined;
+  for (let i = 0; x && i < 4; i++) { if (x.code && NET_DOWN.has(x.code)) return true; x = x.cause as typeof x; }
+  return (e as Error)?.message === 'fetch failed';
 }
 
 function nextPending(): string | null {

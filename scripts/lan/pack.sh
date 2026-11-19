@@ -35,6 +35,7 @@ cp "$B/scripts/next-server.mjs" "$O.tmp/scripts/"
 # установка — одним файлом: drizzle-orm в переносной сборке вшит в сервер (не пакетом), better-sqlite3 — пакетом рядом
 (cd "$B" && node_modules/.bin/esbuild scripts/lan-setup.mjs --bundle --platform=node --format=esm --external:better-sqlite3 --log-level=warning --outfile="$O.tmp/scripts/lan-setup.mjs") >&2
 cp "$B/scripts/lan/start.mjs" "$B/scripts/lan/webctl.sh" "$O.tmp/"
+cp "$B/scripts/works_banner.sh" "$O.tmp/"   # webctl.sh notice — полоса «технические работы» на сайте этой машины
 echo "$SHA $(git -C "$APP" log -1 --format=%cI "$SHA")" > "$O.tmp/VERSION"
 # проверка: в архиве нет секретов и боевых данных
 if find "$O.tmp" -name '.env*' -o -name 'korvex.db*' -o -name '*.key' | grep -q .; then log "ОТКАЗ: в сборке нашлись .env / БД / ключи"; exit 1; fi

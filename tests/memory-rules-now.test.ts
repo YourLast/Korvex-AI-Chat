@@ -97,4 +97,16 @@ describe('виджет «Вывести правила сейчас?»', () => {
     expect(await R.rulesTick()).toBe('yield');
     expect(R.rulesView('n6').state).toBe('queued');
   });
+  it('вход не отвечает (перезапуск шлюза) — задача не «не получилось», а повтор', async () => {
+    const R = await import('@/lib/memoryRules');
+    const M = await import('@/lib/memory');
+    const { getDb, schema } = await import('@/lib/db');
+    getDb().insert(schema.users).values({ id: 'n7', email: 'n7@example.com', name: 'Тест', passwordHash: 'x', role: 'user' as const, createdAt: Date.now(), lastTz: 'Europe/Moscow', lang: 'ru' }).run();
+    vi.stubGlobal('fetch', vi.fn(async () => { const e = new TypeError('fetch failed'); (e as unknown as { cause: unknown }).cause = { code: 'ECONNREFUSED' }; throw e; }));
+    await ended('n7');
+    R.rulesAction('n7', 'now');
+    expect(await R.rulesTick()).toBe('yield');
+    expect(R.rulesView('n7').state).toBe('queued');
+    expect(M.memoryMeta('n7').rules?.failed).toBeUndefined();
+  });
 });
