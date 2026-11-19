@@ -324,7 +324,7 @@ async function runTask(t: Task, url: string): Promise<'ok' | 'none' | 'skip' | '
     if (pf) s.stats.parseFail = (s.stats.parseFail || 0) + 1;
     const docs = t.intro ? threadFileTexts(t.threadId) : [];
     const ops = docs.length ? parsed.ops.filter((o) => o.op === 'delete' || !docLeak(o.text, docs)) : parsed.ops;
-    if (ops.length < parsed.ops.length) console.log(`[memory] chat=${t.threadId} из примера документа отброшено записей: ${parsed.ops.length - ops.length}`);
+    if (docs.length) console.log(`[memory] sample-doc chat=${t.threadId} docs=${docs.length} ops=${parsed.ops.length} dropped=${parsed.ops.length - ops.length}${ops.length < parsed.ops.length ? ` (из примера документа отброшено записей: ${parsed.ops.length - ops.length})` : ''}`);
     const th2 = db.select({ temporary: schema.threads.temporary }).from(schema.threads).where(eq(schema.threads.id, t.threadId)).get();
     if (!th2 || !memoryAllowed(t.userId, th2)) return 'skip';
     const { applied, skipped } = applyOps(t.userId, ops, refs, { user: turn.user, auto: auto(), threadId: t.threadId, messageId: t.messageId, answer: turn.answer });

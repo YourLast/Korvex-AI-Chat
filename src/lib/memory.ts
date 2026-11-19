@@ -498,7 +498,27 @@ export function threadFileTexts(threadId: string | null | undefined): string[] {
   if (!ids.length) return [];
   return getDb().select({ text: schema.files.text }).from(schema.files).where(inArray(schema.files.id, [...new Set(ids)].slice(0, 20))).all().map((r) => r.text ?? '').filter(Boolean);
 }
-const DOC_WORDS = new Set(('итого всего сумма суммы цена количество кол наименование товар товары услуга услуги работа работы ндс без дата номер счет счёт счета акт накладная покупатель поставщик продавец исполнитель заказчик руководитель бухгалтер главный основание оплата назначение платеж платёж единица ед шт руб коп сверка сальдо дебет кредит период остаток приход расход итог договор подпись отпустил получил сдал принял ставка включая том числе код артикул вес склад банк получатель плательщик месяц январь февраль март апрель май июнь июль август сентябрь октябрь ноябрь декабрь начислено удержано выплачено к выплате сотрудник должность оклад премия налог взносы ндфл фсс пфр фомс отчет отчёт таблица лист страница раздел приложение примечание комментарий статус всего: total amount price qty quantity description item date invoice vat tax subtotal customer supplier seller buyer signature unit no number balance debit credit').split(/\s+/));
+const DOC_WORDS = new Set(('итого всего сумма суммы цена количество кол наименование товар товары услуга услуги работа работы ндс без дата номер счет счёт счета акт накладная покупатель поставщик продавец исполнитель заказчик руководитель бухгалтер главный основание оплата назначение платеж платёж единица ед шт руб коп сверка сальдо дебет кредит период остаток приход расход итог договор подпись отпустил получил сдал принял ставка включая том числе код артикул вес склад банк получатель плательщик месяц январь февраль март апрель май июнь июль август сентябрь октябрь ноябрь декабрь начислено удержано выплачено к выплате сотрудник должность оклад премия налог взносы ндфл фсс пфр фомс отчет отчёт таблица лист страница раздел приложение примечание комментарий статус всего: total amount price qty quantity description item date invoice vat tax subtotal customer supplier seller buyer signature unit no number balance debit credit готово готов ревью работе сделано выполнено оплачено отменено закрыто открыто новая новый черновик проверка проверке согласовано согласование ожидает отложено просрочено done review progress todo blocked open closed paid draft pending').split(/\s+/));
+export function docNames(d: string): Set<string> {
+  const names = new Set<string>();
+  const caps = (x: string, skipFirst: boolean) => {
+    for (const m of x.matchAll(/(?<![\p{L}\d])(\p{Lu}[\p{Ll}]{2,})(?![\p{L}])/gu)) {
+      const w = m[1].toLowerCase();
+      if (skipFirst && (m.index ?? 0) === x.search(/\p{L}/u)) continue;
+      if (!DOC_WORDS.has(w)) names.add(w);
+    }
+  };
+  const quotes = (x: string) => { for (const m of x.matchAll(/«([^»]{2,60})»|"([^"\n]{2,60})"/gu)) { const q = (m[1] ?? m[2]).trim(); if (/[\p{Lu}\d]/u.test(q)) names.add(q.toLowerCase()); } };
+  for (const m of d.matchAll(/(?:ООО|ОАО|ЗАО|ПАО|АО|ИП|LLC|Ltd|GmbH|d\.o\.o\.)\s+«?([\p{L}][\p{L}\d-]+)/gu)) names.add(m[1].toLowerCase());
+  for (const m of d.matchAll(/(\p{Lu}[\p{Ll}]{2,})\s+\p{Lu}\.\s?\p{Lu}\./gu)) names.add(m[1].toLowerCase());
+  for (const m of d.matchAll(/(\p{Lu}[\p{Ll}]{2,})\s+(\p{Lu}[\p{Ll}]{2,})\s+(\p{Lu}[\p{Ll}]+(?:ович|евич|ич|овна|евна|ична|инична))(?![\p{L}])/gu)) for (const k of [1, 2, 3]) names.add(m[k].toLowerCase());
+  for (const line of d.split('\n')) {
+    const c = line.indexOf(':');
+    if (c >= 0 && c < 40) { caps(line.slice(c + 1), false); quotes(line.slice(c + 1)); continue; }
+    if (/\d{3}|\d[.,]\d{2}(?!\d)|\d{1,2}\.\d{1,2}\.\d{2,4}/.test(line)) { caps(line, true); quotes(line); }
+  }
+  return names;
+}
 export function docLeak(record: string, docs: string[]): boolean {
   if (!docs.length) return false;
   const digits = (s: string) => (s.match(/\d(?:[\d\s.,\u00a0]*\d)?/g) ?? []).map((x) => x.replace(/\D/g, '')).filter((x) => x.length >= 3);
@@ -507,17 +527,8 @@ export function docLeak(record: string, docs: string[]): boolean {
     const docNums = new Set(docs.flatMap(digits));
     if (recNums.some((n) => docNums.has(n) || [...docNums].some((d) => d.length >= 3 && (d.includes(n) || n.includes(d))))) return true;
   }
-  const names = new Set<string>();
-  for (const d of docs) {
-    for (const m of d.matchAll(/«([^»]{2,60})»|"([^"\n]{2,60})"/gu)) names.add((m[1] ?? m[2]).trim().toLowerCase());
-    for (const m of d.matchAll(/(?:ООО|ОАО|ЗАО|ПАО|АО|ИП|LLC|Ltd|GmbH|d\.o\.o\.)\s+«?([\p{L}][\p{L}\d-]+)/gu)) names.add(m[1].toLowerCase());
-    for (const line of d.split('\n')) {
-      const ws = [...line.matchAll(/(?<![\p{L}\d])(\p{Lu}[\p{Ll}]{2,})(?![\p{L}])/gu)];
-      for (const m of ws) if ((m.index ?? 0) > 0 && !DOC_WORDS.has(m[1].toLowerCase())) names.add(m[1].toLowerCase());
-    }
-  }
   const low = record.toLowerCase();
-  for (const n of names) {
+  for (const d of docs) for (const n of docNames(d)) {
     if (n.length < 3) continue;
     if (n.includes(' ') ? low.includes(n) : new RegExp(`(?<![\\p{L}])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'u').test(low)) return true;
   }
