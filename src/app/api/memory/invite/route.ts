@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { authed, fail, json } from '@/lib/api';
 import { inviteLater, inviteNever, inviteState } from '@/lib/introInvite';
 import { rulesNotice, rulesSeen } from '@/lib/memoryRules';
+import { addressTy } from '@/lib/memory';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: Request) {
   const a = await authed(req);
   if ('res' in a) return a.res;
-  return json({ show: inviteState(a.user.id).widget, rules: rulesNotice(a.user.id) });
+  return json({ show: inviteState(a.user.id).widget, rules: rulesNotice(a.user.id), ty: addressTy(a.user.id) });
 }
 
 export async function POST(req: Request) {

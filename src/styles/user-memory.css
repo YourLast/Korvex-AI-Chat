@@ -90,3 +90,8 @@
   .iiv-c .iiv-row .k-btn { flex: 1 1 100%; justify-content: center; }
   .iiv-c .iiv-never { margin-left: 0; }
 }
+.iiv.rn { margin: 0 0 var(--s-3); }
+.iiv.rn .rn-acts { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+.iiv-c.rn .rn-acts { margin-top: 4px; }
+.iiv .rn-spin { width: 18px; height: 18px; margin: 0; }
+@media (max-width: 600px) { .iiv.rn { flex-wrap: wrap; } .iiv.rn .rn-acts { flex: 1 1 100%; } .iiv.rn .rn-acts .k-btn { flex: 1 1 auto; justify-content: center; } }

@@ -50,6 +50,8 @@ export function MemorySettings({ initial }: { initial: MemoryState }) {
   const [edit, setEdit] = useState<{ item: MemoryItem | null; text: string; section: SectionId } | null>(null);
   const [busy, setBusy] = useState(false);
   const [intro, setIntro] = useState(false);
+  const [introDone, setIntroDone] = useState(!!initial.introDone);
+  const [again, setAgain] = useState(false);
   const [rnBump, setRnBump] = useState(0);
   const [name, setName] = useState(initial.callName.value);
   const [nameBusy, setNameBusy] = useState(false);
@@ -58,7 +60,7 @@ export function MemorySettings({ initial }: { initial: MemoryState }) {
   if (st.callName.value !== nameSeen) { if (name === nameSeen) setName(st.callName.value); setNameSeen(st.callName.value); }
   const reload = useCallback(async () => {
     const r = await fetch('/api/memory', { cache: 'no-store' }).catch(() => null);
-    if (r?.ok) setSt((await r.json()) as MemoryState);
+    if (r?.ok) { const j = (await r.json()) as MemoryState; setSt(j); setIntroDone(!!j.introDone); }
   }, []);
   useEffect(() => { if (window.location.hash === '#intro') { setIntro(true); window.history.replaceState(window.history.state, '', window.location.pathname); } }, []);
   useLive((e) => { if (e.t === 'memory') void reload(); });
@@ -132,7 +134,7 @@ export function MemorySettings({ initial }: { initial: MemoryState }) {
       desc={t('tools.memset.desc')}
       action={<>
         {}
-        {on && <Button kind="primary" icon="spark" onClick={() => setIntro(true)} testId="mem-intro">{t(n > 0 ? 'tools.memset.introMore' : 'tools.memset.intro')}</Button>}
+        {on && <Button kind="primary" icon="spark" onClick={() => { setAgain(introDone); setIntro(true); }} testId="mem-intro">{t(introDone ? 'tools.memset.introAgain' : n > 0 ? 'tools.memset.introMore' : 'tools.memset.intro')}</Button>}
         <Button icon="plus" onClick={() => setEdit({ item: null, text: '', section: 'facts' })} testId="mem-add">{t('tools.add')}</Button>
       </>}>
       {on && <RulesNow bump={rnBump} />}
@@ -213,7 +215,7 @@ export function MemorySettings({ initial }: { initial: MemoryState }) {
         )}
       </Sheet>
       {confirmUi}
-      <MemoryIntro open={intro} onClose={() => { setIntro(false); setRnBump((x) => x + 1); void reload(); }} />
+      <MemoryIntro open={intro} again={again} onClose={() => { setIntro(false); setAgain(false); setRnBump((x) => x + 1); void reload(); }} />
     </KPage>
   );
 }

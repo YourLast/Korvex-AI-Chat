@@ -54,4 +54,12 @@ describe('заметка после примера', () => {
     expect(M.INTRO_RULES).toContain('скрепкой у поля ввода');
     expect(M.INTRO_RULES).toContain('без уговоров');
   });
+  it('предложение прикрепить пример без «?» — тоже «спросила» (не повторять)', async () => {
+    const M = await import('@/lib/memory');
+    expect(M.askedTopics(['Понял. Если удобно, прикрепите один-два типичных документа — посмотрю, в каком виде вы их делаете.']).has('sample')).toBe(true);
+  });
+  it('EN: «What do you do, and in what role» — вопрос о работе (не переспрашивать)', async () => {
+    const M = await import('@/lib/memory');
+    expect(M.askedTopics(['Got it. What do you do, and in what role — for yourself or for clients?']).has('work')).toBe(true);
+  });
 });

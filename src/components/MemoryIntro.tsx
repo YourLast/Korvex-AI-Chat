@@ -20,7 +20,7 @@ import { INTRO_DRAFT as DRAFT } from '@/ext/client';
 
 type View = { threadId: string | null; messages: MsgView[]; busy: boolean; off?: boolean; progress?: { left: number; tail: boolean }; done?: boolean };
 
-export function MemoryIntro({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function MemoryIntro({ open, onClose, again = false }: { open: boolean; onClose: () => void; again?: boolean }) {
   const t = useT();
   const mobile = useIsMobile();
   const models = useShell()?.models ?? [];
@@ -98,6 +98,9 @@ export function MemoryIntro({ open, onClose }: { open: boolean; onClose: () => v
       else setErr(t('tools.memset.introRestartFail'));
     } finally { setRestarting(false); }
   };
+
+  const askedAgain = useRef(false);
+  useEffect(() => { if (!open) { askedAgain.current = false; return; } if (again && threadId && !askedAgain.current) { askedAgain.current = true; void restart(); } }, [open, again, threadId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const lastA = [...msgs].reverse().find((m) => m.role === 'assistant');
   const answered = msgs.some((m) => m.role === 'user');

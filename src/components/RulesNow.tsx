@@ -4,6 +4,7 @@ import { useT } from '@/lib/i18n/react';
 import { useLive } from '@/lib/live';
 import type { RulesView } from '@/lib/memoryRules';
 import { Button } from './Kit';
+import { variant } from './IntroInvite';
 import '@/styles/user-memory.css';
 
 const POLL_MS = 3000;
@@ -12,6 +13,8 @@ export function RulesNow({ bump = 0 }: { bump?: number }) {
   const t = useT();
   const [v, setV] = useState<RulesView | null>(null);
   const [busy, setBusy] = useState(false);
+  const [style, setStyle] = useState('');
+  useEffect(() => setStyle(variant()), []);
   const load = useCallback(async () => {
     const r = await fetch('/api/memory/rules', { cache: 'no-store' }).catch(() => null);
     if (r?.ok) setV((await r.json()) as RulesView);
@@ -36,7 +39,15 @@ export function RulesNow({ bump = 0 }: { bump?: number }) {
     window.setTimeout(() => document.querySelector('[data-testid=mem-sec-rules]')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
   };
   if (!v || v.state === 'none') return null;
-  const box = (title: string, sub: string | null, acts: React.ReactNode, spin = false) => (
+  const sv = style;
+  const box = (title: string, sub: string | null, acts: React.ReactNode, spin = false) => sv ? (
+    <div className={`iiv iiv-${sv} rn`} data-testid="rules-now" data-state={v.state} data-variant={sv} role="status" aria-live="polite">
+      {sv === 'a' && <span className="iiv-tile" aria-hidden="true">{spin ? <span className="k-spin rn-spin" /> : <span className="mark" />}</span>}
+      {sv !== 'a' && (spin ? <span className="k-spin rn-spin" aria-hidden="true" /> : <span className="mark" aria-hidden="true" />)}
+      <span className="iiv-body"><b>{title}</b>{sub && <small>{sub}</small>}</span>
+      {acts && <span className="rn-acts">{acts}</span>}
+    </div>
+  ) : (
     <div className="ii rn" data-testid="rules-now" data-state={v.state} role="status" aria-live="polite">
       <span className="ii-t"><b>{spin && <span className="k-spin rn-spin" aria-hidden="true" />}{title}</b>{sub && <small>{sub}</small>}</span>
       {acts && <span className="ii-acts">{acts}</span>}
@@ -44,7 +55,7 @@ export function RulesNow({ bump = 0 }: { bump?: number }) {
   );
   if (v.state === 'offer') return box(t('tools.memset.rn.t'), t('tools.memset.rn.s'), <>
     <Button kind="primary" busy={busy} disabled={busy} onClick={() => void act('now')} testId="rn-go">{t('tools.memset.rn.go')}</Button>
-    <button type="button" className="ii-lnk" disabled={busy} onClick={() => void act('later')} data-testid="rn-later">{t('tools.memset.rn.later')}</button>
+    <button type="button" className="ii-lnk iiv-never" disabled={busy} onClick={() => void act('later')} data-testid="rn-later">{t('tools.memset.rn.later')}</button>
   </>);
   if (v.state === 'queued') return box(t('tools.memset.rn.queued'), t('tools.memset.rn.runS'), null, true);
   if (v.state === 'running') return box(t('tools.memset.rn.run'), t('tools.memset.rn.runS'), null, true);

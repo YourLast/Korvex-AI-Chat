@@ -1,10 +1,10 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import { getDb, schema } from './db';
-import { listMemory, memoryPrefs, profileName, ruleConflict, sweepMaybe, type Prefs } from './memory';
+import { listMemory, memoryMeta, memoryPrefs, profileName, ruleConflict, sweepMaybe, type Prefs } from './memory';
 
 export type MemoryItem = { id: string; section: string; key: string | null; text: string; origin: string; sure: boolean; createdAt: number; updatedAt: number;
   chat: { id: string; title: string; href: string } | null; blocked: string | null };
-export type MemoryState = { prefs: Prefs; items: MemoryItem[]; callName: { value: string; fromProfile: boolean; id: string | null } };
+export type MemoryState = { prefs: Prefs; items: MemoryItem[]; callName: { value: string; fromProfile: boolean; id: string | null }; introDone?: boolean };
 
 export const nameOf = (text: string) => text.replace(/^(зовут|имя|обращаться|называть|my name is|name|call me|zovem se|ime)\s*[:—-]?\s*/iu, '').replace(/^[«"]|[»"]$/g, '').trim();
 
@@ -19,6 +19,7 @@ export function memoryState(userId: string): MemoryState {
   const prof = nameRow ? null : profileName(userId);
   return {
     prefs: memoryPrefs(userId),
+    introDone: !!memoryMeta(userId).introEnd,
     callName: nameRow ? { value: nameOf(nameRow.text), fromProfile: false, id: nameRow.id } : { value: prof ?? '', fromProfile: !!prof, id: null },
     items: rows.map((r) => {
       const t = r.threadId ? byId.get(r.threadId) : undefined;

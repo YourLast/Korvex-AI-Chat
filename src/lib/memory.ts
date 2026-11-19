@@ -523,6 +523,10 @@ export function docLeak(record: string, docs: string[]): boolean {
   }
   return false;
 }
+export function addressTy(userId: string): boolean {
+  const r = listMemory(userId).find((x) => x.key === 'address' && x.sure !== 0);
+  return !!r && /на\s*«?ты/iu.test(r.text) && !/на\s*«?вы/iu.test(r.text);
+}
 export function threadAnswers(threadId: string | null | undefined): string[] {
   if (!threadId) return [];
   return getDb().select({ c: schema.messages.content }).from(schema.messages)
@@ -621,17 +625,17 @@ export function memoryAllowed(userId: string, thread: ThreadLike): boolean {
   return memoryPrefs(userId).on;
 }
 
-type Topic = { id: string; say: string; sayEn: string; known: (rows: MemoryRow[]) => boolean; q: RegExp; soft?: boolean };
+type Topic = { id: string; say: string; sayEn: string; known: (rows: MemoryRow[]) => boolean; q: RegExp; soft?: boolean; inText?: boolean };
 const has = (re: RegExp) => (r: MemoryRow[]) => r.some((x) => x.sure !== 0 && re.test(x.text));
 const T_WORK: Topic = { id: 'work', say: 'чем занимается и в какой роли, какой участок (профессия, должность, на себя или на клиентов)', sayEn: 'what they do and in which role (profession, position, for themselves or for clients)',
   known: (r) => r.some((x) => x.sure !== 0 && x.section === 'work'),
-  q: /(занимаешься|занимаетесь|работаешь|работаете|кем\s+ты|кем\s+вы|чем\s+ты|чем\s+вы|бизнес|учишься|учитесь|професси|должност|участок|for\s+a\s+living|your\s+(work|job|role))/iu };
+  q: /(занимаешься|занимаетесь|работаешь|работаете|кем\s+ты|кем\s+вы|чем\s+ты|чем\s+вы|бизнес|учишься|учитесь|професси|должност|участок|for\s+a\s+living|your\s+(work|job|role)|what\s+do\s+you\s+do|in\s+what\s+role|what\s+is\s+your\s+(work|job))/iu };
 const T_FORMAT: Topic = { id: 'work_format', say: 'в каком виде ему удобно получать ответы и расчёты и как он сам считает и работает: таблица или по шагам, сначала итог или выкладки, округление и единицы, как называет свои документы и этапы', sayEn: 'in what form they like to get answers and calculations and how they themselves calculate and work: a table or step by step, result first or the workings, rounding and units, what they call their documents and stages',
   known: (r) => r.some((x) => x.key === 'length' || x.key === 'format') && r.some((x) => x.key === 'method'), soft: true,
   q: /(в\s+каком\s+виде|как\s+(вы\s+|ты\s+)?(сам\S*\s+)?(счита|работа)|таблиц|по\s+шагам|сначала\s+(итог|вывод|ответ)|округл|сверху|в\s+том\s+числе|формат|коротк|подробн|кратк|развёрнут|развернут|in\s+what\s+form|step\s+by\s+step|table|rounding)/iu };
 const T_FORMAT_ACC: Topic = { ...T_FORMAT, say: T_FORMAT.say + '; бухгалтеру — плюс НДС «сверху» или «в том числе» и как он сверяет (с выпиской, с 1С, по актам)', sayEn: T_FORMAT.sayEn + '; for an accountant also VAT on top or included and how they reconcile (bank statement, 1C, acts)' };
 const T_SAMPLE: Topic = { id: 'sample', say: 'пример его документа: предложи одним предложением прикрепить скрепкой у поля ввода один-два типичных документа или отчёта, какие он делает или получает (можно шаблон или старый пример без важных данных), — чтобы понять формат; откажется или «потом» — дальше без уговоров', sayEn: 'a sample of their documents: in one sentence offer to attach (paper clip next to the input) one or two typical documents or reports they make or receive (a template or an old one without sensitive data is fine) so you see the format; if they decline or say later, move on without persuading',
-  known: (r) => r.some((x) => x.key === 'sample'), soft: true,
+  known: (r) => r.some((x) => x.key === 'sample'), soft: true, inText: true,
   q: /(прикреп|пришл\S*\s+(пример|образ|шаблон)|покаж\S*\s+(пример|образ)|пример\S*\s+(документ|отч[её]т)|attach|sample|template)/iu };
 const T_ADDR: Topic = { id: 'address', say: 'как к нему обращаться и на «ты» или на «вы» (одним вопросом)', sayEn: 'how to address them and formal or informal (one question)',
   known: (r) => r.some((x) => x.key === 'name') && r.some((x) => x.key === 'address'), q: new RegExp(`${NAME_Q.source}|(на\\s+«?ты»?|на\\s+«?вы»?|formal|informal)`, 'iu') };
@@ -687,7 +691,7 @@ export function unknownTopics(rows: MemoryRow[], userAnswers: string[] = []): st
 const ALL_TOPICS = [T_WORK, T_FORMAT, ...ACC_CORE, ...ACC_TAIL, ...OTHER_CORE, ...OTHER_TAIL, T_SAMPLE, T_ADDR];
 export function askedTopics(answers: string[], topics: Topic[] = ALL_TOPICS): Set<string> {
   const qs = answers.flatMap(questionsOf);
-  return new Set(topics.filter((t) => qs.some((q) => t.q.test(q))).map((t) => t.id));
+  return new Set(topics.filter((t) => qs.some((q) => t.q.test(q)) || (t.inText && answers.some((a) => t.q.test(a)))).map((t) => t.id));
 }
 export function introProgress(rows: MemoryRow[], answers: string[], userAnswers: string[] = [], pending = false): { left: number; tail: boolean; end: boolean } {
   const { core, tail } = introPlan(rows, userAnswers);
