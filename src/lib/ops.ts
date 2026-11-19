@@ -3,8 +3,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { eq } from 'drizzle-orm';
 import { dataDir, getDb, schema } from './db';
-import { INTRO, markIntroEnd, memoryMeta } from './memory';
+import { INTRO, listMemory, markIntroEnd, memoryMeta } from './memory';
 import { kickRules, rulesView } from './memoryRules';
+import { deleteUser } from './moderation';
 
 export type OpsOut = { status: number; body: Record<string, unknown> };
 
@@ -34,6 +35,24 @@ export function opsRules(threadId: string): OpsOut {
   return { status: 200, body: flags(o.userId) };
 }
 
+const TEST_EMAIL = /^[a-z0-9._+-]+@example\.com$/i;
+export function opsTestUser(email: string, o: { dry: boolean; now?: number }): OpsOut {
+  if (!TEST_EMAIL.test(email)) return { status: 400, body: { error: 'только адреса @example.com' } };
+  const u = getDb().select().from(schema.users).where(eq(schema.users.email, email.toLowerCase())).get();
+  if (!u) return { status: 404, body: { error: 'нет такой учетки' } };
+  const now = o.now ?? Date.now();
+  if (u.role !== 'user' || now - u.createdAt > 24 * 3600_000) return { status: 409, body: { error: 'не тестовая учетка: роль не user или создана раньше суток назад' } };
+  const chats = getDb().select({ id: schema.threads.id }).from(schema.threads).where(eq(schema.threads.userId, u.id)).all().length;
+  const memory = listMemory(u.id).length;
+  const files = getDb().select({ id: schema.files.id }).from(schema.files).where(eq(schema.files.userId, u.id)).all().length;
+  const counts = { user: u.id.slice(0, 8), email: u.email, chats, memory, files };
+  if (o.dry) return { status: 200, body: { dry: true, ...counts } };
+  const r = deleteUser('system:ops', u.id, { confirm: u.email, reason: 'тестовая учетка проверки (служебный вызов)' });
+  if (!r.ok) return { status: 409, body: { error: 'не удалена', ...counts } };
+  const left = getDb().select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.id, u.id)).get();
+  return { status: 200, body: { deleted: !left, ...counts } };
+}
+
 export function opsKey(): string {
   const f = path.join(dataDir(), 'ops.key');
   try { const k = fs.readFileSync(f, 'utf8').trim(); if (k) return k; } catch {  }
@@ -51,6 +70,7 @@ export function registerOps() {
       const chat = q.get('chat') ?? '';
       if (name === 'intro-end') return opsIntroEnd(chat);
       if (name === 'rules') return opsRules(chat);
+      if (name === 'test-user') return opsTestUser(q.get('email') ?? '', { dry: q.get('delete') !== '1' });
       return { status: 404, body: { error: 'нет такого действия' } };
     },
   };

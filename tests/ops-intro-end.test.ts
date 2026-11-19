@@ -61,3 +61,35 @@ describe('служебный конец знакомства', () => {
     expect(ops.run('nope', new URLSearchParams()).status).toBe(404);
   });
 });
+
+describe('тестовая учетка: подсчет и удаление штатным deleteUser', () => {
+  it('только @example.com, роль user, созданная за сутки; dry — только числа; удаление — вместе с чатами и памятью', async () => {
+    const { getDb, schema } = await import('@/lib/db');
+    const { opsTestUser } = await import('@/lib/ops');
+    const M = await import('@/lib/memory');
+    const now = Date.now();
+    getDb().insert(schema.users).values([
+      { id: 'synth1', email: 'ie-intro-x1@example.com', name: 'Тест', passwordHash: 'x', role: 'user' as const, createdAt: now, lang: 'ru' },
+      { id: 'synth2', email: 'old-x@example.com', name: 'Тест', passwordHash: 'x', role: 'user' as const, createdAt: now - 3 * 864e5, lang: 'ru' },
+      { id: 'synth3', email: 'adm-x@example.com', name: 'Тест', passwordHash: 'x', role: 'admin' as const, createdAt: now, lang: 'ru' },
+      { id: 'real1', email: 'person@mail.test', name: 'Тест', passwordHash: 'x', role: 'user' as const, createdAt: now, lang: 'ru' },
+    ]).run();
+    getDb().insert(schema.threads).values({ id: '22222222-2222-4222-8222-222222222222', userId: 'synth1', title: 'Знакомство', modelId: 'alpha', createdAt: now, updatedAt: now, temporary: M.INTRO }).run();
+    M.addMemory('synth1', { section: 'work', text: 'Бухгалтер на аутсорсе', origin: 'auto', sure: true });
+    expect(opsTestUser('person@mail.test', { dry: true }).status).toBe(400);
+    expect(opsTestUser('old-x@example.com', { dry: false }).status).toBe(409);
+    expect(opsTestUser('adm-x@example.com', { dry: false }).status).toBe(409);
+    expect(opsTestUser('nobody@example.com', { dry: true }).status).toBe(404);
+    const d = opsTestUser('ie-intro-x1@example.com', { dry: true });
+    expect(d.body).toMatchObject({ dry: true, chats: 1, memory: 1, files: 0 });
+    expect(getDb().select().from(schema.users).where((await import('drizzle-orm')).eq(schema.users.id, 'synth1')).get()).toBeTruthy();
+    const r = opsTestUser('ie-intro-x1@example.com', { dry: false });
+    expect(r.body).toMatchObject({ deleted: true, chats: 1, memory: 1 });
+    const { eq } = await import('drizzle-orm');
+    expect(getDb().select().from(schema.threads).where(eq(schema.threads.userId, 'synth1')).all()).toHaveLength(0);
+    expect(getDb().select().from(schema.userMemory).where(eq(schema.userMemory.userId, 'synth1')).all()).toHaveLength(0);
+    expect(getDb().select().from(schema.users).where(eq(schema.users.id, 'real1')).get()).toBeTruthy();
+    const audit = getDb().select().from(schema.adminAudit).all().filter((a) => a.targetEmail === 'ie-intro-x1@example.com');
+    expect(audit[0]).toMatchObject({ adminId: 'system:ops', action: 'delete', adminName: 'Система' });
+  });
+});

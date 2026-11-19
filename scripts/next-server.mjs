@@ -72,7 +72,7 @@ if (adminPort) {
       const out = (code, o) => { res.writeHead(code, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(o)); };
       if (!ops) return out(503, { error: 'приложение еще не готово' });
       if (!ops.ok(req.headers['x-kx-ops'])) return out(401, { error: 'нужен ключ data/ops.key в X-KX-Ops' });
-      if (name === 'intro-end' && req.method !== 'POST') return out(405, { error: 'POST' });
+      if ((name === 'intro-end' || u.searchParams.get('delete') === '1') && req.method !== 'POST') return out(405, { error: 'POST' });
       try { const r = ops.run(name, u.searchParams); log(`ops ${name} → ${r.status}`); return out(r.status, r.body); } catch (e) { return out(500, { error: String(e?.message || e).slice(0, 200) }); }
     }
     handle(req, res);
