@@ -246,7 +246,8 @@ export function parseIntroMarks(text: string): IntroMarks {
   const out: IntroMarks = { done: [], skip: [], bad: [] };
   for (const m of text.matchAll(MARK_RE)) {
     for (const kv of m[1].trim().split(/[\s,;]+/).filter(Boolean)) {
-      const [k, v = ''] = kv.split('=');
+      const [k, v0 = ''] = kv.split('=');
+      const v = v0.replace(/^\[+|\]+$/g, '');
       if (k === 'end' && END_REASONS.has(v)) out.end = v;
       else if ((k === 'done' || k === 'skip') && TOPIC_IDS.has(v)) out[k].push(v);
       else out.bad.push(kv.slice(0, 40));

@@ -130,6 +130,7 @@ describe('метки модели [[intro: …]]', () => {
     expect(stripIntroMarks('Спасибо, мне хватит.\n\n[[intro: end=enough]]')).toBe('Спасибо, мне хватит.');
     expect(stripIntroMarks('Понял. А в чём работаешь?\n[[intro: done=work done=work_format]]')).toBe('Понял. А в чём работаешь?');
     expect(stripIntroMarks('Понял.\n[[int', true)).toBe('Понял.');
+    expect(stripIntroMarks('Ок, пример потом.\n\n[[intro: skip=[sample]]]')).toBe('Ок, пример потом.');
     expect(stripIntroMarks('Понял.\n[', true)).toBe('Понял.');
     expect(stripIntroMarks('Понял [ссылка](x)', true)).toBe('Понял [ссылка](x)');
     expect(hasIntroMarks('обычный текст [[ссылка]]')).toBe(false);
@@ -173,6 +174,7 @@ describe('метки модели [[intro: …]]', () => {
     const before = I.introView('e9').progress!.left;
     expect(M.introAfterTurn('e9', th, 'Понял, копирайтер.\n[[intro: done=work skip=work_format done=nope]]')).toBe(false);
     expect([...M.introMarked('e9', th)].sort()).toEqual(['work', 'work_format']);
+    expect(M.parseIntroMarks('Ок.\n[[intro: done=[sample]]]\n[[intro: skip=[address]]]')).toMatchObject({ done: ['sample'], skip: ['address'], bad: [] });
     expect(I.introView('e9').progress!.left).toBeLessThan(before);
     const note = M.memoryBlockInfo('e9', { id: th, temporary: M.INTRO, createdAt: Date.now() - 1000 } as never).note!;
     expect(note).not.toContain('[work_format]');
