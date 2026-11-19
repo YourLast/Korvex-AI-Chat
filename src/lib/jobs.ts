@@ -496,7 +496,7 @@ function historyOf(j: Live, model: ModelCfg, tz: string): { messages: ChatMsg[];
   if (!me) throw new TurnError(404, 'Сообщение удалено');
   const path: Message[] = activePath(all, j.mode === 'continue' ? me.id : me.parentId);
   try {
-    if (th?.temporary === INTRO && mem !== null) { const mi2 = lastMemInfo; if (mi2?.end) { const now = Date.now(); setMemoryMeta(j.userId, { introEnd: now, rules: { ...(memoryMeta(j.userId).rules ?? {}), pending: now } }); } }
+    if (th?.temporary === INTRO && mem !== null) { const mi2 = lastMemInfo; if (mi2?.end) { const now = Date.now(); setMemoryMeta(j.userId, { introEnd: now, rules: { ...(memoryMeta(j.userId).rules ?? {}), pending: now, now: undefined, later: undefined, nowSeen: undefined, failed: undefined } }); } }
     else if (th && !th.temporary && j.kind === 'chat' && !j.lane && j.mode === 'send' && memoryAllowed(j.userId, th)) {
       const u = path.at(-1);
       const extra = turnNotes(j.userId, u?.role === 'user' ? u : null, path.at(-2)?.role === 'assistant' ? path.at(-2)!.content : null, j.levelId);

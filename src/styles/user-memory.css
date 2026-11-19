@@ -59,3 +59,5 @@
 .ii-acts { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-2); align-items: center; }
 .ii-acts .ii-lnk { border: 0; background: none; color: var(--text-2); font: inherit; font-size: var(--fs-small, 13px); padding: 6px 4px; cursor: pointer; }
 @media (hover: hover) { .ii-acts .ii-lnk:hover { color: var(--text-1); } }
+.rn { margin: 0 0 var(--s-3); }
+.rn-spin { display: inline-block; width: 12px; height: 12px; margin-right: 8px; vertical-align: -1px; }

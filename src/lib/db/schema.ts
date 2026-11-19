@@ -417,7 +417,7 @@ export type MemoryRow = typeof userMemory.$inferSelect;
 export type MemoryMeta = { askedName?: number; introAt?: number; introDone?: number;
   introEnd?: number;
   invite?: { start?: number; shown?: number; day?: string; later?: string; never?: number };
-  rules?: { pending?: number; done?: number; n?: number; ids?: string[]; seen?: number; failed?: number } };
+  rules?: { pending?: number; done?: number; n?: number; ids?: string[]; seen?: number; failed?: number; now?: number; later?: number; nowSeen?: number } };
 
 export const browserSessions = sqliteTable('browser_sessions', {
   threadId: text('thread_id').primaryKey().references(() => threads.id, { onDelete: 'cascade' }),

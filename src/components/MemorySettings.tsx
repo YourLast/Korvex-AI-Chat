@@ -10,6 +10,7 @@ import { useLive } from '@/lib/live';
 import { Button, DestructiveButton, EmptyState, Field, Group, KPage, PickerRow, Row, Sheet, SwitchRow, toast, useConfirm } from './Kit';
 import { Icon } from './Icon';
 import { MemoryIntro } from './MemoryIntro';
+import { RulesNow } from './RulesNow';
 import '@/styles/user-memory.css';
 
 const SECTION_IDS = ['who', 'work', 'style', 'rules', 'knowledge', 'interests', 'facts'] as const;
@@ -49,6 +50,7 @@ export function MemorySettings({ initial }: { initial: MemoryState }) {
   const [edit, setEdit] = useState<{ item: MemoryItem | null; text: string; section: SectionId } | null>(null);
   const [busy, setBusy] = useState(false);
   const [intro, setIntro] = useState(false);
+  const [rnBump, setRnBump] = useState(0);
   const [name, setName] = useState(initial.callName.value);
   const [nameBusy, setNameBusy] = useState(false);
   const [confirmUi, ask] = useConfirm();
@@ -133,6 +135,7 @@ export function MemorySettings({ initial }: { initial: MemoryState }) {
         {on && <Button kind="primary" icon="spark" onClick={() => setIntro(true)} testId="mem-intro">{t(n > 0 ? 'tools.memset.introMore' : 'tools.memset.intro')}</Button>}
         <Button icon="plus" onClick={() => setEdit({ item: null, text: '', section: 'facts' })} testId="mem-add">{t('tools.add')}</Button>
       </>}>
+      {on && <RulesNow bump={rnBump} />}
       <Group foot={on ? t('tools.memset.footOn') : t('tools.memset.footOff')}>
         <SwitchRow title={t('tools.memset.use')} sub={on ? t('tools.memset.useOn') : t('tools.memset.useOff')} checked={on} onChange={(v) => void setPref({ on: v })} testId="mem-on" />
         <SwitchRow title={t('tools.memset.auto')} sub={auto ? t('tools.memset.autoOn') : t('tools.memset.autoOff')} checked={on && auto} disabled={!on} onChange={(v) => void setPref({ auto: v })} testId="mem-auto" />
@@ -210,7 +213,7 @@ export function MemorySettings({ initial }: { initial: MemoryState }) {
         )}
       </Sheet>
       {confirmUi}
-      <MemoryIntro open={intro} onClose={() => { setIntro(false); void reload(); }} />
+      <MemoryIntro open={intro} onClose={() => { setIntro(false); setRnBump((x) => x + 1); void reload(); }} />
     </KPage>
   );
 }
