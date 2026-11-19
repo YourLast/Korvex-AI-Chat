@@ -180,6 +180,15 @@ describe('карточка очереди сервера', () => {
     expect(card.getAttribute('role')).toBe('status');
     expect(card.textContent).toContain('Можно закрыть вкладку — ответ сохранится в чате.');
   });
+  it('причина ожидания: «ваш прошлый расчёт ещё идёт, позиция N»; память движка — подпись', () => {
+    const { rerender } = render(createElement(ServeQueueCard, { ahead: 1, eta: null, reason: 'own_running' }));
+    expect(screen.getByTestId('squeued-title').textContent).toBe('Ваш прошлый расчёт ещё идёт — этот следом, позиция 2');
+    rerender(createElement(ServeQueueCard, { ahead: 0, eta: null, reason: 'kv' }));
+    expect(screen.getByTestId('squeued-title').textContent).toBe('Расчёт в очереди, вы следующий — начнём автоматически');
+    expect(screen.getByTestId('squeued-sub').textContent).toBe('Жду, пока освободится память движка');
+    expect(serveQueueOf({ ahead: 1, eta: 0, reason: 'own_running' })).toEqual({ ahead: 1, eta: null, reason: 'own_running' });
+    expect(serveQueueOf({ ahead: 1, reason: 'x' })).toEqual({ ahead: 1, eta: null });
+  });
   it('место обновляется по кадрам: 2 → 1 → «вы следующий»; полоска растёт', () => {
     const { rerender } = render(createElement(ServeQueueCard, { ahead: 2, eta: 7200 }));
     expect(Number(screen.getByTestId('squeued-bar').getAttribute('aria-valuenow'))).toBe(33);

@@ -55,6 +55,8 @@ export default {
 
   'squeue.in': ['Расчёт в очереди, перед вами {n} — начнём автоматически', 'The calculation is queued, {n} ahead of you — it will start automatically', 'Proračun je u redu čekanja, ispred vas {n} — počinjemo automatski'],
   'squeue.next': ['Расчёт в очереди, вы следующий — начнём автоматически', 'The calculation is queued, you’re next — it will start automatically', 'Proračun je u redu čekanja, vi ste sledeći — počinjemo automatski'],
+  'squeue.own': ['Ваш прошлый расчёт ещё идёт — этот следом, позиция {n}', 'Your previous calculation is still running — this one is next, position {n}', 'Vaš prethodni proračun još traje — ovaj je sledeći, pozicija {n}'],
+  'squeue.kv': ['Жду, пока освободится память движка', 'Waiting for engine memory to free up', 'Čekam da se oslobodi memorija mašine'],
   'squeue.wait': ['Ждать примерно {t}', 'Estimated wait: about {t}', 'Procenjeno čekanje: oko {t}'],
   'squeue.soon': ['Начнём меньше чем через минуту', 'Starting in under a minute', 'Počinjemo za manje od minuta'],
   'squeue.min': ['{n} мин', '{n} min', '{n} min'],

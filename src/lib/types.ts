@@ -69,7 +69,7 @@ export type MsgView = {
   phase?: 'wait' | 'queued' | 'think' | 'answer';
   ahead?: number;
   eta?: number;
-  squeue?: { ahead: number; eta: number | null } | null;
+  squeue?: { ahead: number; eta: number | null; reason?: 'own_running' | 'kv' } | null;
   startedAt?: number;
   rStartedAt?: number | null;
 };

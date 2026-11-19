@@ -252,7 +252,7 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
       {}
       {m.phase === 'queued' && (readOnly ? <p className="t-cap" data-testid="queued">{tx('msg.queuedAdmin')}</p> : <QueueCard ahead={m.ahead ?? 0} eta={m.eta} />)}
       {}
-      {sq && (readOnly ? <p className="t-cap" data-testid="squeued">{tx('squeue.admin')}</p> : <ServeQueueCard ahead={sq.ahead} eta={sq.eta} />)}
+      {sq && (readOnly ? <p className="t-cap" data-testid="squeued">{tx('squeue.admin')}</p> : <ServeQueueCard ahead={sq.ahead} eta={sq.eta} reason={sq.reason} />)}
       {}
       {waiting && m.phase !== 'queued' && !sq && <p className="t-cap ans-wait"><span className="ans-wait-ic" aria-hidden="true"><HeadMark live /></span><span className="shimmer">{tx('msg.thinking')}</span></p>}
       {shown && <SrcCtx.Provider value={srcCtx}><Markdown text={shown} live={!!m.streaming} /></SrcCtx.Provider>}

@@ -1,7 +1,8 @@
 import type { OrgHeader } from './orgCard';
 export type Memory = Record<string, unknown>;
 export type Extras = { memory?: Memory; sources?: unknown[]; sinfo?: Record<string, number> };
-export type QueueInfo = { state: 'queued' | 'started'; ahead: number; eta: number | null };
+export type QueueReason = 'own_running' | 'kv';
+export type QueueInfo = { state: 'queued' | 'started'; ahead: number; eta: number | null; reason?: QueueReason | null };
 
 export type Dialect = {
   name: string;

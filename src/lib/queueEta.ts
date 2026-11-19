@@ -31,11 +31,12 @@ export function fmtEta(sec: number, lang: Lang = 'ru'): string {
   return tr(lang, 'queue.etaSec', { n: Math.min(55, Math.max(5, Math.round(sec / 5) * 5)) });
 }
 
-export function serveQueueOf(v: unknown): { ahead: number; eta: number | null } | null {
+export function serveQueueOf(v: unknown): { ahead: number; eta: number | null; reason?: 'own_running' | 'kv' } | null {
   if (!v || typeof v !== 'object') return null;
-  const o = v as { ahead?: unknown; eta?: unknown };
+  const o = v as { ahead?: unknown; eta?: unknown; reason?: unknown };
   const ahead = Number(o.ahead), eta = Number(o.eta);
-  return { ahead: Number.isFinite(ahead) && ahead > 0 ? Math.floor(ahead) : 0, eta: Number.isFinite(eta) && eta > 0 ? Math.round(eta) : null };
+  const reason = o.reason === 'own_running' || o.reason === 'kv' ? o.reason : undefined;
+  return { ahead: Number.isFinite(ahead) && ahead > 0 ? Math.floor(ahead) : 0, eta: Number.isFinite(eta) && eta > 0 ? Math.round(eta) : null, ...(reason ? { reason } : {}) };
 }
 
 export function fmtWait(sec: number, lang: Lang = 'ru'): string | null {

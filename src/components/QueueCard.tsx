@@ -27,15 +27,16 @@ function useQueuePlace(ahead: number) {
   return { position, fill: far <= 1 ? 1 : (far - position + 1) / far, next: position === 1 };
 }
 
-export function ServeQueueCard({ ahead, eta }: { ahead: number; eta?: number | null }) {
+export function ServeQueueCard({ ahead, eta, reason }: { ahead: number; eta?: number | null; reason?: 'own_running' | 'kv' }) {
   const t = useT();
   const { position, fill, next } = useQueuePlace(ahead);
   const [pre, post] = t('squeue.in', { n: '\u0000' }).split('\u0000');
   const wait = eta && eta > 0 ? fmtWait(eta, t.lang) : null;
   return (
     <div className={`qcard${next ? ' is-next' : ''}`} role="status" aria-live="polite" data-testid="squeued" data-ahead={position - 1}>
-      <p className="qcard-t" data-testid="squeued-title">{next ? t('squeue.next') : <>{pre}<span className="tnum">{position - 1}</span>{post}</>}</p>
-      {eta && eta > 0 ? <p className="qcard-s" data-testid="squeued-sub">{wait ? t('squeue.wait', { t: wait }) : t('squeue.soon')}</p> : null}
+      {}
+      <p className="qcard-t" data-testid="squeued-title" data-reason={reason}>{reason === 'own_running' ? t('squeue.own', { n: position }) : next ? t('squeue.next') : <>{pre}<span className="tnum">{position - 1}</span>{post}</>}</p>
+      {eta && eta > 0 ? <p className="qcard-s" data-testid="squeued-sub">{wait ? t('squeue.wait', { t: wait }) : t('squeue.soon')}</p> : reason === 'kv' ? <p className="qcard-s" data-testid="squeued-sub">{t('squeue.kv')}</p> : null}
       <div className="qcard-bar" role="progressbar" aria-label={t('queue.progress')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(fill * 100)} aria-valuetext={t('queue.place', { n: position })} data-testid="squeued-bar">
         <i style={{ width: `${Math.round(fill * 100)}%` }} />
       </div>
