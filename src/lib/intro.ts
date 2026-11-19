@@ -45,9 +45,9 @@ export function introView(userId: string): IntroView {
   return { threadId: t.id, messages: v?.messages ?? [], busy: !!jobOfThread(t.id), progress: { left: p.left, tail: p.tail }, done: !!memoryMeta(userId).introEnd };
 }
 
-export function introTurn(userId: string, t: Thread, o: { text: string; mode?: 'send' | 'regenerate'; hidden?: boolean; timezone?: string }): Submitted {
+export function introTurn(userId: string, t: Thread, o: { text: string; mode?: 'send' | 'regenerate'; hidden?: boolean; timezone?: string; fileIds?: string[] }): Submitted {
   const mode = o.mode ?? 'send';
-  const s = submitTurn({ thread: t, userId, mode, text: mode === 'send' ? o.text : '', modelId: introModel(), levelId: introLevel(), timezone: o.timezone, ...(o.hidden ? { userMeta: { hidden: true } } : {}) });
+  const s = submitTurn({ thread: t, userId, mode, text: mode === 'send' ? o.text : '', ...(mode === 'send' && o.fileIds?.length ? { fileIds: o.fileIds } : {}), modelId: introModel(), levelId: introLevel(), timezone: o.timezone, ...(o.hidden ? { userMeta: { hidden: true } } : {}) });
   if (mode === 'send' && !o.hidden && s.userMessageId) {
     considerIntro(userId, t.id, s.userMessageId, s.assistantMessageId);
     if (!memoryMeta(userId).introDone) setMemoryMeta(userId, { introDone: Date.now() });
@@ -80,8 +80,8 @@ export function openIntro(userId: string, o: { timezone?: string; now?: number }
   return { ...v, started, waiting: !started && !v.busy && v.messages.at(-1)?.role === 'assistant' };
 }
 
-export function sendIntro(userId: string, text: string, timezone?: string): Submitted {
-  return introTurn(userId, ensureThread(userId), { text, timezone });
+export function sendIntro(userId: string, text: string, timezone?: string, fileIds?: string[]): Submitted {
+  return introTurn(userId, ensureThread(userId), { text, timezone, fileIds });
 }
 
 export async function restartIntro(userId: string, o: { timezone?: string } = {}): Promise<IntroView & { started: boolean }> {

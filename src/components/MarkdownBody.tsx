@@ -147,6 +147,7 @@ const components: Components = {
       const table = /^(XLSX|XLSM|XLS|ODS|CSV|TSV)$/.test(ext);
       return <FileCard href={href} name={name} table={table} meta={<>{ext || <FileWord />}{title ? ` · ${title}` : ''}</>}>{children}</FileCard>;
     }
+    if (href === '/settings/memory#intro') return <a href={href} className="lnk-act" data-testid="intro-link">{children}<Icon n="chev-right" sm /></a>;
     if (href && /^\/(?!\/)/.test(href)) return <a href={href} className="lnk">{children}</a>;
     return <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="lnk">{children}</a>;
   },

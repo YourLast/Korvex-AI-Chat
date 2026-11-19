@@ -18,7 +18,7 @@ export const SECTIONS: { id: Section; title: string; prompt: string; hint: strin
 ];
 const SECTION_PROMPT_EN: Record<Section, string> = { who: 'Who', work: 'Work and projects', interests: 'Interests', style: 'How to talk', rules: 'How to work with them', knowledge: 'Knowledge and rules (found earlier, with a source; still verify norms by search before answering)', facts: 'Other' };
 export const isSection = (s: unknown): s is Section => SECTIONS.some((x) => x.id === s);
-export const KEYS: Record<string, Section> = { name: 'who', city: 'who', language: 'who', role: 'work', company: 'work', address: 'style', tone: 'style', length: 'style', format: 'style', emoji: 'style', humor: 'style', curious: 'style', writes: 'style' };
+export const KEYS: Record<string, Section> = { name: 'who', city: 'who', language: 'who', role: 'work', company: 'work', address: 'style', tone: 'style', length: 'style', format: 'style', emoji: 'style', humor: 'style', curious: 'style', writes: 'style', method: 'rules', sample: 'style' };
 export const CURATOR_KEYS = Object.keys(KEYS).filter((k) => k !== 'writes');
 export const TEMP = 1, INTRO = 2;
 export const isTemp = (t: { temporary?: number | null } | null | undefined) => t?.temporary === TEMP;
@@ -483,6 +483,46 @@ export function threadUserTexts(threadId: string | null | undefined): string[] {
     .where(and(eq(schema.messages.threadId, threadId), eq(schema.messages.role, 'user'))).orderBy(desc(schema.messages.seq)).limit(30).all()
     .filter((r) => !(r.meta as { hidden?: unknown } | null)?.hidden).map((r) => r.c);
 }
+export function lastUserFiles(threadId: string | null | undefined): string[] {
+  if (!threadId) return [];
+  const r = getDb().select({ meta: schema.messages.meta }).from(schema.messages)
+    .where(and(eq(schema.messages.threadId, threadId), eq(schema.messages.role, 'user'))).orderBy(desc(schema.messages.seq)).limit(1).get();
+  const m = (r?.meta ?? null) as { hidden?: unknown; fileIds?: unknown } | null;
+  return m && !m.hidden && Array.isArray(m.fileIds) ? m.fileIds.filter((x): x is string => typeof x === 'string') : [];
+}
+export function threadFileTexts(threadId: string | null | undefined): string[] {
+  if (!threadId) return [];
+  const ids = getDb().select({ meta: schema.messages.meta }).from(schema.messages)
+    .where(and(eq(schema.messages.threadId, threadId), eq(schema.messages.role, 'user'))).all()
+    .flatMap((r) => { const f = (r.meta as { fileIds?: unknown } | null)?.fileIds; return Array.isArray(f) ? f.filter((x): x is string => typeof x === 'string') : []; });
+  if (!ids.length) return [];
+  return getDb().select({ text: schema.files.text }).from(schema.files).where(inArray(schema.files.id, [...new Set(ids)].slice(0, 20))).all().map((r) => r.text ?? '').filter(Boolean);
+}
+const DOC_WORDS = new Set(('итого всего сумма суммы цена количество кол наименование товар товары услуга услуги работа работы ндс без дата номер счет счёт счета акт накладная покупатель поставщик продавец исполнитель заказчик руководитель бухгалтер главный основание оплата назначение платеж платёж единица ед шт руб коп сверка сальдо дебет кредит период остаток приход расход итог договор подпись отпустил получил сдал принял ставка включая том числе код артикул вес склад банк получатель плательщик месяц январь февраль март апрель май июнь июль август сентябрь октябрь ноябрь декабрь начислено удержано выплачено к выплате сотрудник должность оклад премия налог взносы ндфл фсс пфр фомс отчет отчёт таблица лист страница раздел приложение примечание комментарий статус всего: total amount price qty quantity description item date invoice vat tax subtotal customer supplier seller buyer signature unit no number balance debit credit').split(/\s+/));
+export function docLeak(record: string, docs: string[]): boolean {
+  if (!docs.length) return false;
+  const digits = (s: string) => (s.match(/\d(?:[\d\s.,\u00a0]*\d)?/g) ?? []).map((x) => x.replace(/\D/g, '')).filter((x) => x.length >= 3);
+  const recNums = digits(record);
+  if (recNums.length) {
+    const docNums = new Set(docs.flatMap(digits));
+    if (recNums.some((n) => docNums.has(n) || [...docNums].some((d) => d.length >= 3 && (d.includes(n) || n.includes(d))))) return true;
+  }
+  const names = new Set<string>();
+  for (const d of docs) {
+    for (const m of d.matchAll(/«([^»]{2,60})»|"([^"\n]{2,60})"/gu)) names.add((m[1] ?? m[2]).trim().toLowerCase());
+    for (const m of d.matchAll(/(?:ООО|ОАО|ЗАО|ПАО|АО|ИП|LLC|Ltd|GmbH|d\.o\.o\.)\s+«?([\p{L}][\p{L}\d-]+)/gu)) names.add(m[1].toLowerCase());
+    for (const line of d.split('\n')) {
+      const ws = [...line.matchAll(/(?<![\p{L}\d])(\p{Lu}[\p{Ll}]{2,})(?![\p{L}])/gu)];
+      for (const m of ws) if ((m.index ?? 0) > 0 && !DOC_WORDS.has(m[1].toLowerCase())) names.add(m[1].toLowerCase());
+    }
+  }
+  const low = record.toLowerCase();
+  for (const n of names) {
+    if (n.length < 3) continue;
+    if (n.includes(' ') ? low.includes(n) : new RegExp(`(?<![\\p{L}])${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'u').test(low)) return true;
+  }
+  return false;
+}
 export function threadAnswers(threadId: string | null | undefined): string[] {
   if (!threadId) return [];
   return getDb().select({ c: schema.messages.content }).from(schema.messages)
@@ -586,8 +626,13 @@ const has = (re: RegExp) => (r: MemoryRow[]) => r.some((x) => x.sure !== 0 && re
 const T_WORK: Topic = { id: 'work', say: 'чем занимается и в какой роли, какой участок (профессия, должность, на себя или на клиентов)', sayEn: 'what they do and in which role (profession, position, for themselves or for clients)',
   known: (r) => r.some((x) => x.sure !== 0 && x.section === 'work'),
   q: /(занимаешься|занимаетесь|работаешь|работаете|кем\s+ты|кем\s+вы|чем\s+ты|чем\s+вы|бизнес|учишься|учитесь|професси|должност|участок|for\s+a\s+living|your\s+(work|job|role))/iu };
-const T_FORMAT: Topic = { id: 'format', say: 'как подавать ответ: коротко или подробно, таблицей или текстом, сначала итог или ход решения', sayEn: 'how to present answers: short or detailed, table or text, result first or the reasoning',
-  known: (r) => r.some((x) => x.key === 'length' || x.key === 'format'), q: /(коротк|подробн|кратк|развёрнут|развернут|таблиц|списк|сначала\s+(итог|вывод|ответ)|формат|short|detail)/iu };
+const T_FORMAT: Topic = { id: 'work_format', say: 'в каком виде ему удобно получать ответы и расчёты и как он сам считает и работает: таблица или по шагам, сначала итог или выкладки, округление и единицы, как называет свои документы и этапы', sayEn: 'in what form they like to get answers and calculations and how they themselves calculate and work: a table or step by step, result first or the workings, rounding and units, what they call their documents and stages',
+  known: (r) => r.some((x) => x.key === 'length' || x.key === 'format') && r.some((x) => x.key === 'method'), soft: true,
+  q: /(в\s+каком\s+виде|как\s+(вы\s+|ты\s+)?(сам\S*\s+)?(счита|работа)|таблиц|по\s+шагам|сначала\s+(итог|вывод|ответ)|округл|сверху|в\s+том\s+числе|формат|коротк|подробн|кратк|развёрнут|развернут|in\s+what\s+form|step\s+by\s+step|table|rounding)/iu };
+const T_FORMAT_ACC: Topic = { ...T_FORMAT, say: T_FORMAT.say + '; бухгалтеру — плюс НДС «сверху» или «в том числе» и как он сверяет (с выпиской, с 1С, по актам)', sayEn: T_FORMAT.sayEn + '; for an accountant also VAT on top or included and how they reconcile (bank statement, 1C, acts)' };
+const T_SAMPLE: Topic = { id: 'sample', say: 'пример его документа: предложи одним предложением прикрепить скрепкой у поля ввода один-два типичных документа или отчёта, какие он делает или получает (можно шаблон или старый пример без важных данных), — чтобы понять формат; откажется или «потом» — дальше без уговоров', sayEn: 'a sample of their documents: in one sentence offer to attach (paper clip next to the input) one or two typical documents or reports they make or receive (a template or an old one without sensitive data is fine) so you see the format; if they decline or say later, move on without persuading',
+  known: (r) => r.some((x) => x.key === 'sample'), soft: true,
+  q: /(прикреп|пришл\S*\s+(пример|образ|шаблон)|покаж\S*\s+(пример|образ)|пример\S*\s+(документ|отч[её]т)|attach|sample|template)/iu };
 const T_ADDR: Topic = { id: 'address', say: 'как к нему обращаться и на «ты» или на «вы» (одним вопросом)', sayEn: 'how to address them and formal or informal (one question)',
   known: (r) => r.some((x) => x.key === 'name') && r.some((x) => x.key === 'address'), q: new RegExp(`${NAME_Q.source}|(на\\s+«?ты»?|на\\s+«?вы»?|formal|informal)`, 'iu') };
 const soft = (t: Topic): Topic => ({ ...t, soft: true });
@@ -630,7 +675,7 @@ export function eagerAnswers(userAnswers: string[]): boolean {
 export function introPlan(rows: MemoryRow[], userAnswers: string[] = []): { core: Topic[]; tail: Topic[] } {
   const acc = isAccountant(rows, userAnswers);
   const addr = rows.some((x) => x.key === 'name') ? { ...T_ADDR, say: 'на «ты» или на «вы»', sayEn: 'formal or informal address', known: (r: MemoryRow[]) => r.some((x) => x.key === 'address') } : T_ADDR;
-  return { core: [T_WORK, ...(acc ? ACC_CORE : OTHER_CORE), T_FORMAT, addr], tail: eagerAnswers(userAnswers) ? (acc ? ACC_TAIL : OTHER_TAIL) : [] };
+  return { core: [T_WORK, acc ? T_FORMAT_ACC : T_FORMAT, ...(acc ? ACC_CORE : OTHER_CORE), T_SAMPLE, addr], tail: eagerAnswers(userAnswers) ? (acc ? ACC_TAIL : OTHER_TAIL) : [] };
 }
 export function introTopics(rows: MemoryRow[], userAnswers: string[] = []): Topic[] {
   const p = introPlan(rows, userAnswers);
@@ -639,7 +684,7 @@ export function introTopics(rows: MemoryRow[], userAnswers: string[] = []): Topi
 export function unknownTopics(rows: MemoryRow[], userAnswers: string[] = []): string[] {
   return introTopics(rows, userAnswers).filter((t) => !t.known(rows)).map((t) => t.say);
 }
-const ALL_TOPICS = [T_WORK, ...ACC_CORE, ...ACC_TAIL, ...OTHER_CORE, ...OTHER_TAIL, T_FORMAT, T_ADDR];
+const ALL_TOPICS = [T_WORK, T_FORMAT, ...ACC_CORE, ...ACC_TAIL, ...OTHER_CORE, ...OTHER_TAIL, T_SAMPLE, T_ADDR];
 export function askedTopics(answers: string[], topics: Topic[] = ALL_TOPICS): Set<string> {
   const qs = answers.flatMap(questionsOf);
   return new Set(topics.filter((t) => qs.some((q) => t.q.test(q))).map((t) => t.id));
@@ -665,6 +710,7 @@ export const INTRO_RULES = [
   '— не переспрашивай то, что уже известно (сведения ниже, заметка и сам разговор); неполное можно уточнить; догадки из «Возможно» можно мягко проверить;',
   '— не спрашивай о здоровье, личных деньгах, отношениях, политике и религии; никогда не проси пароли, ключи и коды;',
   '— не хочет отвечать — не настаивай, переходи к следующей теме и к этой больше не возвращайся;',
+  '— когда в заметке тема «пример его документа» — одним предложением, в его манере, предложи прикрепить скрепкой у поля ввода один-два типичных документа или отчёта (можно шаблон или старый пример без важных данных), чтобы понять формат; это по желанию: откажется или «потом» — сразу следующая тема, без уговоров; приложил — ответ по заметке («Понял формат: …» и «верно?»);',
   '— когда в заметке сказано, что знакомство закончено, — новых вопросов не задавай: напиши «Спасибо, мне хватит. Вот что я запомнила:» и 3–7 коротких пунктов только из того, что заметка называет узнанным в этом разговоре (ничего не додумывай), затем «Поправить можно в Настройках → Память»; вопросом не заканчивай;',
   '— после конца знакомства он может продолжить писать — тогда просто помогай с тем, что он просит, без новых вопросов о нём;',
   '— в конце его сообщения бывает служебная заметка Korvex в квадратных скобках — это не его слова: учитывай её молча и не упоминай.',
@@ -678,6 +724,7 @@ export const INTRO_RULES_EN = [
   '— do not ask again what is already known (the facts below, the note and the conversation itself); you may clarify what is incomplete; you may gently check guesses from "Maybe";',
   '— do not ask about health, personal money, relationships, politics and religion; never ask for passwords, keys or codes;',
   '— if they do not want to answer, do not insist: move to the next topic and do not come back to this one;',
+  '— when the note has the topic "a sample of their documents", offer in one sentence, in their manner, to attach (paper clip next to the input) one or two typical documents or reports (a template or an old one without sensitive data is fine) so you see the format; it is optional: if they decline or say later, go straight to the next topic without persuading; if they attach, answer as the note says ("Got the format: …" and "right?");',
   '— until you know whether they prefer formal or informal address: if they write formally or dryly, be formal; otherwise neutral; after they answer, use only that form;',
   '— ask in the words of their work, no bureaucratese; do not ask for client names, tax IDs or amounts;',
   '— say progress in words when it fits: "two questions left", "last question"; when the main part is done and only optional topics remain: "I know the main things; a couple more questions if you do not mind";',
@@ -686,7 +733,9 @@ export const INTRO_RULES_EN = [
   "— at the end of their message there may be a Korvex service note in square brackets: these are not their words; take it into account silently and do not mention it.",
 ].join('\n');
 const rowsLine = (rows: MemoryRow[]) => rows.map((r) => r.text.replace(/[\n\r]+/g, ' ')).join('; ');
-export function introNote(rows: MemoryRow[], snapIds: Set<string>, answers: string[], lang: 'ru' | 'en' = 'ru', userAnswers: string[] = [], ended = false): string {
+const SAMPLE_NOTE = 'Он приложил пример своего документа. Ответь одной строкой: «Понял формат: …» — 2–4 правила формата из документа (колонки и их порядок, итог первым или последним, НДС «в том числе» или сверху, округление, вид дат и номеров, его названия документов и разделов) — и спроси «верно?». Ни одной суммы, имени, названия организации, реквизита или номера из документа не пиши. Следующую тему — после его ответа.';
+const SAMPLE_NOTE_EN = 'They attached a sample of their document. Answer in one line: "Got the format: …" with 2–4 format rules from it (columns and their order, total first or last, VAT included or on top, rounding, how dates and numbers look, their names for documents and sections) and ask "right?". Do not write a single amount, name, company name, bank detail or number from the document. Move to the next topic after their answer.';
+export function introNote(rows: MemoryRow[], snapIds: Set<string>, answers: string[], lang: 'ru' | 'en' = 'ru', userAnswers: string[] = [], ended = false, sampleJust = false): string {
   const ok = rows.filter((r) => !ruleConflict(r.text) && !isSecret(r.text));
   const fresh = ok.filter((r) => !snapIds.has(r.id) && r.sure !== 0);
   const { core, tail } = introPlan(ok, userAnswers);
@@ -702,6 +751,7 @@ export function introNote(rows: MemoryRow[], snapIds: Set<string>, answers: stri
     const o: string[] = [];
     if (!answers.length) o.push('This is the start: greet them in one short sentence, say there are a few questions, it is quick and you will say when it is enough, and ask the first question right away. Do not introduce yourself: no "I am …", no model or company name.');
     if (fresh.length) o.push(`Learned in this conversation: ${rowsLine(fresh)}.`);
+    if (sampleJust) return `[Korvex service note, not the person's words: ${[...o, SAMPLE_NOTE_EN].join(' ')}]`;
     if (left.length) {
       const prog = inTail ? (leftCore.length === 0 && answers.length && !asked.has(leftTail[0].id) && leftTail.length === tail.length ? ' The main part is done: say "I know the main things; a couple more questions if you do not mind" and ask.' : '') : leftCore.length === 1 ? ' This is the last question: say so.' : leftCore.length <= 3 ? ` ${leftCore.length} questions left (including this one): you may say so in words.` : '';
       o.push(`You do not know yet (in order): ${left.map((t) => t.sayEn).join('; ')}. Ask about the first topic.${prog}${skipped.length ? ` You already asked but they did not answer, do not repeat: ${skipped.map((t) => t.sayEn).join('; ')}.` : ''}`);
@@ -712,6 +762,7 @@ export function introNote(rows: MemoryRow[], snapIds: Set<string>, answers: stri
   const out: string[] = [];
   if (!answers.length) out.push('Это начало знакомства: поздоровайся одной короткой фразой, скажи, что вопросов несколько, это недолго и ты скажешь, когда хватит, — без «рад, что наконец поговорили», без «как дела» и без рассказа о себе (не представляйся: без «Я — …», без имени модели и компании) — и сразу задай вопрос.');
   if (fresh.length) out.push(`Узнал в этом разговоре: ${rowsLine(fresh)}.`);
+  if (sampleJust) return `[Служебная заметка Korvex, не слова человека: ${[...out, SAMPLE_NOTE].join(' ')}]`;
   if (left.length) {
     const prog = inTail ? (leftTail.length === tail.length ? ' Главное уже есть: скажи «главное я знаю; ещё пара вопросов, если не против» и спроси.' : '')
       : leftCore.length === 1 ? ' Это последний вопрос — так и скажи.' : leftCore.length <= 3 ? ` Осталось ${leftCore.length} вопроса вместе с этим — можно сказать словами.` : '';
@@ -799,7 +850,7 @@ export function memoryBlockInfo(userId: string, thread: ThreadLike, now = Date.n
     const b = renderBlock(snap, budgetTokens(), { profile: profileName(userId), askName: false, curiosity: null, intro: lang === 'en' ? INTRO_RULES_EN : INTRO_RULES, tenure, now: snapAt, lang });
     const answers = threadAnswers(thread?.id), userAnswers = threadUserTexts(thread?.id);
     const ended = !!memoryMeta(userId).introEnd;
-    const note = introNote(rows, new Set(snap.map((r) => r.id)), answers, lang, userAnswers, ended);
+    const note = introNote(rows, new Set(snap.map((r) => r.id)), answers, lang, userAnswers, ended, !ended && lastUserFiles(thread?.id).length > 0);
     const end = !ended && introProgress(rows.filter((r) => !ruleConflict(r.text) && !isSecret(r.text)), answers, userAnswers).end;
     return { text: b.text, why: b.stats.used ? 'on' : 'empty', stats: b.stats, note, end };
   }

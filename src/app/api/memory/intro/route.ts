@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 
 const Body = z.union([
   z.object({ action: z.enum(['open', 'restart']), timezone: z.string().max(64).optional() }),
-  z.object({ text: z.string().trim().min(1).max(4000), timezone: z.string().max(64).optional() }),
+  z.object({ text: z.string().trim().max(4000), fileIds: z.array(z.string()).max(5).default([]), timezone: z.string().max(64).optional() }).refine((x) => x.text.length > 0 || x.fileIds.length > 0),
 ]);
 
 export async function POST(req: Request) {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       if (v.waiting) ext.introOpened?.(a.user.id, p.data.timezone);
       return json(v);
     }
-    const s = sendIntro(a.user.id, p.data.text, p.data.timezone);
+    const s = sendIntro(a.user.id, p.data.text, p.data.timezone, p.data.fileIds);
     return json({ ...introView(a.user.id), jobId: s.jobId, userMessageId: s.userMessageId, assistantMessageId: s.assistantMessageId }, 202);
   } catch (e) {
     if (e instanceof TurnError) return e.code ? NextResponse.json({ error: e.message, code: e.code, alt: e.alt ?? null }, { status: e.status }) : fail(e.status, e.message);

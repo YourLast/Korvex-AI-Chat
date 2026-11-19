@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import type { MsgView } from '@/lib/types';
+import type { FileChip, MsgView } from '@/lib/types';
 import { useT } from '@/lib/i18n/react';
 import { errText } from '@/lib/i18n/errors';
 import { useLive, type LiveEv } from '@/lib/live';
@@ -84,10 +84,10 @@ export function MemoryIntro({ open, onClose }: { open: boolean; onClose: () => v
   useLayoutEffect(toEnd, [toEnd, msgs.length, last?.content.length, last?.reasoning?.length, last?.memUpd?.length, last?.streaming, open]);
   const onScroll = () => { const el = list.current; if (el) stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80; };
 
-  const onSend = (text: string) => {
+  const onSend = (text: string, files: FileChip[] = []) => {
     if (!threadId || off) return false;
     stick.current = true;
-    return send({ threadId, text, ...DRAFT });
+    return send({ threadId, text, ...(files.length ? { files, fileIds: files.map((f) => f.id) } : {}), ...DRAFT });
   };
   const restart = async () => {
     if (!(await ask({ title: t('tools.memset.introRestartAsk'), message: t('tools.memset.introRestartMsg'), action: t('tools.memset.introRestart') }))) return;
@@ -136,7 +136,7 @@ export function MemoryIntro({ open, onClose }: { open: boolean; onClose: () => v
   );
   const composer = off ? null : (
     <div className="mi-comp" data-nodrag>
-      <Composer ref={comp} busy={busy || restarting} placeholder={t('tools.memset.introPh')} label={t('tools.memset.introPh')} modelSlot={null} onStop={stop} onSend={(text) => onSend(text)} attach={false} />
+      <Composer ref={comp} busy={busy || restarting} placeholder={t('tools.memset.introPh')} label={t('tools.memset.introPh')} modelSlot={null} onStop={stop} onSend={(text, files) => onSend(text, files)} />
     </div>
   );
   return (

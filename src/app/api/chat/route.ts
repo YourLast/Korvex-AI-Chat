@@ -42,8 +42,8 @@ export async function POST(req: Request) {
   try {
     if (isIntro(thread)) {
       if (b.mode !== 'send' && b.mode !== 'regenerate') return fail(400, 'bad mode');
-      if (b.mode === 'send' && !b.text.trim()) return fail(400, 'empty message');
-      return json(introTurn(a.user.id, thread, { text: b.text, mode: b.mode, timezone: b.timezone }), 202);
+      if (b.mode === 'send' && !b.text.trim() && !b.fileIds.length) return fail(400, 'empty message');
+      return json(introTurn(a.user.id, thread, { text: b.text, mode: b.mode, timezone: b.timezone, fileIds: b.fileIds }), 202);
     }
     const wk = weekState(a.user);
     if (wk.phase === 'blocked') {

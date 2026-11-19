@@ -127,4 +127,11 @@ describe('приглашение: пример в форме обращения 
     for (const t of ['Клиент просит счет на 8 769 900,28 с НДС. Что ему ответить?', 'Скидка 12 % от 36 000,00 — сколько выйдет?', 'Цена на сайте 500 ₽?'])
       expect(I.mannerOf(U, t), t).toBe('');
   });
+  it('строка заканчивается явным действием: «нажми сюда» на «ты», «нажмите сюда» на «вы», «начать знакомство» без формы, «tap here» в EN', async () => {
+    const I = await import('@/lib/introInvite');
+    expect(I.inviteNote('ru', 'на «ты»')).toContain('[нажми сюда](/settings/memory#intro)');
+    expect(I.inviteNote('ru', 'на «вы»')).toContain('[нажмите сюда](/settings/memory#intro)');
+    expect(I.inviteNote('ru', '')).toContain('[начать знакомство](/settings/memory#intro)');
+    expect(I.inviteNote('en')).toContain('[tap here](/settings/memory#intro)');
+  });
 });

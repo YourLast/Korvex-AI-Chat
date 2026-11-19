@@ -143,7 +143,7 @@ describe('знакомство — постоянный разговор', () =>
       ['who', 'name', 'Зовут Мила'], ['work', 'role', 'Дизайнер'], ['interests', null, 'велосипед'], ['style', 'length', 'Коротко'],
       ['style', 'address', 'На «ты»'], ['style', 'tone', 'С юмором'], ['who', 'city', 'Казань'],
     ].filter(([, k]) => !(k && over[k] === 'skip')).map(([section, key, text], i) => ({ id: `x${i}`, userId: 'z', section, key, text, origin: 'auto', sure: 1, threadId: null, messageId: null, createdAt: 1, updatedAt: 1 }));
-    const Q = ['С какими задачами чаще всего будешь приходить?', 'В чём работаешь — какие программы и инструменты?', 'Что тебе важнее всего проверять в ответе?'];
+    const Q = ['С какими задачами чаще всего будешь приходить?', 'В чём работаешь — какие программы и инструменты?', 'В каком виде тебе удобно получать ответы — таблицей или по шагам?', 'Что тебе важнее всего проверять в ответе?', 'Если удобно, прикрепи пример своего документа?'];
     const all = M.introNote(rows({}) as never, new Set(), Q);
     expect(all).toContain('Знакомство закончено');
     expect(all).toContain('Спасибо, мне хватит. Вот что я запомнила:');
@@ -152,9 +152,10 @@ describe('знакомство — постоянный разговор', () =>
     const adr = M.introNote(rows({ address: 'skip' }) as never, new Set(), [...Q, 'Тебе удобнее на «ты» или на «вы»?']);
     expect(adr).toContain('Знакомство закончено (о «на «ты» или на «вы»» он отвечать не стал — не переспрашивай)');
     const left = M.introNote(rows({}) as never, new Set(), []);
-    expect(left).toContain('Ещё не знаешь (по порядку): с какими задачами чаще всего будет приходить');
-    expect(left).toContain('Осталось 3 вопроса вместе с этим');
-    expect(M.introNote(rows({}) as never, new Set(), Q.slice(0, 2))).toContain('Это последний вопрос');
+    expect(left).toContain('Ещё не знаешь (по порядку): в каком виде ему удобно получать ответы и расчёты и как он сам считает и работает');
+    expect(left).toContain('пример его документа');
+    expect(M.introNote(rows({}) as never, new Set(), Q.slice(0, 2))).toContain('Осталось 3 вопроса вместе с этим');
+    expect(M.introNote(rows({}) as never, new Set(), Q.slice(0, 4))).toContain('Это последний вопрос');
     expect(left.split('Ещё не знаешь')[1]).not.toMatch(/город|интересно|юмор/);
     expect(M.INTRO_RULES).toContain('«Спасибо, мне хватит. Вот что я запомнила:»');
     expect(M.INTRO_RULES).toContain('вопросом не заканчивай');
@@ -167,7 +168,7 @@ describe('знакомство — постоянный разговор', () =>
     expect(an).toContain('1С');
     expect(an).not.toContain('с какими задачами чаще всего');
     expect(an).not.toContain('в какой сфере');
-    const accQ = ['На каких режимах клиенты — УСН, ОСНО?', 'В какой 1С работаете?', 'Что чаще всего считаете?', 'Как удобнее получать ответ — коротко или подробно?', 'На «ты» или на «вы»?'];
+    const accQ = ['На каких режимах клиенты — УСН, ОСНО?', 'В какой 1С работаете?', 'Что чаще всего считаете?', 'Как удобнее получать ответ — коротко или подробно?', 'Прикрепите пример отчёта, если удобно?', 'На «ты» или на «вы»?'];
     const eager = ['веду учёт пятнадцати ООО на упрощёнке', 'в основном торговля и пара производств'];
     const tail = M.introNote(acc as never, new Set(), accQ, 'ru', eager);
     expect(tail).toContain('что постоянно проверяет и где');
@@ -175,7 +176,8 @@ describe('знакомство — постоянный разговор', () =>
     expect(M.introNote(acc as never, new Set(), accQ, 'ru', ['да', 'нет'])).toContain('Знакомство закончено');
     expect(M.isAccountant([] as never, ['я бухгалтер, веду пять ООО'])).toBe(true);
     expect(M.isAccountant([] as never, ['я программист'])).toBe(false);
-    expect(M.introProgress(acc as never, ['На каких режимах клиенты — УСН, ОСНО?'])).toEqual({ left: 4, tail: false, end: false });
+    expect(M.introProgress(acc as never, ['На каких режимах клиенты — УСН, ОСНО?'])).toEqual({ left: 5, tail: false, end: false });
+    expect(an).toContain('НДС «сверху» или «в том числе»');
     expect(M.introNote([] as never, new Set(), [])).toContain('Это начало знакомства: поздоровайся одной короткой фразой, скажи, что вопросов несколько');
     expect(M.introNote([] as never, new Set(), ['Привет! Как к тебе обращаться?'])).not.toContain('Это начало знакомства');
   });

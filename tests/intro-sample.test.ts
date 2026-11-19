@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vitest';
+import { tmpData } from './helpers';
+
+tmpData();
+const DOC = [
+  'СЧЁТ-ФАКТУРА № 1452 от 03.11.2026',
+  'Продавец: ООО «Ромашка», ИНН 7701234567, КПП 770101001',
+  'Покупатель: ИП Сидоров Пётр Ильич',
+  '| Наименование | Кол-во | Цена | Сумма | НДС |',
+  '| Доставка груза Москва — Тверь | 2 | 15 400,00 | 30 800,00 | в т.ч. 5 133,33 |',
+  'Итого: 30 800,00, в том числе НДС 20 % — 5 133,33',
+  'Главный бухгалтер Кузнецова А. В.',
+].join('\n');
+
+describe('docLeak — данные из документа в памяти не остаются', () => {
+  it.each([
+    ['Из примера: таблица — Наименование, Кол-во, Цена, Сумма, НДС; итог внизу', false],
+    ['НДС «в том числе» отдельной колонкой; суммы до копеек', false],
+    ['Даты в формате ДД.ММ.ГГГГ; ставка НДС 20 %', false],
+    ['Итог: 30 800,00', true],
+    ['Счёт № 1452', true],
+    ['ИНН продавца 7701234567', true],
+    ['Продавец — Ромашка', true],
+    ['Покупатель: Сидоров', true],
+    ['Подпись — главный бухгалтер Кузнецова', true],
+    ['Доставки по маршруту Москва — Тверь', true],
+  ])('%s → утечка: %s', (rec, leak) => {
+    return import('@/lib/memory').then((M) => expect(M.docLeak(rec as string, [DOC])).toBe(leak));
+  });
+  it('без вложений — ничего не отбрасывается', async () => {
+    const M = await import('@/lib/memory');
+    expect(M.docLeak('Счёт № 1452', [])).toBe(false);
+  });
+});
+
+describe('заметка после примера', () => {
+  it('приложил файл — «Понял формат: …» и «верно?», без следующей темы и без данных документа', async () => {
+    const M = await import('@/lib/memory');
+    const n = M.introNote([] as never, new Set(), ['Прикрепи пример отчёта, если удобно?'], 'ru', ['вот'], false, true);
+    expect(n).toContain('«Понял формат: …»');
+    expect(n).toContain('«верно?»');
+    expect(n).toContain('Ни одной суммы, имени');
+    expect(n).not.toContain('Ещё не знаешь');
+    expect(M.introNote([] as never, new Set(), ['Attach a sample?'], 'en', ['here'], false, true)).toContain('"Got the format: …"');
+  });
+  it('ключи: method — rules, sample — style', async () => {
+    const M = await import('@/lib/memory');
+    expect(M.KEYS.method).toBe('rules');
+    expect(M.KEYS.sample).toBe('style');
+    expect(M.CURATOR_KEYS).toEqual(expect.arrayContaining(['method', 'sample']));
+  });
+  it('шаг «покажите пример» — в постоянной инструкции, по желанию, без уговоров', async () => {
+    const M = await import('@/lib/memory');
+    expect(M.INTRO_RULES).toContain('скрепкой у поля ввода');
+    expect(M.INTRO_RULES).toContain('без уговоров');
+  });
+});
