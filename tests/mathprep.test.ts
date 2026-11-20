@@ -25,7 +25,8 @@ describe('prepMath', () => {
   });
   it('оставляет настоящие формулы', () => {
     expect(prepMath('где $x = 5$ и $y$.')).toBe('где $x = 5$ и $y$.');
-    expect(prepMath('$$17 \\times 23 = 391$$')).toBe('$$17 \\times 23 = 391$$');
+    expect(prepMath('итог $$17 \\times 23 = 391$$ в строке')).toBe('итог $$17 \\times 23 = 391$$ в строке');
+    expect(prepMath('Итого:\n\n$$17 \\times 23 = 391$$\n\nдальше')).toBe('Итого:\n\n\n$$\n17 \\times 23 = 391\n$$\n\n\nдальше');
     expect(prepMath('$$\nE = mc^2\n$$')).toBe('$$\nE = mc^2\n$$');
   });
   it('закрывающий $ перед цифрой — не формула', () => {
@@ -40,7 +41,7 @@ describe('prepMath', () => {
 
   it('верные формулы не меняются ни на байт (в том числе блоки, \\left…\\right, окружения)', () => {
     for (const f of [
-      'где $x = 5$ и $y$.', '$$17 \\times 23 = 391$$', '$$\nE = mc^2\n$$', 'дробь $\\frac{a^2+b^2}{c}$ и $\\dfrac{1}{8}$',
+      'где $x = 5$ и $y$.', 'итог $$17 \\times 23 = 391$$ в строке', '$$\nE = mc^2\n$$', 'дробь $\\frac{a^2+b^2}{c}$ и $\\dfrac{1}{8}$',
       '$$\n\\begin{align} a &= b \\\\ c &= d \\end{align}\n$$', '$\\left( \\frac{1}{2} \\right)$', 'скобки $\\{a, b\\}$ и $\\sum_{i=1}^{n} x_i$',
     ]) expect(prepMath(f), f).toBe(f);
   });

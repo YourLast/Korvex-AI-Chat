@@ -131,7 +131,9 @@ body { font-family: var(--font); }
 .hljs-deletion { color: var(--neg); }
 .hljs-variable, .hljs-params, .hljs-attribute { color: var(--text-1); }
 
-.md .katex { font-size: 1.04em; color: var(--text-strong); }
+.md .katex { font-size: 1.04em; color: var(--text-strong); white-space: nowrap; }
+.md :not(.katex-display) > .katex { display: inline-block; max-width: 100%; overflow-x: auto; overflow-y: hidden; vertical-align: bottom; padding: 2px 0; margin: -2px 0; scrollbar-width: none; }
+.md :not(.katex-display) > .katex::-webkit-scrollbar { display: none; }
 .md .katex-display { margin: var(--s-3) 0; overflow-x: auto; overflow-y: hidden; padding: var(--s-1) 0; }
 .md .katex-display > .katex { white-space: nowrap; }
 

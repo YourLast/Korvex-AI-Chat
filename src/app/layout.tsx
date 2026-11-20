@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import fs from 'node:fs';
 import path from 'node:path';
-import 'katex/dist/katex.min.css';
+import '../../node_modules/rehype-katex/node_modules/katex/dist/katex.min.css';
 import '@/styles/design-tokens.css';
 import '@/styles/theme.css';
 import '@/styles/design-app.css';

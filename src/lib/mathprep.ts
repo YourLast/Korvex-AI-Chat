@@ -94,6 +94,7 @@ function guardDollars(s: string): string {
 function prepText(s: string): string {
   let t = s.replace(/\\\[([\s\S]+?)\\\]/g, (_m, body: string) => `\n\n$$\n${body.trim()}\n$$\n\n`);
   t = t.replace(/\\\(([\s\S]+?)\\\)/g, (_m, body: string) => `$${body.trim()}$`);
+  t = t.replace(/^[ \t]*\$\$([^\n$]+?)\$\$[ \t]*$/gm, (_m, body: string) => `\n$$\n${body.trim()}\n$$\n`);
   return guardDollars(t);
 }
 
