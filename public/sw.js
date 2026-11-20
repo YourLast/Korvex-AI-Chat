@@ -11,16 +11,31 @@ self.addEventListener('fetch', (e) => {
   const u = new URL(r.url);
   if (u.origin !== location.origin || u.pathname.startsWith('/api/') || u.pathname.startsWith('/cache/')) return;
   if (u.pathname.startsWith('/_next/static/') || /\.(png|svg|ico|woff2)$/.test(u.pathname)) {
-    e.respondWith(caches.match(r).then((hit) => hit || fetch(r).then((res) => { const cp = res.clone(); caches.open(V).then((c) => c.put(r, cp)); return res; })));
+    e.respondWith(caches.match(r).then((hit) => hit || fetch(r).then((res) => { const cp = res.clone(); caches.open(V).then((c) => c.put(r, cp)).catch(() => {}); return res; }))
+      .catch(() => assetDown()).then((res) => res || assetDown()));
     return;
   }
   if (r.mode === 'navigate') e.respondWith((async () => {
     try {
       const pre = await e.preloadResponse;
-      return pre || await fetch(r);
-    } catch (_) { return caches.match('/offline.html'); }
+      const res = pre || await fetch(r);
+      if (res) return res;
+    } catch (_) {  }
+    return pageDown();
   })());
 });
+
+const assetDown = () => new Response('', { status: 503, statusText: 'Service Unavailable', headers: { 'Cache-Control': 'no-store' } });
+async function pageDown() {
+  try { const hit = await caches.match('/offline.html'); if (hit) return hit; } catch (_) {  }
+  return new Response(DOWN_HTML, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
+}
+const DOWN_HTML = '<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+  + '<meta name="color-scheme" content="light dark"><title>Korvex AI</title><style>html,body{height:100%;margin:0;font:15px/24px system-ui,-apple-system,sans-serif;'
+  + 'background:#000;color:#ededed}@media (prefers-color-scheme:light){html,body{background:#fff;color:#1a1a1a}}body{display:grid;place-items:center;text-align:center;padding:24px}'
+  + 'p{opacity:.7;margin:8px 0 0}</style></head><body><div><h1 style="font-size:22px;font-weight:500;margin:0">Нет связи с сервером</h1>'
+  + '<p>Повторим автоматически · Can’t reach the server, retrying</p></div>'
+  + '<script>setInterval(function(){fetch("/",{method:"HEAD",cache:"no-store"}).then(function(r){if(r.ok)location.reload()}).catch(function(){})},5000)</script></body></html>';
 
 self.addEventListener('push', (e) => {
   let d = {};

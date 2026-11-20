@@ -1,13 +1,13 @@
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#000000"><title>Korvex AI — нет сети</title>
-<style>html,body{height:100%;margin:0;background:#000;color:#ededed;font:15px/24px system-ui,-apple-system,"Segoe UI",sans-serif}body{display:grid;place-items:center;text-align:center;padding:24px;padding-bottom:env(safe-area-inset-bottom)}img{width:40px;height:40px;margin-bottom:24px}p{color:#a1a1a1;margin:8px 0 0}button{margin-top:24px;height:40px;padding:0 16px;border-radius:8px;border:1px solid rgba(255,255,255,.18);background:#fff;color:#000;font:500 14px system-ui}</style></head>
-<body><div><img src="/mark.png" alt=""><h1 id="h" style="font-size:22px;font-weight:500;margin:0">Нет соединения</h1><p id="p">Чаты и память доступны только онлайн.</p><button id="b" onclick="location.reload()">Повторить</button></div>
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="color-scheme" content="light dark"><meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)"><meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)"><title>Korvex AI — нет связи</title>
+<style>html,body{height:100%;margin:0;background:#000;color:#ededed;font:15px/24px system-ui,-apple-system,"Segoe UI",sans-serif}body{display:grid;place-items:center;text-align:center;padding:24px;padding-bottom:env(safe-area-inset-bottom)}img{width:40px;height:40px;margin-bottom:24px}p{color:#a1a1a1;margin:8px 0 0}button{margin-top:24px;height:40px;padding:0 16px;border-radius:999px;border:0;background:#fff;color:#000;font:500 14px system-ui}@media (prefers-color-scheme:light){html:not(.dk),html:not(.dk) body{background:#fff;color:#1a1a1a}html:not(.dk) p{color:#525252}html:not(.dk) button{background:#0a0a0a;color:#fff}html:not(.dk) img{filter:invert(1)}}html.lt,html.lt body{background:#fff;color:#1a1a1a}html.lt p{color:#525252}html.lt button{background:#0a0a0a;color:#fff}html.lt img{filter:invert(1)}</style></head>
+<body><div><img src="/mark.png" alt=""><h1 id="h" style="font-size:22px;font-weight:500;margin:0">Нет связи с сервером</h1><p id="p">Повторим автоматически.</p><button id="b" onclick="location.reload()">Повторить сейчас</button></div>
 <script>
 // язык: выбор человека (cookie/localStorage kx.lang), иначе язык устройства: sr/hr/bs/me -> srpski, ru/uk/be/kk -> русский, остальное -> English
 (function () {
   var T = {
-    ru: ['Нет соединения', 'Чаты и память доступны только онлайн.', 'Повторить', 'Korvex AI — нет сети'],
-    en: ['No connection', 'Chats and memory are only available online.', 'Try again', 'Korvex AI — offline'],
-    sr: ['Nema veze', 'Čatovi i memorija dostupni su samo onlajn.', 'Pokušaj ponovo', 'Korvex AI — nema mreže']
+    ru: ['Нет связи с сервером', 'Повторим автоматически.', 'Повторить сейчас', 'Korvex AI — нет связи'],
+    en: ['Can’t reach the server', 'We’ll retry automatically.', 'Retry now', 'Korvex AI — no connection'],
+    sr: ['Nema veze sa serverom', 'Pokušaćemo ponovo automatski.', 'Pokušaj sada', 'Korvex AI — nema veze']
   };
   var tag = function (s) { s = String(s || '').toLowerCase().split(/[-_]/)[0]; return /^(sr|hr|bs|me|cnr|sh)$/.test(s) ? 'sr' : /^(ru|uk|be|kk)$/.test(s) ? 'ru' : s === 'en' ? 'en' : null; };
   var lang = null;
@@ -17,5 +17,10 @@
   var t = T[lang || 'en'];
   document.documentElement.lang = lang === 'sr' ? 'sr-Latn' : (lang || 'en');
   document.getElementById('h').textContent = t[0]; document.getElementById('p').textContent = t[1]; document.getElementById('b').textContent = t[2]; document.title = t[3];
+  // тема человека (cookie kx-theme): светлая / тёмная; иначе — как на устройстве (media выше)
+  try { var th = /(?:^|;\s*)kx-theme=(light|dark)/.exec(document.cookie); if (th) document.documentElement.className = th[1] === 'light' ? 'lt' : 'dk'; } catch (e) {}
+  // сервер снова отвечает (или сеть вернулась) — перезагрузить страницу, человеку ничего нажимать не нужно
+  var tryNow = function () { fetch('/', { method: 'HEAD', cache: 'no-store' }).then(function (r) { if (r.ok) location.reload(); }).catch(function () {}); };
+  setInterval(tryNow, 5000); window.addEventListener('online', tryNow);
 })();
 </script></body></html>
