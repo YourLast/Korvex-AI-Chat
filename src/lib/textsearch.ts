@@ -1,3 +1,4 @@
+import { blocksAsLabels } from './blocks/text';
 
 const INVISIBLE = /[­​-‏⁠-⁤﻿]/g;
 
@@ -16,7 +17,7 @@ export function fold(s: string): string {
 }
 
 export function plainText(md: string): string {
-  return md
+  return blocksAsLabels(md, 'ru')
     .replace(INVISIBLE, '')
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1')
     .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')

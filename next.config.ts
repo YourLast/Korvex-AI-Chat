@@ -2,7 +2,7 @@ import type { NextConfig } from 'next';
 
 const config: NextConfig = {
   distDir: process.env.KX_DIST_DIR || '.next',
-  serverExternalPackages: ['better-sqlite3', '@node-rs/argon2', 'web-push', 'undici'],
+  serverExternalPackages: ['better-sqlite3', '@node-rs/argon2', 'web-push', 'undici', 'exceljs'],
   ...(Number(process.env.KX_BUILD_CPUS) > 0 ? { experimental: { cpus: Number(process.env.KX_BUILD_CPUS) } } : {}),
   ...(process.env.KX_BUILD_SKIP_TSC === '1' ? { typescript: { ignoreBuildErrors: true } } : {}),
   ...(process.env.KX_STANDALONE === '1' ? { output: 'standalone' as const, outputFileTracingRoot: process.cwd() } : {}),

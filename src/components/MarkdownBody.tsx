@@ -17,6 +17,8 @@ import { SRC_MARKER, parseMarker } from '@/lib/srcmark';
 import { WEB_MARKER, outsideCode, webTargets } from '@/lib/webmark';
 import { OUT_PREFIX } from '@/ext/client';
 import { copyText } from '@/lib/clipboard';
+import { KxFence, KxFile } from './blocks/KxEmbed';
+import { isKxbHref } from '@/lib/blocks/text';
 
 const DL_RE = /📎\s*\[([^\]]+)\]\(([^)\s]+)\)(?:\s*\(([^)]+)\))?/g;
 const IMG_MD_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
@@ -130,6 +132,7 @@ const components: Components = {
   pre({ node, children }) {
     const code = (node as unknown as { children?: (H & { properties?: { className?: string[] } })[] })?.children?.[0];
     const lang = code?.properties?.className?.find((c) => c.startsWith('language-'))?.slice(9) ?? '';
+    if (lang === 'korvex') return <KxFence raw={code ? textOf(code) : ''} />;
     return (
       <div className="code" data-testid="code-block">
         <div className="code-head"><span>{lang || <L k="md.code" />}</span><CopyBtn text={code ? textOf(code) : ''} /></div>
@@ -144,12 +147,18 @@ const components: Components = {
       const name = typeof children === 'string' ? children : Array.isArray(children) ? children.join('') : '';
       const ext = (name.match(/\.([A-Za-z0-9]{1,5})$/)?.[1] ?? '').toUpperCase();
       if (/^(PNG|JPE?G|GIF|WEBP)$/.test(ext)) return <OutImage src={href} name={name} size={title} />;
+      if (isKxbHref(href)) return <KxFile href={href} name={name} />;
       const table = /^(XLSX|XLSM|XLS|ODS|CSV|TSV)$/.test(ext);
       return <FileCard href={href} name={name} table={table} meta={<>{ext || <FileWord />}{title ? ` · ${title}` : ''}</>}>{children}</FileCard>;
     }
     if (href === '/settings/memory#intro') return <a href={href} className="lnk-act" data-testid="intro-link">{children}<Icon n="chev-right" sm /></a>;
     if (href && /^\/(?!\/)/.test(href)) return <a href={href} className="lnk">{children}</a>;
     return <a href={href} target="_blank" rel="noopener noreferrer nofollow" className="lnk">{children}</a>;
+  },
+  p({ node, children }) {
+    const kids = (node as unknown as { children?: { tagName?: string; properties?: { href?: string } }[] })?.children ?? [];
+    if (kids.some((k) => k.tagName === 'a' && isKxbHref(k.properties?.href))) return <div className="md-p">{children}</div>;
+    return <p>{children}</p>;
   },
   img({ src, alt, title }) {
     const s = typeof src === 'string' ? src : '';

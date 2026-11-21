@@ -5,7 +5,7 @@ import { allowedBy, ruleOf, whoOf } from './access';
 
 export const FEATURE_OFF = 'Выключено администратором';
 
-export const FEATURE_IDS = ['voice', 'files', 'memory', 'automations', 'webSearch', 'compare', 'push', 'code', 'signup'] as const;
+export const FEATURE_IDS = ['voice', 'files', 'memory', 'automations', 'webSearch', 'compare', 'push', 'code', 'signup', 'blocks'] as const;
 export type FeatureId = (typeof FEATURE_IDS)[number];
 
 type Def = { id: FeatureId; def: () => boolean; warn?: string };
@@ -19,6 +19,7 @@ const DEFS: Record<FeatureId, Def> = {
   push: { id: 'push', def: () => process.env.KX_LAN !== '1' },
   code: { id: 'code', def: () => cfg('KX_FEATURE_CODE') === '1', warn: 'code' },
   signup: { id: 'signup', def: () => process.env.ALLOW_SIGNUP === '1' },
+  blocks: { id: 'blocks', def: () => cfg('KX_BLOCKS') === '1' },
 };
 
 export const featureDefault = (id: FeatureId): boolean => DEFS[id].def();

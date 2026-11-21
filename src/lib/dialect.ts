@@ -7,7 +7,7 @@ export type QueueInfo = { state: 'queued' | 'started'; ahead: number; eta: numbe
 export type Dialect = {
   name: string;
   headers?(chatId: string, o: { agent?: boolean; org?: OrgHeader | null }): Record<string, string>;
-  body?(o: { sources?: boolean }): Record<string, unknown>;
+  body?(o: { sources?: boolean; blocks?: string[] | null }): Record<string, unknown>;
   memoryKey?: string;
   extras?(c: unknown): Extras | null;
   maintFrame?(c: unknown): number | null;

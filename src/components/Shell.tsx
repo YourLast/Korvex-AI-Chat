@@ -40,6 +40,7 @@ import { FolderSection, MoveButton, ProjectDialog, dragThread } from './Folders'
 import { ChatSheet, type ChatRef, type ChatView } from './ChatSheet';
 import { haptic } from '@/lib/haptic';
 import { FeaturesProvider, type Features } from './FeaturesCtx';
+import { BlocksCfgProvider, type BlocksCfg } from './blocks/BlocksCfg';
 import { useBrand } from './BrandCtx';
 import { prepareModel as warmServe, prepareOnReturn as warmOnReturn } from '@/ext/client';
 
@@ -65,7 +66,7 @@ async function takePending(): Promise<string | null> {
   } catch { return null; }
 }
 
-export function Shell({ user, models, retired, locked, initialThreads, initialFolders = [], initialStatus = null, apiOn = true, features = null, children }: { user: { name: string; email?: string; role?: string; orgs?: boolean }; models: PublicModel[]; retired?: RetiredModel[]; locked?: LockedModel[]; initialThreads: ThreadLite[]; initialFolders?: FolderView[]; initialStatus?: StatusView | null; apiOn?: boolean; features?: Features | null; children: ReactNode }) {
+export function Shell({ user, models, retired, locked, initialThreads, initialFolders = [], initialStatus = null, apiOn = true, features = null, blocks = null, children }: { user: { name: string; email?: string; role?: string; orgs?: boolean }; models: PublicModel[]; retired?: RetiredModel[]; locked?: LockedModel[]; initialThreads: ThreadLite[]; initialFolders?: FolderView[]; initialStatus?: StatusView | null; apiOn?: boolean; features?: Features | null; blocks?: BlocksCfg | null; children: ReactNode }) {
   const brandName = useBrand().name;
   setRetired(retired);
   const tx = useT();
@@ -373,7 +374,7 @@ export function Shell({ user, models, retired, locked, initialThreads, initialFo
         <ChatSheet target={chatSheet?.c ?? null} view={chatSheet?.view ?? 'menu'} onView={(v) => setChatSheet((x) => (x ? { ...x, view: v } : x))} onClose={() => setChatSheet(null)}
           folders={folders} refresh={refresh} reloadFolders={loadFolders} />
         <div className="main" ref={setMain}>
-          <MainCtx.Provider value={main}><FeaturesProvider value={features}>{pending && pending !== path ? <ThreadPreview href={pending} /> : children}</FeaturesProvider></MainCtx.Provider>
+          <MainCtx.Provider value={main}><FeaturesProvider value={features}><BlocksCfgProvider value={blocks}>{pending && pending !== path ? <ThreadPreview href={pending} /> : children}</BlocksCfgProvider></FeaturesProvider></MainCtx.Provider>
         </div>
       </div>
      </StatusCtx.Provider>

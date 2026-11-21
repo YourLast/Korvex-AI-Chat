@@ -13,10 +13,11 @@ import files from './files';
 import seat from './seat';
 import steps from './steps';
 import org from './org';
+import blocks from './blocks';
 import { EXT_DICT } from '@/ext/i18n';
 
-export const PARTS: Record<string, Dict> = { common, auth, chat, shell, picker, server, work, tools, install, ops, files, seat, steps, org };
-export const DICT = { ...common, ...auth, ...chat, ...shell, ...picker, ...server, ...work, ...tools, ...install, ...ops, ...files, ...seat, ...steps, ...org, ...EXT_DICT } as typeof common & typeof auth & typeof chat & typeof shell
-  & typeof picker & typeof server & typeof work & typeof tools & typeof install & typeof ops & typeof files & typeof seat & typeof steps & typeof org;
+export const PARTS: Record<string, Dict> = { common, auth, chat, shell, picker, server, work, tools, install, ops, files, seat, steps, org, blocks };
+export const DICT = { ...common, ...auth, ...chat, ...shell, ...picker, ...server, ...work, ...tools, ...install, ...ops, ...files, ...seat, ...steps, ...org, ...blocks, ...EXT_DICT } as typeof common & typeof auth & typeof chat & typeof shell
+  & typeof picker & typeof server & typeof work & typeof tools & typeof install & typeof ops & typeof files & typeof seat & typeof steps & typeof org & typeof blocks;
 export type Key = keyof typeof DICT;
 export type { Entry };

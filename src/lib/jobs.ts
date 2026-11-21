@@ -25,9 +25,11 @@ import { OutClaimer } from './outfiles';
 import { hasCodeSession } from './code/flag';
 import { agentToolsOn, answerStep, runAgentLoop, servStepsIn, toolsPath, UpRetry, type Steer } from './agentLoop';
 import { orgHeader } from './orgCard';
+import { blocksFor } from './blocks/config';
 import { agentHistory, chatToOai, folderInstruction, transcriptForMeta, withExtra } from './agentHistory';
 import type { StepEvent } from './tools/types';
 import type { MemoryInfo } from './types';
+import { fileSnapshots, hasBlocks, snapshotRates } from './blocks/snapshot';
 import { INTRO, hasIntroMarks, introAfterTurn, markIntroEnd, memoryAllowed, memoryBlockInfo, stripIntroMarks } from './memory';
 import { turnNotes } from './introInvite';
 import { runClaude } from './anthropic/run';
@@ -693,7 +695,7 @@ async function run(j: Live) {
         const retry = new UpRetry(canCut);
         for (;;) {
           let got = false, again = false;
-          for await (const ev of streamChat({ model, level, chatId: h.session, messages: h.messages, signal: j.ac.signal, timezone: tz, agent: j.inline?.agent, sources: j.kind !== 'api' && !j.apiKeyId, org: orgHeader(j.userId, j.folderId) })) {
+          for await (const ev of streamChat({ model, level, chatId: h.session, messages: h.messages, signal: j.ac.signal, timezone: tz, agent: j.inline?.agent, sources: j.kind !== 'api' && !j.apiKeyId, blocks: j.kind !== 'api' && !j.apiKeyId ? blocksFor(j.userId, j.folderId) : null, org: orgHeader(j.userId, j.folderId) })) {
             if (ev.t === 'err' && retry.want(ev, got, () => servStepsIn(j.reasoning.slice(mark.r)))) { again = true; break; }
             if (ev.t === 'r' || ev.t === 'c' || ev.t === 'tc') got = true;
             feed(j, ev);
@@ -713,6 +715,8 @@ async function run(j: Live) {
   const cancelled = j.ac.signal.aborted && !j.error;
   finalize(j, j.error ? 'error' : cancelled ? 'cancelled' : 'done');
 }
+
+function safeSnap(userId: string, content: string) { try { return fileSnapshots(userId, content); } catch (err) { console.error('[blocks] snapshot', (err as Error).message); return {}; } }
 
 function finalize(j: Live, status: JobStatus) {
   const e = ex();
@@ -760,6 +764,7 @@ function finalize(j: Live, status: JobStatus) {
           memory: j.memory ?? (j.base.meta.memory as Memory | undefined) ?? null, usage: j.usage ?? (j.base.meta.usage as Record<string, unknown> | undefined) ?? null,
           durationMs, finish: j.finish, error: j.error, errorUser, stopped, status, jobId: j.id,
           ...(j.steps.size || j.base.meta.steps ? { steps: stepList(j) } : {}), ...(j.agent ? { agent: j.agent } : {}), ...(j.claude ? { claude: j.claude } : {}),
+          ...(hasBlocks(j.content) ? ((files) => (Object.keys(files).length ? { blocks: { ...((j.base.meta.blocks as object | undefined) ?? {}), files } } : {}))(safeSnap(j.userId, j.content)) : {}),
           gen: j.gen.t0 ? { ms: j.gen.act, n: j.gen.n, c: j.gen.c, tps: serverTps(j.usage), tokens: typeof j.usage?.completion_tokens === 'number' ? j.usage.completion_tokens : null } : (j.base.meta.gen ?? null) };
         db.update(schema.messages).set({ content: j.content, reasoning: j.reasoning || null, reasoningMs: j.rMs || null, meta }).where(eq(schema.messages.id, row.id)).run();
       }
@@ -791,6 +796,7 @@ function finalize(j: Live, status: JobStatus) {
   if (fin.pair?.waiting && (fin.notice === 'toast' || fin.notice === 'push')) fin.notice = 'quiet';
   const both = fin.pair && !fin.pair.waiting && fin.pair.both.length > 1
     ? ((names) => fin.pair!.both.map((x, i) => ({ model: names[i], status: x.status, lane: x.lane, m: x.messageId })))(pairNames(fin.pair.both)) : undefined;
+  if (j.messageId && status === 'done' && hasBlocks(j.content)) { const mid = j.messageId, c = j.content; void snapshotRates(mid, c).catch((err) => console.error('[blocks] rate snapshot', (err as Error).message)); }
   if (status === 'done' && j.kind === 'chat' && j.threadId && !j.lane) { try { introAfterTurn(j.userId, j.threadId, introRaw ?? j.content); } catch (err) { console.error('[memory] intro-end', (err as Error).message); } }
   jobEvent(j, { error: j.error, title: j.title, preview: fin.preview, notice: fin.notice, autoName: j.autoName, ...(both ? { both } : {}), ...(fin.pair?.waiting ? { waiting: true } : {}) });
   j.listeners.forEach((f) => f({ t: 'state', status }));

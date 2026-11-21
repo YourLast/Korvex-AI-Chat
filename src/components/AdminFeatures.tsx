@@ -14,6 +14,7 @@ const TEXT = (): Record<string, { title: string; sub: string }> => ({
   push: { title: adm("Уведомления"), sub: adm("Web Push о готовом ответе.") },
   code: { title: adm("Режим кода"), sub: adm("Агент работает с репозиторием GitHub и запускает команды в песочнице.") },
   signup: { title: adm("Регистрация без приглашения"), sub: adm("Любой может создать аккаунт на странице входа.") },
+  blocks: { title: adm("Блоки в ответе"), sub: adm("Таблицы с выгрузкой, сверка, итоговые числа, курс ЦБ, сроки. Выключено — те же данные простым видом.") },
 });
 
 export function AdminFeatures() {
@@ -36,6 +37,7 @@ export function AdminFeatures() {
           <SwitchRow key={f.id} title={TEXT()[f.id]?.title ?? f.id} sub={TEXT()[f.id]?.sub} checked={f.on} onChange={(v) => void set(f, v)} testId={`feature-${f.id}`} />
         ))}
       </Group>
+      {(list ?? []).some((f) => f.id === 'blocks') && <BlocksAdmin />}
       <SearchBackend />
     </>
   );
@@ -80,6 +82,39 @@ function SearchBackend() {
         <Button onClick={() => void test()} busy={busy} testId="ws-test">{adm("Проверить")}</Button>
         <Button kind="primary" onClick={() => void save()} busy={busy} testId="ws-save">{adm("Сохранить")}</Button>
       </div>
+    </>
+  );
+}
+
+type BV = { on: boolean; region: 'ru' | 'world'; types: Record<string, boolean>; ready: string[]; usage: { day: string; kind: string; provider: string; n: number }[] };
+const BLOCK_TEXT = (): Record<string, string> => ({
+  table: adm("Таблица"), kpi: adm("Итоговые числа"), rate: adm("Курс ЦБ"), deadlines: adm("Сроки"),
+  chart: adm("График"), map: adm("Карта"), party: adm("Карточка контрагента"), html: adm("Расчёт кодом модели"),
+});
+
+function BlocksAdmin() {
+  const [v, setV] = useState<BV | null>(null);
+  const [err, setErr] = useState('');
+  useEffect(() => { void fetch('/api/admin/blocks').then((r) => r.json()).then(setV).catch(() => setErr(adm("Нет связи с сервером"))); }, []);
+  const set = async (t: string, on: boolean) => {
+    const r = await fetch('/api/admin/blocks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ types: { [t]: on } }) }).catch(() => null);
+    if (!r?.ok) { setErr(adm("Не сохранилось")); return; }
+    setErr(''); setV(await r.json());
+  };
+  if (!v) return err ? <Notice>{err}</Notice> : null;
+  const week = new Map<string, number>();
+  for (const u of v.usage) week.set(u.kind, (week.get(u.kind) ?? 0) + u.n);
+  const usage = [...week].map(([k, n]) => `${BLOCK_TEXT()[k] ?? k}: ${n}`).join(' · ');
+  return (
+    <>
+      {err && <Notice>{err}</Notice>}
+      <Group title={adm("Блоки")} testId="admin-blocks"
+        foot={`${v.region === 'ru' ? adm("Регион сервера: Россия — внешние сервисы только российские (курс — ЦБ).") : adm("Регион сервера: без ограничений.")}${usage ? ` ${admf("За неделю: {0}.", usage)}` : ''}${v.on ? '' : ` ${adm("Сейчас блоки выключены выше — виды ниже вступят в силу, когда их включат.")}`}`}>
+        {Object.keys(v.types).map((t) => {
+          const ready = v.ready.includes(t);
+          return <SwitchRow key={t} title={BLOCK_TEXT()[t] ?? t} sub={ready ? undefined : adm("Следующий этап — пока показывается простым видом")} checked={!!v.types[t]} disabled={!ready} onChange={(on) => void set(t, on)} testId={`blocks-type-${t}`} />;
+        })}
+      </Group>
     </>
   );
 }

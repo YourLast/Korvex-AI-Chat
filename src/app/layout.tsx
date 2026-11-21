@@ -18,6 +18,7 @@ import { ImageViewerSlot } from '@/components/iv';
 import { FileViewerSlot } from '@/components/FileViewerSlot';
 import { SB_SNIPPET } from '@/lib/sbSnippet';
 import '@/styles/viewer.css';
+import '@/styles/blocks.css';
 import { brand, logoUrl } from '@/lib/brand';
 import { BrandProvider } from '@/components/BrandCtx';
 import { cookies } from 'next/headers';

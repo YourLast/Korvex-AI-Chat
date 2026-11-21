@@ -1,10 +1,11 @@
 import { stripMarkers } from './srcmark';
 import { stripWebMarks } from './webmark';
 import { OUT_PREFIX } from '@/ext/client';
+import { blocksAsLabels } from './blocks/text';
 const FILE_RE = new RegExp('📎\\s*\\[([^\\]]+)\\]\\(' + OUT_PREFIX.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&') + '[^)]+\\)');
 
 export function summarize(md0: string, max = 100): string {
-  const md = stripWebMarks(stripMarkers(md0, 'drop'), 'drop');
+  const md = stripWebMarks(stripMarkers(blocksAsLabels(md0, 'ru'), 'drop'), 'drop');
   const f = FILE_RE.exec(md);
   if (f) return `Готов файл «${f[1]}»`;
   let t = md

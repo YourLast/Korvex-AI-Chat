@@ -572,3 +572,16 @@ export const adminModels = sqliteTable('admin_models', {
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 });
+
+export const cbrRates = sqliteTable('cbr_rates', {
+  asked: text('asked').primaryKey(),
+  setDate: text('set_date').notNull(),
+  rates: text('rates', { mode: 'json' }).notNull().$type<Record<string, { id: string; name: string; nominal: number; unit: string }>>(),
+  fetchedAt: integer('fetched_at').notNull(),
+});
+export const blockUsage = sqliteTable('block_usage', {
+  day: text('day').notNull(),
+  kind: text('kind').notNull(),
+  provider: text('provider').notNull().default(''),
+  n: integer('n').notNull().default(0),
+}, (t) => [primaryKey({ columns: [t.day, t.kind, t.provider] })]);

@@ -11,7 +11,7 @@ type View = {
   users: { id: string; name: string; email: string; role: string }[];
   invites: { id: string; note: string; role: string; uses: number }[];
 };
-const FEATURE_NAME = (): Record<string, string> => ({ voice: adm("Голосовой ввод"), files: adm("Файлы"), memory: adm("Память о человеке"), automations: adm("Автоматизации"), webSearch: adm("Поиск в интернете"), compare: adm("Сравнение моделей"), push: adm("Уведомления"), code: adm("Режим кода") });
+const FEATURE_NAME = (): Record<string, string> => ({ voice: adm("Голосовой ввод"), files: adm("Файлы"), memory: adm("Память о человеке"), automations: adm("Автоматизации"), webSearch: adm("Поиск в интернете"), compare: adm("Сравнение моделей"), push: adm("Уведомления"), code: adm("Режим кода"), blocks: adm("Блоки в ответе") });
 const ROLE_NAME = (): Record<string, string> => ({ user: adm("Пользователь"), alpha: adm("Альфа"), admin: adm("Администратор") });
 
 function summary(rule: Rule | null, roles: string[] | null, adminsOnly = false): string {

@@ -45,6 +45,7 @@ export async function* streamChat(opts: {
   timezone?: string | null;
   agent?: AgentReq;
   sources?: boolean;
+  blocks?: string[] | null;
   org?: OrgHeader | null;
 }): AsyncGenerator<UpEvent> {
   if (opts.agent) { yield* streamAgent({ ...opts, agent: opts.agent }); return; }
@@ -92,7 +93,7 @@ export async function* streamChat(opts: {
     abortSignal: signal,
     maxRetries: 0,
     includeRawChunks: !!D.queueFrame,
-    providerOptions: effort || opts.sources ? { [D.name]: { ...(effort ? { reasoningEffort: effort } : {}), ...(opts.sources ? (D.body?.({ sources: true }) ?? {}) : {}) } } : undefined,
+    providerOptions: effort || opts.sources || opts.blocks?.length ? { [D.name]: { ...(effort ? { reasoningEffort: effort } : {}), ...(opts.sources || opts.blocks?.length ? (D.body?.({ sources: !!opts.sources, blocks: opts.blocks }) ?? {}) : {}) } } : undefined,
   });
 
   let rStart = 0;
@@ -217,7 +218,7 @@ function agentFrame(f: unknown, st: AgentState, D: Dialect): UpEvent[] {
   return out;
 }
 
-async function* streamAgent(opts: { model: ModelCfg; level: Level; chatId: string; signal: AbortSignal; timezone?: string | null; agent: AgentReq; sources?: boolean; org?: OrgHeader | null }): AsyncGenerator<UpEvent> {
+async function* streamAgent(opts: { model: ModelCfg; level: Level; chatId: string; signal: AbortSignal; timezone?: string | null; agent: AgentReq; sources?: boolean; blocks?: string[] | null; org?: OrgHeader | null }): AsyncGenerator<UpEvent> {
   const { model, level, chatId, signal, agent } = opts;
   const D = dialect();
   const key = modelKey(model) ?? D.defaultKey;
@@ -233,7 +234,7 @@ async function* streamAgent(opts: { model: ModelCfg; level: Level; chatId: strin
     ...(tools ? { tools, ...(agent.toolChoice !== undefined ? { tool_choice: agent.toolChoice } : {}) } : {}),
     ...(tools && typeof agent.parallelToolCalls === 'boolean' ? { parallel_tool_calls: agent.parallelToolCalls } : {}),
     ...(agent.maxTokens ? { max_tokens: agent.maxTokens } : {}),
-    ...(opts.sources ? (D.body?.({ sources: true }) ?? {}) : {}),
+    ...(opts.sources || opts.blocks?.length ? (D.body?.({ sources: !!opts.sources, blocks: opts.blocks }) ?? {}) : {}),
   };
   let res: Response;
   try {

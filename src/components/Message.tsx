@@ -28,6 +28,9 @@ import { useIsAdmin } from './Shell';
 import { QueueCard, ServeQueueCard } from './QueueCard';
 import { FolderCard } from './FolderCard';
 import { SrcCtx, SrcList } from './SrcChip';
+import { BlockEnvCtx } from './blocks/BlockEnv';
+import { blocksAsText } from '@/lib/blocks/text';
+import { useThreadFolder } from './blocks/useThreadFolder';
 import { sourcesOf, stripMarkers } from '@/lib/srcmark';
 import { stripWebMarks, turnUrls } from '@/lib/webmark';
 import { openFile } from '@/lib/fileView';
@@ -238,6 +241,8 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
   const urlKey = urlList.join('\n');
   const urls = useMemo(() => urlList, [urlKey]); // eslint-disable-line react-hooks/exhaustive-deps
   const srcCtx = useMemo(() => ({ sources, live: !!m.streaming, urls }), [sources, m.streaming, urls]);
+  const folderId = useThreadFolder();
+  const blockEnv = useMemo(() => ({ live: !!m.streaming, snap: meta.blocks ?? null, folderId, msgId: m.id }), [m.streaming, meta.blocks, folderId, m.id]);
   return (
     <div className={`ans${col ? ` ans-${col}` : ''}`} data-testid="assistant-msg" id={`m-${m.id}`} data-rated={readOnly && m.rating ? (m.rating.value < 0 ? 'down' : 'up') : undefined}>
       <header className="ans-head">
@@ -255,7 +260,7 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
       {sq && (readOnly ? <p className="t-cap" data-testid="squeued">{tx('squeue.admin')}</p> : <ServeQueueCard ahead={sq.ahead} eta={sq.eta} reason={sq.reason} />)}
       {}
       {waiting && m.phase !== 'queued' && !sq && <p className="t-cap ans-wait"><span className="ans-wait-ic" aria-hidden="true"><HeadMark live /></span><span className="shimmer">{tx('msg.thinking')}</span></p>}
-      {shown && <SrcCtx.Provider value={srcCtx}><Markdown text={shown} live={!!m.streaming} /></SrcCtx.Provider>}
+      {shown && <SrcCtx.Provider value={srcCtx}><BlockEnvCtx.Provider value={blockEnv}><Markdown text={shown} live={!!m.streaming} /></BlockEnvCtx.Provider></SrcCtx.Provider>}
       <SrcList sources={sources} live={!!m.streaming} />
       <SharedShots m={m} />
       <Results m={m} />
@@ -284,7 +289,7 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
               <button type="button" className="btn btn--ghost" data-testid="continue" onClick={onContinue}>{tx('msg.continue')}</button>
             )}
             {onSwitch && <Versions s={m.siblings} onSwitch={onSwitch} />}
-            <button type="button" className="icon-btn" aria-label={tx('msg.copy')} onClick={() => { copyText(stripWebMarks(stripMarkers(m.content, 'plain', tx.lang))).then((ok) => { if (ok) setCopied(true); setTimeout(() => setCopied(false), 1200); }); }}>
+            <button type="button" className="icon-btn" aria-label={tx('msg.copy')} onClick={() => { copyText(stripWebMarks(stripMarkers(blocksAsText(m.content, tx.lang, meta.blocks ?? undefined), 'plain', tx.lang))).then((ok) => { if (ok) setCopied(true); setTimeout(() => setCopied(false), 1200); }); }}>
               <Icon n={copied ? 'check' : 'copy'} sm />
             </button>
             {!readOnly && last && canRegen && <button type="button" className="icon-btn" aria-label={tx('msg.regen')} onClick={onRegenerate} data-testid="regen"><Icon n="retry" sm /></button>}

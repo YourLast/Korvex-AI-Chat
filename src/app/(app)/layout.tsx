@@ -11,6 +11,7 @@ import { pageLang } from '@/lib/i18n/server';
 import { apiOn } from '@/lib/apiGate';
 import { Shell } from '@/components/Shell';
 import { featureMap } from '@/lib/features';
+import { blocksView } from '@/lib/blocks/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,5 +22,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const list = threadList(user.id);
   startProbe();
   const status = statusFor(cleanTz(user.lastTz) ?? cleanTz(user.timezone) ?? DEFAULT_TZ, Date.now(), lang);
-  return <Shell user={{ name: user.name, email: user.email, role: user.role, orgs: !!userFlags(user.id).orgs }} models={modelsFor(user.role, lang, user.id)} retired={retiredModels()} locked={lockedFor(user.role, user.id)} initialThreads={list} initialFolders={listFolders(user.id)} initialStatus={status} apiOn={apiOn()} features={featureMap(user.id)}>{children}</Shell>;
+  const folders = listFolders(user.id);
+  return <Shell user={{ name: user.name, email: user.email, role: user.role, orgs: !!userFlags(user.id).orgs }} models={modelsFor(user.role, lang, user.id)} retired={retiredModels()} locked={lockedFor(user.role, user.id)} initialThreads={list} initialFolders={folders} initialStatus={status} apiOn={apiOn()} features={featureMap(user.id)} blocks={blocksView(user.id, folders.map((x) => x.id))}>{children}</Shell>;
 }
