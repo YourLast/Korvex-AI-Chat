@@ -17,7 +17,7 @@ import { useShell } from './Shell';
 import { useConfirm } from './Kit';
 import '@/styles/user-memory.css';
 import { INTRO_DRAFT as DRAFT } from '@/ext/client';
-import { hasIntroMarks, stripIntroMarks } from '@/lib/introMarks';
+import { introVoice, stripIntroMarks } from '@/lib/introMarks';
 
 type View = { threadId: string | null; messages: MsgView[]; busy: boolean; off?: boolean; progress?: { left: number; tail: boolean }; done?: boolean; remembered?: { id: string; text: string }[] };
 
@@ -131,7 +131,7 @@ export function MemoryIntro({ open, onClose, again = false }: { open: boolean; o
           </div>
         ) : (
           <div key={m.id} className="mi-a" data-testid="intro-assistant" data-done={!m.streaming && !!m.content.trim() || undefined}>
-            <AssistantMsg m={m.streaming || hasIntroMarks(m.content) ? { ...m, content: stripIntroMarks(m.content, !!m.streaming) } : m} models={models} bare headSlot={<ModelMark id={m.meta?.modelId ?? DRAFT.modelId} models={models} />}
+            <AssistantMsg m={{ ...m, content: introVoice(stripIntroMarks(m.content, !!m.streaming)) }} models={models} bare headSlot={<ModelMark id={m.meta?.modelId ?? DRAFT.modelId} models={models} />}
               last={m === lastA} canRegen={!busy && !restarting} onRegenerate={() => { if (threadId) { stick.current = true; void send({ threadId, text: '', mode: 'regenerate', ...DRAFT }); } }} />
           </div>
         ))}

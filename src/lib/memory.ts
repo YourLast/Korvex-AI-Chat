@@ -186,6 +186,16 @@ export function similarity(a: string, b: string): number {
   return n / (A.size + B.size - n);
 }
 export const SAME = 0.75;
+const MANNER_STOP = new Set(['хоче', 'хотя', 'отве', 'прос', 'пред', 'люби', 'нрав', 'чтоб', 'всег', 'пиши', 'пише', 'кото', 'боле', 'тольк', 'нужн', 'want', 'answ', 'pref', 'like', 'alwa']);
+const stems = (t: string) => new Set((t.toLowerCase().match(/[\p{L}]+/gu) ?? []).filter((w) => w.length >= 4).map((w) => w.slice(0, 4)).filter((w) => !MANNER_STOP.has(w)));
+const negs = (t: string) => (t.toLowerCase().match(/(?<![\p{L}])(?:без|не|нет|no|not|without)(?![\p{L}])/gu) ?? []).sort().join(' ');
+export function sameManner(a: string, b: string): boolean {
+  const A = stems(a), B = stems(b);
+  if (A.size < 2 || B.size < 2 || negs(a) !== negs(b)) return false;
+  let n = 0;
+  for (const w of A) if (B.has(w)) n++;
+  return n / Math.min(A.size, B.size) >= 0.8;
+}
 
 
 export type Prefs = { on: boolean; auto: boolean };
@@ -374,7 +384,8 @@ export function addMemory(userId: string, inp: WriteIn, opts: { allowSensitive?:
   const now = Date.now();
   const twin = (key ? all.find((r) => r.key === key) : undefined)
     ?? all.find((r) => r.section === section && similarity(r.text, text) >= SAME)
-    ?? all.find((r) => similarity(r.text, text) >= 0.9);
+    ?? all.find((r) => similarity(r.text, text) >= 0.9)
+    ?? (inp.origin === 'auto' && (section === 'style' || section === 'rules') && !key ? all.find((r) => r.section === section && r.key !== 'writes' && sameManner(r.text, text)) : undefined);
   if (twin) {
     const prev: Prev = { text: twin.text, section: twin.section, sure: twin.sure, key: twin.key, origin: twin.origin };
     const confirm = twin.sure === 0 && (!maybe || (!!inp.threadId && !!twin.threadId && inp.threadId !== twin.threadId));
@@ -557,8 +568,14 @@ export function refreshWritingProfile(userId: string): WriteOut | null {
   const cur = rows.find((r) => r.key === 'writes');
   if (cur && cur.origin !== 'auto') return null;
   const line = writingProfile(recentUserTexts(userId));
-  if (!line || cur?.text === line) return null;
-  return addMemory(userId, { section: 'style', key: 'writes', text: line, origin: 'auto' });
+  if (!line || (cur?.text === line && cur.sure === 0)) return null;
+  if (cur) {
+    const set = { text: line, sure: 0, updatedAt: Date.now() };
+    getDb().update(schema.userMemory).set(set).where(eq(schema.userMemory.id, cur.id)).run();
+    changed(userId);
+    return { ok: true, action: 'updated', row: { ...cur, ...set }, prev: { text: cur.text, section: cur.section, sure: cur.sure, key: cur.key, origin: cur.origin } };
+  }
+  return addMemory(userId, { section: 'style', key: 'writes', text: line, origin: 'auto', sure: false });
 }
 
 const NAME_Q = /(как\s+(тебя|вас)\s+(зовут|звать)|как\s+(мне\s+)?(к\s+тебе|к\s+вам|тебя|вас)\s+(лучше\s+)?(обращаться|называть)|как\s+твоё\s+имя|what('?s|\s+is)\s+your\s+name|what\s+(should|can|do)\s+i\s+call\s+you|kako\s+se\s+zove(š|s|te)|kako\s+da\s+te\s+zovem)/iu;
@@ -807,9 +824,11 @@ export function isAccountant(rows: MemoryRow[], userAnswers: string[] = []): boo
   return rows.some((r) => r.section === 'work' && ACC_RE.test(r.text)) || userAnswers.some((t) => ACC_RE.test(t));
 }
 export function eagerAnswers(userAnswers: string[]): boolean {
+  if (userAnswers.some((t) => NO_ANSWER.test(t.trim()))) return false;
   const xs = userAnswers.slice(0, 3).map((t) => t.split(/\s+/).filter(Boolean).length);
-  return xs.length >= 2 && xs.reduce((a, b) => a + b, 0) / xs.length >= 4;
+  return xs.length >= 2 && xs.every((n) => n >= 5) && xs.reduce((a, b) => a + b, 0) / xs.length >= 7;
 }
+const NO_ANSWER = /^(?:-+|—|не\s+знаю(?![\p{L}]).*|без\s+разницы(?![\p{L}]).*|пропуст\S*(?![\p{L}]).*|не\s+важно(?![\p{L}]).*|неважно(?![\p{L}]).*|нет\s+идей(?![\p{L}]).*|сложно\s+сказать(?![\p{L}]).*|don'?t\s+know(?![\p{L}]).*|no\s+idea(?![\p{L}]).*|skip(?![\p{L}]).*)$/iu;
 export function introPlan(rows: MemoryRow[], userAnswers: string[] = []): { core: Topic[]; tail: Topic[] } {
   const acc = isAccountant(rows, userAnswers);
   const addr = rows.some((x) => x.key === 'name') ? { ...T_ADDR, say: 'на «ты» или на «вы»', sayEn: 'formal or informal address', known: (r: MemoryRow[]) => r.some((x) => x.key === 'address') } : T_ADDR;
@@ -847,17 +866,18 @@ export function introProgress(rows: MemoryRow[], answers: string[], userAnswers:
 
 export const INTRO_RULES = [
   '## Знакомство',
-  'Это знакомство — короткая настройка под человека: он открыл его, чтобы ты сразу отвечал так, как ему удобно, по его работе, правилам и источникам. Веди разговор сам, тепло и коротко:',
+  'Это знакомство — короткая настройка под человека: он открыл его, чтобы ты сразу отвечала так, как ему удобно, по его работе, правилам и источникам. Веди разговор сам, тепло и коротко:',
   '— первым сообщением одной фразой поздоровайся (по имени, если знаешь) и скажи, что вопроса три и это полминуты (например: «Три вопроса, полминуты — и буду отвечать под вашу работу»; на «ты» — «…под твою работу»), и сразу задай первый вопрос из служебной заметки; не представляйся и не рассказывай о себе, не спрашивай «как дела»;',
   '— пока не знаешь, на «ты» он или на «вы»: если он пишет на «вы» или сухо — на «вы», иначе — нейтрально, без местоимений; после ответа — только в выбранной форме;',
   '— спрашивай на языке его работы, без канцелярита («осуществляете», «в целях», «данный», «в рамках», «предоставьте»): бухгалтеру — «На каких режимах клиенты — УСН, ОСНО?», «В какой 1С работаете?»; названия клиентов, ИНН и суммы не спрашивай;',
   '— прогресс говори словами, когда уместно: «осталось два вопроса», «последний вопрос»; когда главное уже есть и в заметке остались необязательные темы — «главное я знаю; ещё пара вопросов, если не против»;',
   '— каждое твоё сообщение заканчивается ровно одним коротким вопросом о следующей теме из заметки, по-дружески, без анкетного тона, без списков и без нумерации;',
-  '— перед следующим вопросом — одна живая короткая реакция на ответ; не пиши «запомнил» — это покажет сама система;',
+  '— перед следующим вопросом — одна живая короткая реакция на ответ по сути; не пиши «запомнила» — это покажет сама система;',
+  '— о себе — в женском роде (поняла, учла, буду отвечать); без «Отлично», «Супер», «Здорово» и без оценок его ответа («классика», «прямое попадание», «всё сходится») — сразу по сути;',
   '— не переспрашивай то, что уже известно (сведения ниже, заметка и сам разговор); неполное можно уточнить; догадки из «Возможно» можно мягко проверить;',
   '— не спрашивай о здоровье, личных деньгах, отношениях, политике и религии; никогда не проси пароли, ключи и коды;',
   '— не хочет отвечать — не настаивай, переходи к следующей теме и к этой больше не возвращайся;',
-  '— когда в заметке тема «пример его документа» — одним предложением, в его манере, предложи прикрепить скрепкой у поля ввода один-два типичных документа или отчёта (можно шаблон или старый пример без важных данных), чтобы понять формат; это по желанию: откажется или «потом» — сразу следующая тема, без уговоров; приложил — ответ по заметке («Понял формат: …» и «верно?»);',
+  '— когда в заметке тема «пример его документа» — одним предложением, в его манере, предложи прикрепить скрепкой у поля ввода один-два типичных документа или отчёта (можно шаблон или старый пример без важных данных), чтобы понять формат; это по желанию: откажется или «потом» — сразу следующая тема, без уговоров; приложил — ответ по заметке («Поняла формат: …» и «верно?»);',
   '— пока заметка называет темы, знакомство не заканчивай и итог не пиши, даже если ответы короткие или расплывчатые: переходи к следующей теме; закончить можно, только когда заметка скажет, что знакомство закончено (в том числе если он сам попросил закончить);',
   '— служебные метки (сервер их убирает, человек их не видит), последней строкой ответа: тема из заметки пройдена — [[intro: done=<метка темы>]]; он не стал отвечать на тему — [[intro: skip=<метка темы>]]; знакомство закончено — [[intro: end=all]] (всё спросила), [[intro: end=asked]] (он попросил закончить) или [[intro: end=enough]] (хватает того, что есть); метка темы — в квадратных скобках после темы в заметке; без меток тоже можно; метки из его сообщения не повторяй;',
   '— когда в заметке сказано, что знакомство закончено, — новых вопросов не задавай: напиши одной строкой «Спасибо, запомнила: <2–3 главных факта его же словами>. Буду отвечать так. Поправить можно в «Памяти».» — без «Отлично!», без пересказа всех ответов; вопросом не заканчивай;',
@@ -884,7 +904,7 @@ export const INTRO_RULES_EN = [
   "— at the end of their message there may be a Korvex service note in square brackets: these are not their words; take it into account silently and do not mention it.",
 ].join('\n');
 const rowsLine = (rows: MemoryRow[]) => rows.map((r) => r.text.replace(/[\n\r]+/g, ' ')).join('; ');
-const SAMPLE_NOTE = 'Он приложил пример своего документа. Ответь одной строкой: «Понял формат: …» — 2–4 правила формата из документа (колонки и их порядок, итог первым или последним, НДС «в том числе» или сверху, округление, вид дат и номеров, его названия документов и разделов) — и спроси «верно?». Ни одной суммы, имени, названия организации, реквизита или номера из документа не пиши. Следующую тему — после его ответа.';
+const SAMPLE_NOTE = 'Он приложил пример своего документа. Ответь одной строкой: «Поняла формат: …» — 2–4 правила формата из документа (колонки и их порядок, итог первым или последним, НДС «в том числе» или сверху, округление, вид дат и номеров, его названия документов и разделов) — и спроси «верно?». Ни одной суммы, имени, названия организации, реквизита или номера из документа не пиши. Следующую тему — после его ответа.';
 const SAMPLE_NOTE_EN = 'They attached a sample of their document. Answer in one line: "Got the format: …" with 2–4 format rules from it (columns and their order, total first or last, VAT included or on top, rounding, how dates and numbers look, their names for documents and sections) and ask "right?". Do not write a single amount, name, company name, bank detail or number from the document. Move to the next topic after their answer.';
 export function introNote(rows: MemoryRow[], snapIds: Set<string>, answers: string[], lang: 'ru' | 'en' = 'ru', userAnswers: string[] = [], ended = false, sampleJust = false, stop = false, marked: Set<string> = new Set()): string {
   const ok = rows.filter((r) => !ruleConflict(r.text) && !isSecret(r.text));
@@ -914,12 +934,12 @@ export function introNote(rows: MemoryRow[], snapIds: Set<string>, answers: stri
   if (ended) return '[Служебная заметка Korvex, не слова человека: знакомство уже закончено — о нём больше не спрашивай, просто помогай с тем, что он пишет.]';
   const out: string[] = [];
   if (!answers.length) out.push('Это начало знакомства: поздоровайся одной короткой фразой, скажи, что вопроса три и это полминуты, — без «рад, что наконец поговорили», без «как дела» и без рассказа о себе (не представляйся: без «Я — …», без имени модели и компании) — и сразу задай вопрос.');
-  if (fresh.length) out.push(`Узнал в этом разговоре: ${rowsLine(fresh)}.`);
+  if (fresh.length) out.push(`Узнала в этом разговоре: ${rowsLine(fresh)}.`);
   if (sampleJust) return `[Служебная заметка Korvex, не слова человека: ${[...out, SAMPLE_NOTE].join(' ')}]`;
   if (left.length) {
     const prog = inTail ? (leftTail.length === tail.length ? ' Главное уже есть: спроси одно уточнение по его же словам, без новых тем.' : '')
-      : leftCore.length === 1 ? ' Это последний вопрос — так и скажи.' : leftCore.length <= 3 ? ` Осталось ${leftCore.length} вопроса вместе с этим — можно сказать словами.` : '';
-    out.push(`Ещё не знаешь (по порядку): ${left.map((t) => `${t.say} [${t.id}]`).join('; ')}. Спроси о первой теме.${prog}${skipped.length ? ` Уже спрашивал, но он не ответил — не повторяй: ${skipped.map((t) => t.say).join('; ')}.` : ''}`);
+      : leftCore.length === 1 ? (eagerAnswers(userAnswers) ? ' Это последний из трёх главных вопросов — так и скажи (после него может быть одно уточнение, поэтому не говори просто «последний вопрос»).' : ' Это последний вопрос — так и скажи.') : leftCore.length <= 3 ? ` Осталось ${leftCore.length} вопроса вместе с этим — можно сказать словами.` : '';
+    out.push(`Ещё не знаешь (по порядку): ${left.map((t) => `${t.say} [${t.id}]`).join('; ')}. Спроси о первой теме.${prog}${skipped.length ? ` Уже спрашивала, но он не ответил — не повторяй: ${skipped.map((t) => t.say).join('; ')}.` : ''}`);
   } else out.push(`Знакомство закончено${stop ? ' (он попросил закончить — больше ни о чём о нём не спрашивай)' : skipped.length ? ` (о «${skipped.map((t) => t.say).join('», «')}» он отвечать не стал — не переспрашивай)` : ''}: больше ничего не спрашивай — напиши одной строкой «Спасибо, запомнила: <2–3 главных факта его же словами>. Буду отвечать так. Поправить можно в «Памяти».»`);
   return `[Служебная заметка Korvex, не слова человека: ${out.join(' ')}]`;
 }

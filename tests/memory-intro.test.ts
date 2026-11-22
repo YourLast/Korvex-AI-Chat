@@ -1,3 +1,4 @@
+import { introVoice } from '@/lib/introMarks';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -133,7 +134,7 @@ describe('знакомство — постоянный разговор', () =>
     expect(gateway.at(-1)!.q.startsWith('я дизайнер')).toBe(true);
     const v2 = I.introView('b2');
     expect(roles(v2)).toBe('assistant,user,assistant');
-    expect(v2.messages.at(-1)!.content).toBe(answer);
+    expect(v2.messages.at(-1)!.content).toBe(introVoice(answer));
     expect(J.jobOfThread(v2.threadId!)).toBeNull();
   });
 
@@ -174,7 +175,10 @@ describe('знакомство — постоянный разговор', () =>
     expect(t1).toContain('одно уточнение по его же словам');
     expect(t1).toContain('Главное уже есть');
     expect(M.introProgress(acc as never, accQ, eager)).toEqual({ left: 0, tail: true, end: false });
-    expect(M.introProgress(acc as never, ['Вы сказали «15 ООО» — все на УСН 6 %?', ...accQ], ['да, все 6 %', ...eager])).toEqual({ left: 0, tail: true, end: false });
+    expect(M.introProgress(acc as never, ['Вы сказали «15 ООО» — все на УСН 6 %?', ...accQ], ['да, все 6 %', ...eager])).toEqual({ left: 0, tail: false, end: true });
+    expect(M.introProgress(acc as never, ['Вы сказали «15 ООО» — все на УСН 6 %?', ...accQ], ['да, все на шести процентах, и ещё два ИП на патенте', ...eager])).toEqual({ left: 0, tail: true, end: false });
+    expect(M.eagerAnswers(['Лучше на «вы».', 'Работаю в Python, FastAPI, PostgreSQL сейчас', 'Чаще всего код и разбор ошибок, я бэкенд'])).toBe(false);
+    expect(M.eagerAnswers(['не знаю, что тут сказать', ...eager])).toBe(false);
     expect(M.introProgress(acc as never, ['А торговля — опт или розница?', 'Вы сказали «15 ООО» — все на УСН 6 %?', ...accQ], ['опт', 'да, все 6 %', ...eager]).end).toBe(true);
     expect(M.isAccountant([] as never, ['я бухгалтер, веду пять ООО'])).toBe(true);
     expect(M.isAccountant([] as never, ['я программист'])).toBe(false);

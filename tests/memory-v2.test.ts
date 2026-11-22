@@ -286,7 +286,7 @@ describe('знакомство (служебный чат)', () => {
     expect(gateway.length).toBe(n0);
     I.sendIntro('a4', 'потом скажу'); await idle('a4');
     const note = gateway.at(-1)!.q.split('[Служебная заметка Korvex')[1];
-    expect(note).toContain('Узнал в этом разговоре: Зовут Мила; Дизайнер интерфейсов.');
+    expect(note).toContain('Узнала в этом разговоре: Зовут Мила; Дизайнер интерфейсов.');
     expect(note).not.toMatch(/Ещё не знаешь[^.]*как к нему обращаться/);
     expect(note).not.toMatch(/Ещё не знаешь[^.]*чем занимается/);
     expect(note).toContain('с какими программами и форматами');

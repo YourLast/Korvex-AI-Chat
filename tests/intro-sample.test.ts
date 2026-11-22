@@ -35,10 +35,10 @@ describe('docLeak — данные из документа в памяти не 
 });
 
 describe('заметка после примера', () => {
-  it('приложил файл — «Понял формат: …» и «верно?», без следующей темы и без данных документа', async () => {
+  it('приложил файл — «Поняла формат: …» и «верно?», без следующей темы и без данных документа', async () => {
     const M = await import('@/lib/memory');
     const n = M.introNote([] as never, new Set(), ['Прикрепи пример отчёта, если удобно?'], 'ru', ['вот'], false, true);
-    expect(n).toContain('«Понял формат: …»');
+    expect(n).toContain('«Поняла формат: …»');
     expect(n).toContain('«верно?»');
     expect(n).toContain('Ни одной суммы, имени');
     expect(n).not.toContain('Ещё не знаешь');

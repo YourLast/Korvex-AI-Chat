@@ -30,6 +30,7 @@ import { agentHistory, chatToOai, folderInstruction, transcriptForMeta, withExtr
 import type { StepEvent } from './tools/types';
 import type { MemoryInfo } from './types';
 import { fileSnapshots, hasBlocks, snapshotRates } from './blocks/snapshot';
+import { introVoice } from './introMarks';
 import { INTRO, hasIntroMarks, introAfterTurn, markIntroEnd, memoryAllowed, memoryBlockInfo, stripIntroMarks } from './memory';
 import { inviteUnder, turnNotes } from './introInvite';
 import { guessesFor } from './guessConfirm';
@@ -756,9 +757,9 @@ function finalize(j: Live, status: JobStatus) {
   const db = getDb();
   const stopped = status === 'cancelled';
   let introRaw: string | null = null;
-  if (j.threadId && j.kind === 'chat' && !j.lane && hasIntroMarks(j.content)) {
+  if (j.threadId && j.kind === 'chat' && !j.lane) {
     const tt = db.select({ temporary: schema.threads.temporary }).from(schema.threads).where(eq(schema.threads.id, j.threadId)).get();
-    if (tt?.temporary === INTRO) { introRaw = j.content; j.content = stripIntroMarks(j.content); }
+    if (tt?.temporary === INTRO) { introRaw = j.content; j.content = introVoice(hasIntroMarks(j.content) ? stripIntroMarks(j.content) : j.content); }
   }
   const durationMs = j.base.durationMs + (j.durationMs || (j.startedAt ? Date.now() - j.startedAt : 0));
   try {
