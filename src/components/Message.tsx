@@ -24,7 +24,7 @@ import { WorkFeed } from './WorkFeed';
 import { HeadMark } from './HeadMark';
 import { useWork } from './WorkCtx';
 import { serverNow } from '@/lib/clock';
-import { useIsAdmin } from './Shell';
+import { useIsAdmin, useSimple } from './Shell';
 import { QueueCard, ServeQueueCard } from './QueueCard';
 import { FolderCard } from './FolderCard';
 import { SrcCtx, SrcList } from './SrcChip';
@@ -236,7 +236,8 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
   const waiting = m.streaming && !m.content && !m.reasoning;
   const sq = m.streaming && m.phase !== 'queued' ? m.squeue : null;
   const shown = useThrottled(m.content, 140, !!m.streaming);
-  const speed = speedText(m, tx.lang);
+  const simple = useSimple();
+  const speed = simple ? null : speedText(m, tx.lang);
   const sources = useMemo(() => sourcesOf(meta.usage), [meta.usage]);
   const urlList = useMemo(() => turnUrls([m.content, m.reasoning, ...(m.steps ?? []).map((x) => x.detail)]), [m.content, m.reasoning, m.steps]);
   const urlKey = urlList.join('\n');
@@ -247,8 +248,8 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
   return (
     <div className={`ans${col ? ` ans-${col}` : ''}`} data-testid="assistant-msg" id={`m-${m.id}`} data-rated={readOnly && m.rating ? (m.rating.value < 0 ? 'down' : 'up') : undefined}>
       <header className="ans-head">
-        {headSlot ?? (<><ModelMark id={meta.modelId ?? ''} models={models} /><b><ModelName name={lab.name} suffix={lab.suffix} /></b><span className="sep" /><span>{level}</span><span className="sep" /></>)}
-        {!bare && <span className="ans-full">{models.find((x) => x.id === meta.modelId)?.fullName}</span>}
+        {headSlot ?? (<><ModelMark id={meta.modelId ?? ''} models={models} /><b><ModelName name={lab.name} suffix={lab.suffix} /></b>{!simple && <><span className="sep" /><span>{level}</span><span className="sep" /></>}</>)}
+        {!bare && !simple && <span className="ans-full">{models.find((x) => x.id === meta.modelId)?.fullName}</span>}
         <span className="grow" />
         {dur ? <span className="tnum">{fmtSec(dur, tx.lang)}</span> : m.streaming && m.startedAt ? <Live since={m.startedAt} /> : null}
         {speed && <><span className="sep" /><span className="tnum ans-speed" data-testid="speed" title={tx('msg.speedTitle')}>{speed}</span></>}

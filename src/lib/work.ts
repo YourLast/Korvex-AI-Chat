@@ -437,8 +437,8 @@ export function summaryTail(items: WItem[], lang: Lang = 'ru'): string {
   return '';
 }
 
-export function summaryLine(items: WItem[], ms: number | null, fmt: (ms: number) => string, lang: Lang = 'ru'): string {
-  const n = countSteps(items);
+export function summaryLine(items: WItem[], ms: number | null, fmt: (ms: number) => string, lang: Lang = 'ru', simple = false): string {
+  const n = simple ? 0 : countSteps(items);
   const time = ms && ms > 0 ? ` ${fmt(ms)}` : '';
   if (!n) return `${tr(lang, 'work.sum.think')}${time}`;
   const tail = summaryTail(items, lang);

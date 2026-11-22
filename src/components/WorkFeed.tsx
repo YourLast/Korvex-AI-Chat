@@ -1,4 +1,5 @@
 'use client';
+import { useSimple } from './Shell';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { ActIcon } from './ActIcon';
@@ -519,13 +520,14 @@ export function WorkFeed({ m, onLive, onDecide, askInBar }: { m: WorkMsg; onLive
     return () => window.removeEventListener('kx:work-open', on);
   }, [m.id]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => () => { stopAnim(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const simple = useSimple();
   if (!items.length) return null;
   const ms = (n ? m.meta?.durationMs : null) ?? m.reasoningMs ?? null;
   const errs = steps.some((s) => s.status === 'err' && !s.recovered);
   const failed = !working && !!(m.meta?.error || m.meta?.errorUser);
   const stopped = !working && !failed && !!m.meta?.stopped;
   const openLive = onLive ? (s: WStep) => onLive({ step: s, all: steps.filter(isBrowser) }) : undefined;
-  const sum = summaryLine(items, ms, (x) => fmtDur(x, t.lang), t.lang);
+  const sum = summaryLine(items, ms, (x) => fmtDur(x, t.lang), t.lang, simple);
   const low = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
   const open = view !== 'line';
   const endPose: HmPose | null = working ? null : failed ? 'error' : stopped ? 'stop' : errs ? 'error' : null;

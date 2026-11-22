@@ -22,7 +22,8 @@ import { FootNote } from './FootNote';
 import { newPid, pollProgress } from '@/lib/upload/progress';
 
 export type ComposerHandle = { focus: () => void; setText: (t: string) => void;  cancelHold: (id: string) => void;
-   addFiles: (chips: FileChip[]) => void };
+   addFiles: (chips: FileChip[]) => void;
+   pick: () => void };
 export type ComposerEdit = { id: string; text: string; files: FileChip[] };
 
 export function editLine(e: ComposerEdit): string {
@@ -64,7 +65,7 @@ export const Composer = forwardRef<ComposerHandle, {
   const editing = !!edit;
   const editR = useRef(editing); editR.current = editing;
 
-  useImperativeHandle(ref, () => ({ focus: () => ta.current?.focus(), setText, cancelHold: (id) => cancelHoldR.current(id),
+  useImperativeHandle(ref, () => ({ focus: () => ta.current?.focus(), setText, pick: () => fileIn.current?.click(), cancelHold: (id) => cancelHoldR.current(id),
     addFiles: (chips) => setUps((u) => [...u, ...chips.filter((c) => !u.some((x) => x.chip?.id === c.id)).map((c): Up => ({ tmp: `doc-${c.id}`, name: c.name, size: c.size, status: 'ready', chip: c, img: isImage(c) }))]) }), []);
 
   const saved = useRef<string | null>(null);

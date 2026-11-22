@@ -51,6 +51,7 @@ type Ctx = { models: PublicModel[]; refresh: () => Promise<void>; openDrawer: ()
 export const ShellCtx = createContext<Ctx | null>(null);
 export const useShell = () => useContext(ShellCtx)!;
 export const useIsAdmin = () => useContext(ShellCtx)?.role === 'admin';
+export const useSimple = () => useContext(ShellCtx)?.role === 'user';
 export const useCanAgents = () => canAgents(useContext(ShellCtx)?.role);
 export const useLockedModels = (): LockedModel[] => useContext(ShellCtx)?.locked ?? [];
 

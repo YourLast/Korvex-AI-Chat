@@ -135,3 +135,10 @@
 .mimb-list--skip .mimb-tx { color: var(--text-3); }
 .mim-acts--b { margin: var(--s-4) 0 0; padding: 0; }
 .mim-tick--none { box-shadow: none; }
+.letter { margin: var(--s-3) 0; }
+.letter-body { padding-left: var(--s-4); color: var(--text-1); }
+.letter-body p { margin: 0 0 var(--s-2); }
+.letter .ans-link { margin-left: var(--s-4); font-size: var(--fs-ui); }
+.quick { margin-top: var(--s-3); }
+.home-pane > .quick { width: min(100%, calc(var(--col-w) + var(--s-12))); box-sizing: border-box; margin-top: calc(var(--s-8) * -1 + var(--s-2)); padding: 0 var(--s-6); text-align: left; }
+@media (max-width: 760px) { .home-pane > .quick { padding: 0 var(--s-4); } }

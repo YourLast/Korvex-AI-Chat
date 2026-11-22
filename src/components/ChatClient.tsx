@@ -1,6 +1,8 @@
 'use client';
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useRouter } from 'next/navigation';
+import { autoLevel } from '@/lib/autoLevel';
+import { QuickActions } from './QuickActions';
 import { IntroInvite } from './IntroInvite';
 import dynamic from 'next/dynamic';
 import type { PublicModel } from '@/lib/models';
@@ -13,7 +15,7 @@ import { heldMorph } from '@/lib/heldMorph';
 import { AssistantMsg, UserTurn } from './Message';
 import { ModelName, PickerButton, levelLabel, manyModels, pairLabels, type CompareNext, type Sel, type Side } from './ModelPicker';
 import { PairTurn, type Lane, type Winner } from './PairTurn';
-import { useCanAgents, useIsAdmin, useShell, Topbar } from './Shell';
+import { useCanAgents, useIsAdmin, useShell, Topbar, useSimple } from './Shell';
 import { useChatStream, type TurnMode } from './useChatStream';
 import { watchTemp } from '@/lib/tempClient';
 import { prepareModel as warm } from '@/ext/client';
@@ -205,7 +207,6 @@ export function useOlder(el: RefObject<HTMLDivElement | null>, hasMore: boolean,
   return sentinel;
 }
 
-const SUGGEST = ['chat.sug1', 'chat.sug2', 'chat.sug3'] as const;
 const SUGGEST_CODE = ['chat.cug1', 'chat.cug2', 'chat.cug3'] as const;
 
 export function ChatClient({ models: modelsProp, thread, initial, fileNames: initialFiles, hasMore: initialMore = false, preview = false, startCompare = false, startTemp = false, startCode = false, focus = null }: {
@@ -224,6 +225,7 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
   const [threadId, setThreadId] = useState<string | null>(thread?.id ?? null);
   const [temp, setTemp] = useState<boolean>(thread ? !!thread.temporary : startTemp);
   const [title, setTitle] = useState(thread?.title ?? '');
+  const simple = useSimple();
   const [sel, setSel] = useState<Sel>(() => normalizeSel(models, thread ? { modelId: thread.modelId, levelId: thread.effort } : null));
   const [cmp, setCmp] = useState<CompareState | null>(() => {
     const p = thread?.compare ? fixPair(models, { model: '', levels: {} }, thread.compare) : null;
@@ -456,11 +458,12 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
       flushPair(id);
       await send({ threadId: id, text, files, fileIds: files.map((f) => f.id), modelId: c!.a.modelId, levelId: c!.a.levelId, mode, editId: opts?.editId, replaceFiles: opts?.replaceFiles, pair: { a: c!.a, b: c!.b }, wrap }, (t) => { setTitle(t); });
     } else {
-      await send({ threadId: id, text, files, fileIds: files.map((f) => f.id), modelId: s.modelId, levelId: s.levelId, mode: opts?.mode, editId: opts?.editId, replaceFiles: opts?.replaceFiles, wrap }, (t) => { setTitle(t); });
+      const lvl = simple ? (autoLevel(models.find((x) => x.id === s.modelId), text, files.length > 0 || fileNames.length > 0) ?? s.levelId) : s.levelId;
+      await send({ threadId: id, text, files, fileIds: files.map((f) => f.id), modelId: s.modelId, levelId: lvl, mode: opts?.mode, editId: opts?.editId, replaceFiles: opts?.replaceFiles, wrap }, (t) => { setTitle(t); });
     }
     refresh();
     return true;
-  }, [threadId, sel, send, refresh, models, temp, codeMode, pick]);
+  }, [threadId, sel, send, refresh, models, temp, codeMode, pick, simple, fileNames]);
 
   const laneTurn = useCallback(async (lane: Lane, mode: 'regenerate' | 'continue', m: MsgView) => {
     if (!threadId) return;
@@ -532,7 +535,7 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
     if (o && cmpRef.current?.on) setTab(voteLane(msgs));
     setPickOpen(o); if (!o) setInstant(false);
   };
-  const slot = (
+  const slot = simple ? null : (
     <PickerButton models={models} compare={cmpOn} sel={cmpOn && cmp ? cmp[tab] : sel} pair={pair} tab={tab} onTab={setTab} pairAny
       onModel={onModel} onLevel={cmpOn ? onPairLevel : onLevel} onPairModel={onPairModel} onCompare={onCompare}
       compareNote={many
@@ -564,6 +567,8 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
     const m = it.m, i = it.i;
     return (
       <AssistantMsg key={m.id} m={m} models={models} last={m === lastAssistant && !m.meta?.lane} canRegen={!busy} fileNames={fileNames}
+        footSlot={m === lastAssistant && !busy && !m.streaming && !preview && msgs[i - 1]?.role === 'user' && (msgs[i - 1].files?.length ?? 0) > 0 && m.content.trim()
+          ? <QuickActions lead={tx('quick.more')} testId="quick-ans" onAct={(text) => void doSend(text, [])} /> : undefined}
         onRegenerate={() => doSend('', [], { mode: 'regenerate' })} onContinue={() => doSend('', [], { mode: 'continue', use: answerSel(m) })} onSwitch={(id) => threadId && switchTo(threadId, id)}
         onAlt={m.meta?.altModel && msgs[i - 1]?.role === 'user' && msgs[i - 1].id.startsWith('u-') ? (alt) => retryOn(alt, msgs[i - 1], m) : undefined} />
     );
@@ -575,7 +580,7 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
         chat={threadId && !preview && !empty ? { id: threadId, title: listTitle || title || tx('shell.newChat'), muted: listMuted, temporary: temp } : undefined}
         sub={ready ? (cmpOn && la && lb
           ? <><ModelName name={la.name} suffix={la.suffix} /> · {la.level}  ×  <ModelName name={lb.name} suffix={lb.suffix} /> · {lb.level}</>
-          : <><ModelName name={lab.name} suffix={lab.suffix} /> · {lab.level}</>) : ' '}>
+          : simple ? <ModelName name={lab.name} suffix={lab.suffix} /> : <><ModelName name={lab.name} suffix={lab.suffix} /> · {lab.level}</>) : ' '}>
         {empty && !threadId && !preview && <TempButton on={temp} onChange={setTemp} />}
         {!empty && !preview && <MuteButton id={threadId} muted={listMuted} />}
       </Topbar>
@@ -598,18 +603,10 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
                 <h1 className="t-display">{cmpOn ? (many ? tx('chat.heroCmpMany') : tx('chat.heroCmpOne')) : temp ? tx('chat.temp') : tx('chat.heroHelp')}</h1>
                 <p>{temp && !cmpOn ? tx('chat.heroTempText') : cmpOn
                   ? (many ? tx('chat.heroCmpManyText') : tx('chat.heroCmpOneText'))
-                  : tx('chat.heroText')}</p>
+                  : tx('chat.heroDocs')}</p>
               </div>
-              {!cmpOn && (
-                <div className="suggest">
-                  <h2>{tx('chat.tryTitle')}</h2>
-                  {SUGGEST.map((k) => { const s = tx(k); return (
-                    <a key={k} href="#" onClick={(e) => { e.preventDefault(); comp.current?.setText(s); comp.current?.focus(); }}>
-                      <Icon n="chat" sm /><span>{s}</span><Icon n="arrow-ur" sm className="go" />
-                    </a>
-                  ); })}
-                </div>
-              )}
+              {}
+              {!cmpOn && !temp && <QuickActions testId="quick-home" onAct={(text, needsFiles) => { if (needsFiles) { comp.current?.setText(text); comp.current?.pick(); comp.current?.focus(); } else void doSend(text, []); }} />}
             </div>
             {agents && !cmpOn && !threadId && !preview && (
               <div className="home-pane" data-pane="code" aria-hidden={!codeMode || undefined} inert={!codeMode || undefined}>
