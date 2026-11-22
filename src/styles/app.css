@@ -846,3 +846,8 @@ div.ft-open { cursor: default; }
 .ft-thumb.pdf-thumb { flex: none; width: 38px; height: 38px; border-radius: 8px; box-shadow: 0 0 0 1px var(--line-1); }
 .ficon .pdf-thumb { border-radius: inherit; }
 @media (prefers-reduced-motion: reduce) { .pdf-thumb { animation: none; } }
+
+.week-refuse { display: flex; align-items: flex-start; gap: var(--s-2); margin: var(--s-2) 0 0; font-size: var(--fs-body); line-height: var(--lh-body); color: var(--text-2); white-space: pre-line; }
+.week-refuse .i { flex: none; margin-top: 3px; color: var(--text-3); }
+.week-refuse .wk-date { display: inline; margin: 0; font-size: inherit; line-height: inherit; font-weight: var(--fw-medium); color: var(--text-1); }
+.week-refuse--alert { margin: 0; color: var(--text-1); }

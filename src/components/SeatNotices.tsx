@@ -4,6 +4,8 @@ import { createPortal } from 'react-dom';
 import { useLive } from '@/lib/live';
 import { useT } from '@/lib/i18n/react';
 import type { Key } from '@/lib/i18n/core';
+import { Icon } from './Icon';
+import { WithDate } from './WeekRefuse';
 
 type Notice = { id: string; kind: string };
 type Support = { handle: string; email: string };
@@ -13,12 +15,14 @@ export function SeatNotices() {
   const t = useT();
   const [list, setList] = useState<Notice[]>([]);
   const [sup, setSup] = useState<Support | null>(null);
+  const [date, setDate] = useState<string | null>(null);
   const load = useCallback(async () => {
     try {
       const r = await fetch('/api/seat', { cache: 'no-store' });
       if (!r.ok) return;
-      const j = (await r.json()) as { notices?: Notice[]; support?: Support; week?: { phase?: string } | null };
+      const j = (await r.json()) as { notices?: Notice[]; support?: Support; week?: { phase?: string; date?: string | null } | null };
       setWeekOver(j.week?.phase === 'over');
+      setDate(j.week?.date ?? null);
       setList((j.notices ?? []).filter((n) => KEY[n.kind]));
       if (j.support) setSup(j.support);
     } catch {  }
@@ -35,7 +39,10 @@ export function SeatNotices() {
     <div className="k-alert-scrim" data-testid="seat-notice-scrim">
       <div className="k-alert" role="alertdialog" aria-modal="true" aria-label={t(KEY[n.kind])} data-testid="seat-notice" data-kind={n.kind}>
         <div className="k-alert-t">
-          <p style={{ margin: 0 }}>{t(KEY[n.kind])}</p>
+          {}
+          {n.kind === 'week_hard'
+            ? <p style={{ margin: 0 }} className="week-refuse week-refuse--alert"><Icon n="clock" sm /><span><WithDate text={date ? t('week.hardDate', { date }) : t('week.hard')} date={date} /></span></p>
+            : <p style={{ margin: 0 }}>{t(KEY[n.kind])}</p>}
           <p className="t-cap" style={{ margin: 'var(--s-3) 0 0' }} data-testid="seat-notice-support">{t('support.line', { tg: sup.handle, email: sup.email })}</p>
         </div>
         <div className="k-alert-a">

@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     if (wk.phase === 'blocked') {
       const lang = reqLang(req, a.user.lang);
       const date = resetDay(wk.resetAt, tzOf(a.user), localeOf(lang));
-      return NextResponse.json({ error: withSupport(lang, tr(lang, 'week.hardDate', { date })), code: 'week_limit', resetAt: wk.resetAt }, { status: 429 });
+      return NextResponse.json({ error: withSupport(lang, tr(lang, 'week.hardDate', { date })), code: 'week_limit', resetAt: wk.resetAt, date }, { status: 429 });
     }
     const over = wk.phase === 'over';
     const after = async (jobs: (string | null | undefined)[]) => {

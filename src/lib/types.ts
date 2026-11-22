@@ -38,6 +38,7 @@ export type AssistantMeta = {
   error?: string | null;
   errorUser?: string | null;
   altModel?: { id: string; name: string };
+  weekLimit?: { date?: string };
   stopped?: boolean;
   status?: string;
   jobId?: string;

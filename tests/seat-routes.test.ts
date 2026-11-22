@@ -35,6 +35,7 @@ describe('/api/chat и недельный лимит', () => {
     expect(j.error).toMatch(/You've used up your weekly limit\. You can send new messages from Monday, \S+ \S+\. If you need more/);
     expect(j.error).toContain('Support: Telegram @korvex_support_test, email support@example.com');
     expect(j.resetAt).toBeGreaterThan(Date.now());
+    expect(j.error).toContain((j as unknown as { date: string }).date);
   });
   it('KX_WEEK_MODE=hard — отказ уже с лимита, мягкой зоны нет', async () => {
     cur = 'u';

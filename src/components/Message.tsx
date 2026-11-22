@@ -1,4 +1,5 @@
 'use client';
+import { WeekRefuse } from './WeekRefuse';
 import { PdfThumb, isPdf } from './PdfThumb';
 import Link from 'next/link';
 import { genTokens } from '@/lib/genspeed';
@@ -277,7 +278,9 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
       <Results m={m} />
       {m.streaming && m.content && <span className="caret" aria-hidden="true" />}
       {meta.stopped && !m.content && <p className="t-cap">{tx('msg.stopped')}</p>}
-      {(meta.errorUser || meta.error) && (
+      {}
+      {meta.weekLimit && meta.errorUser && <WeekRefuse text={meta.errorUser} date={meta.weekLimit.date} />}
+      {(meta.errorUser || meta.error) && !meta.weekLimit && (
         <div className="err-box" role="alert" data-testid="err-box">
           <Icon n="alert" sm />
           <span>

@@ -202,7 +202,7 @@ export function useChatStream(initial: MsgView[], initialHasMore = false, thread
           ...(pairDrafts ? { compare: a.pair } : {}), ...(a.lane ? { lane: a.lane, messageId: a.messageId } : {}) }),
       });
       const j = (await res.json().catch(() => ({}))) as { error?: string; jobId?: string; jobIds?: string[]; title?: string; code?: string; alt?: { id: string; name: string } | null; userMessageId?: string | null; assistantMessageId?: string };
-      if (!res.ok || !j.jobId) throw Object.assign(new Error(j.error || `HTTP ${res.status}`), { code: j.code, alt: j.alt });
+      if (!res.ok || !j.jobId) throw Object.assign(new Error(j.error || `HTTP ${res.status}`), { code: j.code, alt: j.alt, date: (j as { date?: string }).date });
       if (j.title) onTitle?.(j.title);
       if (st.current.stopAsked) { st.current.stopAsked = false; for (const id of j.jobIds ?? [j.jobId]) void fetch(`/api/jobs/${id}/cancel`, { method: 'POST' }).catch(() => {}); }
       if (!pairDrafts && !a.lane && j.assistantMessageId) {
@@ -217,9 +217,9 @@ export function useChatStream(initial: MsgView[], initialHasMore = false, thread
       if (s.msgAt >= sentAt) { if (s.reloading) await s.reloading; }
       else await reload(a.threadId);
     } catch (e) {
-      const x = e as Error & { code?: string; alt?: { id: string; name: string } | null };
+      const x = e as Error & { code?: string; alt?: { id: string; name: string } | null; date?: string };
       const kind = x.code === 'model_down' || x.code === 'week_limit';
-      const down = kind ? { errorUser: x.message, altModel: x.alt ?? undefined } : {};
+      const down = kind ? { errorUser: x.message, altModel: x.alt ?? undefined, ...(x.code === 'week_limit' ? { weekLimit: { date: x.date } } : {}) } : {};
       setMsgs((all) => all.map((m) => (draftIds.has(m.id) || (mode === 'continue' && m.streaming) ? { ...m, streaming: false, rStartedAt: null, meta: { ...m.meta, ...(kind ? {} : { error: x.message }), ...down } } : m)));
     } finally {
       setSending(false);
