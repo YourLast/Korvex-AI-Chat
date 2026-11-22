@@ -25,7 +25,7 @@ export function LevelElastic({ model, value, onChange }: { model: PublicModel; v
   const live = useRef(onChange);
   live.current = onChange;
   const opts = { levels: model.levels, value, caption: tx('picker.thinkLevel'), label: tx('picker.thinkLevelOf', { model: model.name }), testId: `levels-${model.id}`,
-    ...(MULT_VIEW ? { mult: { view: MULT_VIEW, fmt: (x: number) => tx('picker.mult', { n: multFmt(x, lang) }), note: (x: number, uniform: boolean) => (MULT_VIEW === 'warm' ? '' : multNote(tx, lang, x, uniform)),
+    ...(MULT_VIEW ? { mult: { view: MULT_VIEW, fmt: (x: number) => (MULT_VIEW === 'warm' ? tx('picker.multFaster', { n: multFmt(x, lang), w: tx(x % 10 >= 2 && x % 10 <= 4 && (x % 100 < 12 || x % 100 > 14) ? 'picker.timesFew' : 'picker.timesMany') }) : tx('picker.mult', { n: multFmt(x, lang) })), note: (x: number, uniform: boolean) => (MULT_VIEW === 'warm' ? '' : multNote(tx, lang, x, uniform)),
       tip: (x: number) => tx('picker.maxTip', { model: model.name, n: multFmt(x, lang), w: tx(x % 10 >= 2 && x % 10 <= 4 && (x % 100 < 12 || x % 100 > 14) ? 'picker.timesFew' : 'picker.timesMany') }) } } : {}) };
   useEffect(() => {
     if (!host.current) return;

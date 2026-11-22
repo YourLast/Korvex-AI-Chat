@@ -161,10 +161,12 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
     const w = warmAt();
     if (w >= 0) {
       mrow.hidden = false;
+      mrow.classList.add('kxe-mrow--warm');
       levels.forEach((l, i) => {
+        if (i !== w) return;
         const c = document.createElement('span');
         c.className = 'kxe-m kxe-m--warm';
-        if (i === w) {
+        {
           const b = document.createElement('span'); b.className = 'kxe-warm'; b.tabIndex = 0; b.dataset.testid = 'lvl-warm';
           b.innerHTML = '<svg class="i i--sm" aria-hidden="true" focusable="false"><use href="#i-warn"/></svg>';
           b.append(document.createTextNode(o.mult!.fmt(l.mult!)));
@@ -176,6 +178,7 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
       });
       return;
     }
+    mrow.classList.remove('kxe-mrow--warm');
     mrow.hidden = !inCells();
     if (!inCells()) return;
     for (const l of levels) {
