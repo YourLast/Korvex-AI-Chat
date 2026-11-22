@@ -12,7 +12,7 @@ export type ManualBanner = { enabled: boolean; text: string; level: BannerLevel;
 export type Probe = { ok: boolean; fails: number; at: number };
 export type ModelRef = { id: string; name: string };
 
-export type BannerView = { id: 'manual' | 'load' | 'busy' | 'local' | 'works'; sig: string; level: BannerLevel; text: string };
+export type BannerView = { id: 'manual' | 'load' | 'busy' | 'local' | 'works' | 'readonly'; sig: string; level: BannerLevel; text: string };
 export type ModelLive = { state: ModelState; until: number | null };
 export type StatusView = { now: number; banners: BannerView[]; models: Record<string, ModelLive> };
 

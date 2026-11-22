@@ -28,7 +28,9 @@ export async function register() {
     try { (await import('./lib/ops')).registerOps(); } catch (e) { console.error('[ops]', (e as Error).message); }
     try { (await import('./lib/code/janitor')).startJanitor(); } catch (e) { console.error('[code] janitor', (e as Error).message); }
     try { (await import('./lib/seat')).startSeatSweeper(); } catch (e) { console.error('[seat]', (e as Error).message); }
-    if (process.env.KX_SCHEDULER !== '0') {
+    const ro = (await import('./lib/readonly')).readOnly();
+    if (ro) console.log('[readonly] режим только просмотр: расписание автоматизаций не запускается');
+    if (process.env.KX_SCHEDULER !== '0' && !ro) {
       const { startScheduler } = await import('./lib/scheduler');
       startScheduler();
     }

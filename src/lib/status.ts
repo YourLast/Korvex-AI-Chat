@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { dataDir } from './db';
+import { readOnly } from './readonly';
 import { getModels, isClaudeDirect } from './models';
-import type { Lang } from './i18n/core';
+import { tr, type Lang } from './i18n/core';
 import type { LoadEvent, LoadPersist } from './loadWatch';
 import { standDefault } from './cfg';
 import { modelKey } from './providers';
@@ -161,7 +162,8 @@ export function statusFor(tz: string, now = Date.now(), lang: Lang = 'ru'): Stat
   const s = st();
   const busy = busyOn(s.store.busyMode, s.busy.on)
     ? busyBanner(s.busy.eta, s.store.busyMode === 'on' ? `bf${s.store.busyRev}` : `b${s.busy.since ?? 0}`, lang) : null;
-  const banners = [localBanner(lang), worksBanner(readWorks(), now, lang), manualBanner(s.store.banner, now), loadBanner(shown(), s.store.load, probesObj(s), tz, now, lang), busy].filter((b): b is NonNullable<typeof b> => !!b);
+  const ro = readOnly();
+  const banners = [ro ? { id: 'readonly' as const, sig: 'ro' + ro.since, level: 'warn' as const, text: ro.url ? tr(lang, 'srv.readonlyGo', { url: ro.url }) : tr(lang, 'srv.readonly') } : null, localBanner(lang), worksBanner(readWorks(), now, lang), manualBanner(s.store.banner, now), loadBanner(shown(), s.store.load, probesObj(s), tz, now, lang), busy].filter((b): b is NonNullable<typeof b> => !!b);
   return { now, banners, models: modelStates(now) };
 }
 

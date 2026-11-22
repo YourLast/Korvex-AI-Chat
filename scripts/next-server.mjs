@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
 import process from 'node:process';
 import { createRequire } from 'node:module';
 
@@ -27,7 +29,32 @@ const lc = () => globalThis.__kxLifecycle;
 const compression = require('next/dist/compiled/compression');
 const gz = compression({ threshold: 1024, filter: (_req, res) => /^application\/json\b/i.test(String(res.getHeader('Content-Type') || '')) });
 
+const roFile = path.join(process.env.DATA_DIR || path.join(dir, 'data'), 'readonly.json');
+const ro = { at: 0, on: false, text: '' };
+function readonlyOn() {
+  const now = Date.now();
+  if (now - ro.at > 2000) {
+    ro.at = now; ro.on = fs.existsSync(roFile);
+    let url = '';
+    try { const u = JSON.parse(fs.readFileSync(roFile, 'utf8')).url; if (typeof u === 'string' && /^[a-z0-9.-]+$/i.test(u)) url = u; } catch {  }
+    ro.text = `Чат сейчас работает на резервном сервере${url ? ` — откройте ${url}` : ''}. Здесь только просмотр: новые сообщения и правки не сохраняются.`;
+  }
+  return ro.on;
+}
+function readonlyBlocks(req) {
+  const m = req.method || 'GET';
+  if (m === 'GET' || m === 'HEAD' || m === 'OPTIONS') return false;
+  const p = (req.url || '').split('?')[0];
+  if (p === '/api/auth/login' || p === '/api/auth/logout') return false;
+  return readonlyOn();
+}
+
 function serve(req, res) {
+  if (readonlyBlocks(req)) {
+    res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store', 'Retry-After': '600' });
+    res.end(JSON.stringify({ error: ro.text, code: 'readonly' }));
+    return;
+  }
   inflight++;
   let done = false;
   const end = () => { if (!done) { done = true; inflight--; } };
