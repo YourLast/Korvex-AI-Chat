@@ -1,4 +1,5 @@
 import { featureOn } from '@/lib/features';
+import { ThinkSettings } from '@/components/ThinkSettings';
 import { redirect } from 'next/navigation';
 import { currentUser } from '@/lib/auth';
 import { SettingsClient } from '@/components/SettingsClient';
@@ -20,5 +21,5 @@ export default async function SettingsPage() {
   if (!me) redirect('/login');
   const wk = weekView(me);
   const theme = pickTheme({ user: me.theme, cookie: (await cookies()).get(THEME_COOKIE)?.value });
-  return <SettingsClient me={{ name: me.name, email: me.email, timezone: me.timezone, role: me.role, theme }}><MemoryRowLink on={memoryPrefs(me.id).on} count={memoryCount(me.id)} /><LimitsRowLink limited={wk.limited} pct={wk.pct} /><NotifySettings quiet={me.notifyQuiet ?? null} timezone={me.timezone} /><VoiceSettings />{canAgents(me.role) && featureOn('code') && <GithubSettings />}</SettingsClient>;
+  return <SettingsClient me={{ name: me.name, email: me.email, timezone: me.timezone, role: me.role, theme }}><MemoryRowLink on={memoryPrefs(me.id).on} count={memoryCount(me.id)} /><LimitsRowLink limited={wk.limited} pct={wk.pct} /><NotifySettings quiet={me.notifyQuiet ?? null} timezone={me.timezone} /><ThinkSettings /><VoiceSettings />{canAgents(me.role) && featureOn('code') && <GithubSettings />}</SettingsClient>;
 }

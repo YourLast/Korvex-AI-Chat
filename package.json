@@ -1,6 +1,6 @@
 {
   "name": "korvex-ai-chat",
-  "version": "0.1.53",
+  "version": "0.1.54",
   "private": true,
   "license": "SEE LICENSE IN LICENSE",
   "description": "Korvex AI Chat — a self-hosted chat for any OpenAI-compatible model",

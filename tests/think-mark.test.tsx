@@ -8,6 +8,8 @@ import { HeadMark } from '@/components/HeadMark';
 import { MARK_ASPECT, MARK_FULL, MARK_SMALL, MARK_VIEWBOX } from '@/lib/thinkMark';
 import type { MsgView } from '@/lib/types';
 import type { PublicModel } from '@/lib/models';
+import { THINK_DEFAULT } from '@/lib/thinkPref';
+THINK_DEFAULT.on = true;
 
 const models = [{ id: 'alpha', name: 'Alpha', fullName: 'Alpha', defaultLevel: 'low', levels: [{ id: 'low', label: 'low' }] }] as unknown as PublicModel[];
 const msg = (extra: Partial<MsgView>): MsgView => ({ id: 'm1', role: 'assistant', content: '', reasoning: 'Думаю над задачей.', reasoningMs: 27000, meta: { modelId: 'alpha', levelId: 'low' }, ...extra });

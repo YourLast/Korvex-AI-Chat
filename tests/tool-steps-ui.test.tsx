@@ -5,6 +5,8 @@ import { AssistantMsg, speedText } from '@/components/Message';
 import { closeOpen } from '@/components/ToolSteps';
 import type { MsgView } from '@/lib/types';
 import type { PublicModel } from '@/lib/models';
+import { THINK_DEFAULT } from '@/lib/thinkPref';
+THINK_DEFAULT.on = true;
 
 const models = [{ id: 'alpha', name: 'Alpha', fullName: 'Alpha', defaultLevel: 'low', levels: [{ id: 'low', label: 'low' }] }] as unknown as PublicModel[];
 const msg = (reasoning: string, extra: Partial<MsgView> = {}): MsgView => ({

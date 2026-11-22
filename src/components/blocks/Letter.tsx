@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { useT } from '@/lib/i18n/react';
 import { copyText } from '@/lib/clipboard';
 import { KX_VERSION } from '@/lib/blocks/schema';
+import { letterTag } from '@/lib/letterTag';
 import { Icon } from '../Icon';
 
 export type LetterData = { to: string; subject: string; body: string; short: string };
@@ -19,6 +20,45 @@ export function lettersIn(md: string): LetterData[] {
   return [...md.matchAll(/```letter[^\n]*\n([\s\S]*?)```/g)].map((m) => parseLetter(m[1])).filter((x): x is LetterData => !!x);
 }
 export const withoutLetters = (md: string) => md.replace(/\n?```letter[^\n]*\n([\s\S]*?)```\n?/g, (all, body: string) => (parseLetter(body) ? '\n' : all));
+
+type Remind = { at: Record<string, number>; set: (tag: string, on: boolean) => void } | null;
+const RemindCtx = createContext<Remind>(null);
+export function LetterRemindProvider({ messageId, on, children }: { messageId: string | null; on: boolean; children?: ReactNode }) {
+  const [at, setAt] = useState<Record<string, number>>({});
+  useEffect(() => {
+    if (!messageId || !on) return;
+    let live = true;
+    void fetch(`/api/letters/remind?m=${encodeURIComponent(messageId)}`, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null))
+      .then((j: { reminders?: Record<string, number> } | null) => { if (live && j?.reminders) setAt(j.reminders); }).catch(() => {});
+    return () => { live = false; };
+  }, [messageId, on]);
+  const set = useCallback((tag: string, v: boolean) => {
+    if (!messageId) return;
+    void fetch('/api/letters/remind', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ messageId, tag, on: v }) })
+      .then((r) => (r.ok ? r.json() : null)).then((j: { at?: number | null } | null) => {
+        if (!j) return;
+        setAt((x) => { const y = { ...x }; if (j.at) y[tag] = j.at; else delete y[tag]; return y; });
+      }).catch(() => {});
+  }, [messageId]);
+  return <RemindCtx.Provider value={messageId && on ? { at, set } : null}>{children}</RemindCtx.Provider>;
+}
+
+function RemindLine({ l }: { l: LetterData }) {
+  const t = useT();
+  const r = useContext(RemindCtx);
+  if (!r) return null;
+  const tag = letterTag(l.to, l.subject);
+  const at = r.at[tag];
+  const day = at ? new Intl.DateTimeFormat(t.lang === 'en' ? 'en-GB' : t.lang === 'sr' ? 'sr-Latn' : 'ru-RU', { day: 'numeric', month: 'long' }).format(at) : '';
+  return (
+    <p className="kxl-remind" data-testid="letter-remind">
+      <Icon n="bell" sm />
+      {at ? <><span>{t('letter.reminded', { d: day })}</span><span aria-hidden="true"> · </span>
+          <button type="button" className="kxl-tab" onClick={() => r.set(tag, false)} data-testid="letter-remind-off">{t('letter.remindOff')}</button></>
+        : <button type="button" className="kxl-tab" onClick={() => r.set(tag, true)} data-testid="letter-remind-on">{t('letter.remind')}</button>}
+    </p>
+  );
+}
 
 const mailto = (l: LetterData, text: string) => `mailto:?subject=${encodeURIComponent(l.subject)}&body=${encodeURIComponent(text)}`;
 const paras = (text: string) => text.split(/\n{2,}/).map((p, i) => <p key={i}>{p.split('\n').map((ln, k) => <span key={k}>{k > 0 && <br />}{ln}</span>)}</p>);
@@ -56,6 +96,7 @@ export function LetterView({ l, bare }: { l: LetterData; bare?: boolean }) {
       {edit
         ? <textarea className="kxl-edit" value={cur} rows={Math.min(16, cur.split('\n').length + 2)} onChange={(e) => setText((x) => ({ ...x, [mode]: e.target.value }))} aria-label={t('letter.edit')} data-testid="letter-text" />
         : <div className="kxl-text" data-testid="letter-body">{paras(cur)}</div>}
+      <RemindLine l={l} />
     </section>
   );
 }

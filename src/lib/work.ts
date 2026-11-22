@@ -419,7 +419,7 @@ export function nowOf(items: WItem[]): Now | null {
 }
 
 export function lastSentence(t: string): string {
-  const plain = t.replace(/```[\s\S]*?```/g, ' ').replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim();
+  const plain = t.replace(/```[\s\S]*?```/g, ' ').replace(/\[\[t:\s*/g, '').replace(/\]\]/g, '. ').replace(/[*_`#>]+/g, '').replace(/\s+/g, ' ').trim();
   const parts = plain.split(/(?<=[.!?…])\s+/).filter((x) => x.trim().length > 2);
   const s = (parts.length > 1 && !/[.!?…]$/.test(parts[parts.length - 1]) ? parts[parts.length - 2] : parts[parts.length - 1]) ?? plain;
   return s.length > 90 ? s.slice(0, 89).trimEnd() + '…' : s;

@@ -8,6 +8,8 @@ import { HeadMark } from './HeadMark';
 import { iconState } from '@/lib/actIcons';
 import { serverNow } from '@/lib/clock';
 import { useT, type T } from '@/lib/i18n/react';
+import { briefOf, liveTitle } from '@/lib/thoughtTitles';
+import { useThinkFull } from '@/lib/thinkPref';
 import { KIND_ICON, allSteps, buildFeed, countSteps, fmtDur, historyOf, kindName, nowOf, statusSpoken, type WStep } from '@/lib/work';
 import type { MsgView } from '@/lib/types';
 import '@/styles/work-bar.css';
@@ -130,7 +132,10 @@ function BarView({ t, m, items, n, now, wait, show, done, hist, hOpen, setHOpen,
   hOpen: boolean; setHOpen: (v: boolean) => void; bar: React.RefObject<HTMLDivElement | null>; onDecide?: (s: WStep, d: Decision) => void; onShowFeed?: (msgId: string) => void;
   onLive?: (s: WStep, all: WStep[]) => void; pointer: Record<string, (e: React.PointerEvent) => void>;
 }) {
-  const cur = useHold(now?.kind === 'step' ? { t: now.step.title, s: now.step.sub ?? '', ic: now.step.icon ?? KIND_ICON[now.step.kind] } : { t: now?.kind === 'think' ? now.text : t('work.thinkingDots'), s: '', ic: 'spark' }, 1000);
+  const full = useThinkFull();
+  const title = full ? null : liveTitle(briefOf(items, true, t.lang));
+  const cur = useHold(!full ? { t: title ?? t('work.thinkingDots'), s: '', ic: now?.kind === 'step' ? now.step.icon ?? KIND_ICON[now.step.kind] : 'spark' }
+    : now?.kind === 'step' ? { t: now.step.title, s: now.step.sub ?? '', ic: now.step.icon ?? KIND_ICON[now.step.kind] } : { t: now?.kind === 'think' ? now.text : t('work.thinkingDots'), s: '', ic: 'spark' }, 1000);
   const nowText = `${cur.t}${cur.s ? ' · ' + cur.s : ''}`;
   const decide = onDecide ? (st: WStep, allow: Decision) => {
     onDecide(st, allow);
@@ -155,12 +160,12 @@ function BarView({ t, m, items, n, now, wait, show, done, hist, hOpen, setHOpen,
           <div className="wbar-pill wbar-pill--done" data-testid="work-bar-done"><span className="wbar-ic wbar-ic--mark" aria-hidden="true"><HeadMark live={false} end="check" play /></span><span className="wbar-now">{done}</span></div>
         ) : (
           <button type="button" className="wbar-pill" aria-haspopup="dialog" aria-expanded={hOpen} data-testid="work-bar-pill"
-            aria-label={`${nowText}. ${n ? `${t('work.bar.stepN', { n })}. ` : ''}${t('work.bar.showHistory')}`}
+            aria-label={`${nowText}. ${n && full ? `${t('work.bar.stepN', { n })}. ` : ''}${t('work.bar.showHistory')}`}
             onClick={() => setHOpen(true)} {...pointer}>
             {}
             <span className={`wbar-ic${cur.ic === 'spark' ? ' wbar-ic--mark' : ''}`} aria-hidden="true">{cur.ic === 'spark' ? <HeadMark live /> : <ActIcon n={cur.ic} state="run" />}</span>
             <span className="wbar-now" key={nowText} data-testid="work-bar-now"><b>{cur.t}</b>{cur.s && <span className="wbar-sub"> · {cur.s}</span>}</span>
-            {n > 0 && <span className="wbar-n tnum">{t('work.bar.step', { n })}</span>}
+            {n > 0 && full && <span className="wbar-n tnum">{t('work.bar.step', { n })}</span>}
             <Icon n="chev-up" sm className="wbar-chev" />
           </button>
         )}

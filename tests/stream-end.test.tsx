@@ -8,6 +8,8 @@ import { SETTLE_MS } from '@/lib/workView';
 import { live, type LiveEv } from '@/lib/live';
 import type { MsgView } from '@/lib/types';
 import type { PublicModel } from '@/lib/models';
+import { THINK_DEFAULT } from '@/lib/thinkPref';
+THINK_DEFAULT.on = true;
 
 vi.mock('next/link', () => ({ default: (p: { href: string; children: React.ReactNode }) => createElement('a', { href: p.href }, p.children) }));
 

@@ -135,6 +135,9 @@ export default {
 
   'set.title': ['Настройки', 'Settings', 'Podešavanja'],
   'set.account': ['Аккаунт', 'Account', 'Nalog'],
+  'set.chat': ['Чат', 'Chat', 'Čet'],
+  'set.thinkFull': ['Показывать ход мысли полностью', 'Show the full reasoning', 'Prikaži ceo tok razmišljanja'],
+  'set.thinkFullFoot': ['Выключено — во время ответа видно, чем модель занята, коротко по шагам. На этом устройстве.', 'Off — while answering you see what the model is doing, step by step in short. On this device.', 'Isključeno — dok odgovara vidi se ukratko šta model radi, korak po korak. Na ovom uređaju.'],
   'set.tzHere': ['На этом устройстве пояс {tz}. ', 'This device is in the {tz} time zone. ', 'Ovaj uređaj je u vremenskoj zoni {tz}. '],
   'set.tzUse': ['Поставить его', 'Use it', 'Postavi je'],
   'set.name': ['Имя', 'Name', 'Ime'],

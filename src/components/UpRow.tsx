@@ -1,5 +1,5 @@
 'use client';
-import { useSimple } from './Shell';
+import { useCanAgents, useSimple } from './Shell';
 import { useLayoutEffect, useRef } from 'react';
 import { fmtBytes } from '@/lib/format';
 import { useT } from '@/lib/i18n/react';
@@ -81,6 +81,54 @@ function DocChip({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
   );
 }
 
+export type FileView = 0 | 'a' | 'b';
+export const FILE_VIEW = 0 as FileView;
+
+const EXT = /(\.[A-Za-z0-9]{1,6})$/;
+export function nameParts(name: string): { head: string; tail: string } {
+  const ext = name.match(EXT)?.[1] ?? '';
+  const stem = ext ? name.slice(0, -ext.length) : name;
+  if (stem.length <= 8) return { head: stem, tail: ext };
+  return { head: stem.slice(0, -3), tail: stem.slice(-3) + ext };
+}
+const typeIcon = (name: string): string => (/\.(xlsx?|xlsm|csv|ods|tsv)$/i.test(name) ? 'table' : /\.(pptx?|odp|key)$/i.test(name) ? 'slides' : 'file-text');
+
+function FileLine({ u, onRemove, view }: { u: Up; onRemove: (u: Up) => void; view: 'a' | 'b' }) {
+  const tx = useT();
+  const pro = useCanAgents();
+  const tok = useFileTok({ name: u.name, tokens: u.chip?.tokens, mime: u.chip?.mime, info: u.chip?.info });
+  const src = u.img ? viewSrc(u) : undefined;
+  const kind = !u.img && u.status === 'ready' && u.chip ? previewKind(u.name) : null;
+  const size = fmtBytes(u.size, tx.lang);
+  const prog = u.status === 'uploading' ? progText(tx, u.prog) : null;
+  const meta = u.status === 'error' ? u.error ?? '' : prog ?? (u.status === 'uploading' ? tx('comp.reading') : size);
+  const tip = [u.name, size, pro && tok && u.status === 'ready' ? tokText(tx.lang, tok) : ''].filter(Boolean).join(' · ');
+  const { head, tail } = nameParts(u.name);
+  const ic = u.status === 'error' ? <Icon n="alert" sm />
+    : u.status === 'uploading' ? <span className="fl-spin" aria-hidden="true" />
+    // eslint-disable-next-line @next/next/no-img-element
+    : u.img && u.preview ? <img className="fl-thumb" src={u.preview} alt="" draggable={false} decoding="async" />
+    : <Icon n={u.img ? 'file' : typeIcon(u.name)} sm />;
+  const body = (
+    <>
+      <span className="fl-ic">{ic}</span>
+      <span className="fl-name"><span className="fl-head">{head}</span><span className="fl-tail">{tail}</span></span>
+      <span className="fl-meta" data-testid={prog ? 'up-prog' : undefined}>{meta}</span>
+    </>
+  );
+  const open = u.img && src
+    ? <button type="button" className="fl-in" title={tip} aria-label={tx('msg.openImage', { name: u.name })} data-iv="" data-iv-src={src} data-iv-name={u.name} data-iv-size={size} onClick={(e) => thumbClick(e, src)}>{body}</button>
+    : kind ? <button type="button" className="fl-in" title={tip} aria-label={tx('doc.open', { name: u.name })} data-testid="up-doc-open" onClick={(e) => openDoc({ href: `/api/files/${u.chip!.id}`, name: u.name, kind }, e.currentTarget)}>{body}</button>
+    : !u.img && u.status === 'ready' && u.chip && viewKind(u.name) !== 'none' ? <button type="button" className="fl-in" title={tip} aria-label={tx('files.openFile', { name: u.name })} data-testid="up-doc-open" onClick={() => openFile({ id: u.chip!.id, name: u.name })}>{body}</button>
+    : <div className="fl-in" title={tip}>{body}</div>;
+  return (
+    <div className={`fl fl--${view}${u.status === 'error' ? ' is-err' : ''}`} data-testid="up-chip" data-name={u.name} data-status={u.status}>
+      {open}
+      <button type="button" className="fl-x" aria-label={tx('comp.removeNamed', { name: u.name })} title={tx('comp.removeFile')} data-testid="up-remove" onClick={() => onRemove(u)}><Icon n="x" sm /></button>
+    </div>
+  );
+}
+
 function FolderChipUp({ name, n, ups, onRemove }: { name: string; n: number; ups: Up[]; onRemove: (u: Up) => void }) {
   const tx = useT();
   return (
@@ -94,7 +142,7 @@ function FolderChipUp({ name, n, ups, onRemove }: { name: string; n: number; ups
   );
 }
 
-export function UpRow({ items, onRemove }: { items: Up[]; admin?: boolean ; onRemove: (u: Up) => void }) {
+export function UpRow({ items, onRemove, view = FILE_VIEW }: { view?: FileView; items: Up[]; admin?: boolean ; onRemove: (u: Up) => void }) {
   const tx = useT();
   const folded = items.length > 12 ? groupByFolder(items.filter((u) => u.status === 'ready' && u.chip).map((u) => ({ name: u.name, size: u.size, u }))) : { groups: [], rest: [] as { name: string; size: number; u: Up }[] };
   const inGroup = new Set(folded.groups.flatMap((g) => g.items.map((x) => x.u)));
@@ -109,11 +157,11 @@ export function UpRow({ items, onRemove }: { items: Up[]; admin?: boolean ; onRe
   if (!items.length) return null;
   return (
     <>
-      <div className="up-row" ref={row} role="group" aria-label={tx('comp.attachments')} data-iv-scope="" data-testid="up-row">
+      <div className={`up-row${view ? ` up-row--${view}` : ''}`} ref={row} role="group" aria-label={tx('comp.attachments')} data-iv-scope="" data-testid="up-row" data-view={view || undefined}>
         {folded.groups.map((g) => <FolderChipUp key={'g-' + g.root} name={g.root} n={g.items.length} ups={g.items.map((x) => x.u)} onRemove={onRemove} />)}
-        {items.map((u) => (u.img ? <ImgTile key={u.tmp} u={u} onRemove={onRemove} /> : <DocChip key={u.tmp} u={u} onRemove={onRemove} />))}
+        {items.map((u) => (view ? <FileLine key={u.tmp} u={u} onRemove={onRemove} view={view} /> : u.img ? <ImgTile key={u.tmp} u={u} onRemove={onRemove} /> : <DocChip key={u.tmp} u={u} onRemove={onRemove} />))}
       </div>
-      {items.filter((u) => u.img && u.status === 'error').map((u) => (
+      {!view && items.filter((u) => u.img && u.status === 'error').map((u) => (
         <div className="up-note" role="alert" data-testid="up-err" key={'e-' + u.tmp}><Icon n="alert" sm /><span>{u.name}: {u.error}</span></div>
       ))}
     </>

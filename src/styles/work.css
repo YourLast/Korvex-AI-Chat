@@ -209,3 +209,8 @@ button.wk-head:active { background: var(--surface-press); }
 .net-bar .k-spin { width: 12px; height: 12px; }
 .net-bar.is-back { background: color-mix(in srgb, var(--pos) 14%, var(--bg)); }
 .net-bar.is-back .i { color: var(--pos); }
+
+.wk-brief { gap: 2px; }
+.wk-bl { position: relative; min-width: 0; padding: 2px 0 2px calc(var(--icon-sm) + var(--s-2)); font-size: var(--fs-ui); line-height: var(--lh-ui); letter-spacing: var(--ls-ui); color: var(--text-3); overflow-wrap: anywhere; }
+.wk-bl.is-live { color: var(--text-2); }
+.wk-sum:disabled { cursor: default; opacity: 1; color: inherit; }

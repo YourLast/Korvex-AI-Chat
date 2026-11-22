@@ -39,7 +39,7 @@ import { baseName, dirName, groupByFolder } from '@/lib/upload/paths';
 import { BRAND_WORDS, OUT_PREFIX } from '@/ext/client';
 import { copyText } from '@/lib/clipboard';
 import { GuessLine, InviteLine } from './AnswerLines';
-import { LettersList, lettersIn, withoutLetters } from './blocks/Letter';
+import { LetterRemindProvider, LettersList, lettersIn, withoutLetters } from './blocks/Letter';
 
 export function userError(e: string, lang: Lang = 'ru'): string {
   if (/^\d{3}:/.test(e) || /[a-z]{4,}/i.test(e.replace(BRAND_WORDS, ''))) return tr(lang, 'msg.noReply');
@@ -266,8 +266,11 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
       {sq && (readOnly ? <p className="t-cap" data-testid="squeued">{tx('squeue.admin')}</p> : <ServeQueueCard ahead={sq.ahead} eta={sq.eta} reason={sq.reason} />)}
       {}
       {waiting && m.phase !== 'queued' && !sq && <p className="t-cap ans-wait"><span className="ans-wait-ic" aria-hidden="true"><HeadMark live /></span><span className="shimmer">{tx('msg.thinking')}</span></p>}
-      {shown && <SrcCtx.Provider value={srcCtx}><BlockEnvCtx.Provider value={blockEnv}><Markdown text={many ? withoutLetters(shown) : shown} live={!!m.streaming} /></BlockEnvCtx.Provider></SrcCtx.Provider>}
-      {many && <LettersList list={letters} />}
+      {}
+      <LetterRemindProvider messageId={!readOnly && !m.streaming && !m.id.startsWith('tmp') ? m.id : null} on={letters.length > 0}>
+        {shown && <SrcCtx.Provider value={srcCtx}><BlockEnvCtx.Provider value={blockEnv}><Markdown text={many ? withoutLetters(shown) : shown} live={!!m.streaming} /></BlockEnvCtx.Provider></SrcCtx.Provider>}
+        {many && <LettersList list={letters} />}
+      </LetterRemindProvider>
       <SrcList sources={sources} live={!!m.streaming} />
       <SharedShots m={m} />
       <Results m={m} />

@@ -28,6 +28,7 @@ export async function register() {
     try { (await import('./lib/memoryRules')).registerRules(); } catch (e) { console.error('[rules]', (e as Error).message); }
     try { (await import('./lib/ops')).registerOps(); } catch (e) { console.error('[ops]', (e as Error).message); }
     try { (await import('./lib/code/janitor')).startJanitor(); } catch (e) { console.error('[code] janitor', (e as Error).message); }
+    try { (await import('./lib/letterRemind')).startReminders(); } catch (e) { console.error('[remind]', (e as Error).message); }
     try { (await import('./lib/seat')).startSeatSweeper(); } catch (e) { console.error('[seat]', (e as Error).message); }
     const ro = (await import('./lib/readonly')).readOnly();
     if (ro) console.log('[readonly] режим только просмотр: расписание автоматизаций не запускается');

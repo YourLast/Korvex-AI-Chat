@@ -207,3 +207,5 @@ html.kxb-full-open { overflow: hidden; }
 .kxl-row .i { flex: none; color: var(--text-3); align-self: center; }
 .kxl-bare { margin: 0 0 var(--s-4); }
 @media (max-width: 760px) { .kxb--letter .kxb-head { flex-wrap: wrap; } .kxb--letter .kxb-acts { width: 100%; } }
+.kxl-remind { display: flex; align-items: center; gap: 6px; margin: var(--s-2) 0 0; font-size: var(--fs-cap); line-height: var(--lh-cap); color: var(--text-3); }
+.kxl-remind .i { color: var(--text-3); }

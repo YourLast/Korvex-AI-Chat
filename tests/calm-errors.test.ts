@@ -4,6 +4,8 @@ import { createElement } from 'react';
 import { StepRow, WorkFeed } from '@/components/WorkFeed';
 import { allSteps, buildFeed, countSteps, markRecovered, statusSpoken, statusText, summaryLine, turnSettled, type StepEvent } from '@/lib/work';
 import { tr } from '@/lib/i18n/core';
+import { THINK_DEFAULT } from '@/lib/thinkPref';
+THINK_DEFAULT.on = true;
 
 let T = 1000;
 const ev = (p: Partial<StepEvent> & { id: string }): StepEvent => ({ kind: 'browser', title: 'Открывает ozon.ru', status: 'ok', at: { r: 0, c: 0 }, round: 0, t0: T++, ...p });

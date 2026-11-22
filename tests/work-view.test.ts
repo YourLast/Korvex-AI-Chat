@@ -7,6 +7,8 @@ import { AssistantMsg } from '@/components/Message';
 import { SETTLE_MS, atBottom, easeOut, holdOf, initView, reduceView, userInput, viewOf, type ViewEvent, type ViewState } from '@/lib/workView';
 import type { MsgView } from '@/lib/types';
 import type { PublicModel } from '@/lib/models';
+import { THINK_DEFAULT } from '@/lib/thinkPref';
+THINK_DEFAULT.on = true;
 
 const run = (s: ViewState, ...evs: ViewEvent[]) => evs.reduce(reduceView, s);
 const tapOn = (s: ViewState): ViewState => reduceView(s, { t: 'tap', view: viewOf(s) });
