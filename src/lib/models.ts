@@ -6,7 +6,7 @@ import { hasKey, tr, type Lang } from './i18n/core';
 import { adminModelCfgs, providersRev } from './providers';
 import { allowedBy, allowedForRole, ruleOf, whoOf } from './access';
 
-export type Level = { id: string; label: string; effort: string | null; hint?: string; userHint?: string };
+export type Level = { id: string; label: string; effort: string | null; hint?: string; userHint?: string; mult?: number };
 export type ModelCfg = {
   id: string;
   name: string;
@@ -20,6 +20,8 @@ export type ModelCfg = {
   maxConcurrent: number;
   defaultLevel: string;
   levelReset?: { n: number; from: string };
+  mult?: number;
+  multCalc?: { at: string; recheck: string };
   levels: Level[];
   systemPromptFile?: string;
   extract?: boolean;
@@ -43,7 +45,7 @@ export type ModelCfg = {
   roles?: string[];
 };
 export type QueueCfg = { maxConcurrent: number };
-export type PublicModel = Pick<ModelCfg, 'id' | 'name' | 'fullName' | 'blurb' | 'tagline' | 'images' | 'defaultLevel' | 'levelReset' | 'variantOf' | 'variantName' | 'variantHint'> & { levels: Pick<Level, 'id' | 'label' | 'hint'>[] };
+export type PublicModel = Pick<ModelCfg, 'id' | 'name' | 'fullName' | 'blurb' | 'tagline' | 'images' | 'defaultLevel' | 'levelReset' | 'variantOf' | 'variantName' | 'variantHint'> & { levels: Pick<Level, 'id' | 'label' | 'hint' | 'mult'>[] };
 
 let cache: ModelCfg[] | null = null;
 let queuesCache: Record<string, QueueCfg> = {};
@@ -160,7 +162,7 @@ export function publicModels(role: string = 'user', lang?: Lang, access?: string
     ...(m.variantOf ? { variantOf: m.variantOf } : {}),
     ...(m.variantName ? { variantName: loc(lang, `model.variant.${m.id}`, m.variantName) } : {}),
     ...(m.variantHint ? { variantHint: loc(lang, `model.variantHint.${m.id}`, m.variantHint) } : {}),
-    levels: m.levels.map((l) => ({ id: l.id, label: l.label, hint: levelHint(role, lang, l) })),
+    levels: m.levels.map((l) => { const x = l.mult ?? m.mult; return { id: l.id, label: l.label, hint: levelHint(role, lang, l), ...(x ? { mult: x } : {}) }; }),
   }));
 }
 

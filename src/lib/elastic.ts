@@ -1,7 +1,8 @@
 import { MARK, type Tip } from './glint';
 import { haptic as vibrate } from './haptic';
 
-export type ELevel = { id: string; label: string; hint?: string };
+export type ELevel = { id: string; label: string; hint?: string; mult?: number };
+export type EMult = { view: 'head' | 'cells'; fmt: (x: number) => string; note: string };
 export type EOpts = {
   levels: ELevel[];
   value: string;
@@ -9,6 +10,7 @@ export type EOpts = {
   label: string;
   onChange: (id: string) => void;
   testId?: string;
+  mult?: EMult;
 };
 export type ElasticHandle = { update(o: Partial<EOpts>): void; destroy(): void };
 
@@ -114,7 +116,8 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
   const powP = svg('path', { class: 'kxe-pow-p', d: '', 'fill-rule': 'evenodd' });
   const powS = svg('rect', { x: '280', y: '140', width: '452', height: '735', fill: `url(#${uid}-ps)`, 'clip-path': `url(#${uid}-pc)`, opacity: '0' });
   pow.append(powDefs, powP, powS);
-  head.append(cap, val, pow);
+  const mul = document.createElement('span'); mul.className = 'kxe-mult';
+  head.append(cap, val, mul, pow);
   const zone = div('kxe-zone');
   zone.setAttribute('role', 'slider'); zone.tabIndex = 0;
   zone.setAttribute('aria-orientation', 'horizontal'); zone.setAttribute('aria-valuemin', '0');
@@ -125,7 +128,9 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
   track.append(rowBase, pillBg, rowOn);
   track.setAttribute('aria-hidden', 'true');
   zone.append(track);
-  root.append(head, zone);
+  const mrow = div('kxe-mrow'); mrow.setAttribute('aria-hidden', 'true');
+  const note = document.createElement('p'); note.className = 'kxe-note';
+  root.append(head, zone, mrow, note);
   host.append(root);
 
   let levels = o.levels, n = levels.length;
@@ -146,7 +151,25 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
   const maxness = (p: number) => (lastIsMax() && n > 1 ? smooth(clamp01(p) * (n - 1) - (n - 2)) : 0);
   const powerOf = (x: number) => (n < 2 ? 1 : offFirst() ? clamp01(x) : clamp01((clamp01(x) * (n - 1) + 1) / n));
 
+  const mults = () => levels.map((l) => l.mult ?? 0);
+  const uniform = () => { const ms = mults().filter((x) => x > 0); return ms.length > 0 && ms.every((x) => x === ms[0]) && ms.length === n; };
+  const anyMult = () => !!o.mult && mults().some((x) => x > 0);
+  const inCells = () => anyMult() && o.mult!.view === 'cells' && !uniform();
+  const buildMults = () => {
+    mrow.textContent = '';
+    mrow.hidden = !inCells();
+    note.hidden = !anyMult();
+    note.textContent = anyMult() ? o.mult!.note : '';
+    if (!inCells()) return;
+    for (const l of levels) {
+      const c = document.createElement('span');
+      c.className = `kxe-m${l.id === 'max' ? ' is-max' : ''}`;
+      c.textContent = l.mult ? o.mult!.fmt(l.mult) : '';
+      mrow.append(c);
+    }
+  };
   const buildLabels = () => {
+    buildMults();
     rowBase.textContent = ''; rowOn.textContent = '';
     const pre = o.testId?.startsWith('levels-') ? `lvl-${o.testId.slice(7)}-` : null;
     levels.forEach((l) => {
@@ -172,12 +195,18 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
   const paintLabels = () => {
     const cs = rowBase.children;
     for (let i = 0; i < cs.length; i++) cs[i].className = `kxe-cell${i === near ? ' is-on' : ''}`;
+    const ms = mrow.children;
+    for (let i = 0; i < ms.length; i++) ms[i].classList.toggle('is-on', i === near);
   };
   const paintText = (animateIt: boolean) => {
     const l = levels[near];
     cap.textContent = o.caption;
     valL.textContent = l?.label ?? '';
     valH.textContent = l?.hint ?? '';
+    const m = l?.mult && anyMult() && !inCells() ? l.mult : 0;
+    mul.textContent = m ? o.mult!.fmt(m) : '';
+    mul.hidden = !m;
+    mul.classList.toggle('is-max', !!m && l?.id === 'max' && !uniform());
     zone.setAttribute('aria-label', o.label);
     zone.setAttribute('aria-valuemax', String(Math.max(0, n - 1)));
     zone.setAttribute('aria-valuenow', String(near));
@@ -303,10 +332,11 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
 
   return {
     update(u) {
-      const prevIds = levels.map((l) => l.id).join(','), prevVal = levels[near]?.id;
+      const key = () => levels.map((l) => `${l.id}:${l.mult ?? ''}`).join(',') + `|${o.mult?.view ?? ''}|${o.mult?.note ?? ''}`;
+      const prevIds = key(), prevVal = levels[near]?.id;
       o = { ...o, ...u };
       levels = o.levels; n = levels.length;
-      const ids = levels.map((l) => l.id).join(',');
+      const ids = key();
       if (ids !== prevIds) buildLabels();
       if (!drag) {
         near = idxOf(o.value);

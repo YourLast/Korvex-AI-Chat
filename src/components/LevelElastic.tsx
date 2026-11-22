@@ -3,16 +3,21 @@ import { useEffect, useRef } from 'react';
 import type { PublicModel } from '@/lib/models';
 import type { Sel } from '@/lib/levels';
 import { mountElastic, type ElasticHandle } from '@/lib/elastic';
-import { useT } from '@/lib/i18n/react';
+import { useLang, useT } from '@/lib/i18n/react';
+import { MULT_VIEW } from '@/lib/pickerVariant';
 import '@/styles/elastic.css';
+
+export const multFmt = (x: number, lang: string) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang === 'sr' ? 'sr-Latn' : 'ru-RU', { maximumFractionDigits: 2 }).format(x);
 
 export function LevelElastic({ model, value, onChange }: { model: PublicModel; value: string; onChange: (levelId: string) => void }) {
   const tx = useT();
+  const lang = useLang();
   const host = useRef<HTMLDivElement>(null);
   const h = useRef<ElasticHandle | null>(null);
   const live = useRef(onChange);
   live.current = onChange;
-  const opts = { levels: model.levels, value, caption: tx('picker.thinkLevel'), label: tx('picker.thinkLevelOf', { model: model.name }), testId: `levels-${model.id}` };
+  const opts = { levels: model.levels, value, caption: tx('picker.thinkLevel'), label: tx('picker.thinkLevelOf', { model: model.name }), testId: `levels-${model.id}`,
+    ...(MULT_VIEW ? { mult: { view: MULT_VIEW, fmt: (x: number) => tx('picker.mult', { n: multFmt(x, lang) }), note: tx('picker.multNote') } } : {}) };
   useEffect(() => {
     if (!host.current) return;
     const handle = mountElastic(host.current, { ...opts, onChange: (id) => live.current(id) });

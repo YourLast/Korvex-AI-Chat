@@ -12,6 +12,8 @@ export default {
   'picker.levelTitle': ['Уровень · {model}', 'Level · {model}', 'Nivo · {model}'],
   'picker.thinkLevel': ['Уровень размышления', 'Reasoning level', 'Nivo razmišljanja'],
   'picker.thinkLevelOf': ['Уровень размышления {model}', 'Reasoning level of {model}', 'Nivo razmišljanja modela {model}'],
+  'picker.mult': ['×{n}', '×{n}', '×{n}'],
+  'picker.multNote': ['×1 — обычный ход, ×3 — втрое больше недельного лимита.', '×1 is a usual turn, ×3 uses three times the weekly limit.', '×1 je običan potez, ×3 troši triput više nedeljnog limita.'],
   'picker.chip': ['Модель и уровень: {model} {level}{state}', 'Model and level: {model} {level}{state}', 'Model i nivo: {model} {level}{state}'],
   'picker.chipPair': ['Модели и уровни: {a} и {b}', 'Models and levels: {a} and {b}', 'Modeli i nivoi: {a} i {b}'],
   'picker.cmpBoth': ['Сравнить обе', 'Compare both', 'Uporedi oba'],

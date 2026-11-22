@@ -18,3 +18,12 @@
 @media (hover: hover) { .kxe-zone:hover .kxe-row:not(.kxe-row--on) .kxe-cell { color: var(--text-2); } }
 
 .model-chip.model-chip--calm em.lv-max, .lvl-btn.lvl-btn--calm em.lv-max { color: inherit; background: none; -webkit-text-fill-color: currentColor; }
+
+.kxe-mult { flex: none; font-size: 12.5px; line-height: 20px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kxe-mult[hidden], .kxe-mrow[hidden], .kxe-note[hidden] { display: none; }
+.kxe-mult.is-max, .kxe-m.is-max { color: color-mix(in srgb, var(--warn) 62%, var(--text-3)); }
+.kxe-mrow { display: grid; grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); padding: 0 3px; margin-top: -2px; }
+.kxe-m { text-align: center; font-size: 11.5px; line-height: 14px; color: var(--text-3); font-variant-numeric: tabular-nums; white-space: nowrap; opacity: .8; }
+.kxe-m.is-on { opacity: 1; color: var(--text-2); }
+.kxe-m.is-max.is-on { color: color-mix(in srgb, var(--warn) 75%, var(--text-2)); }
+.kxe-note { margin: 0; padding: 0 0 0 4px; font-size: 12px; line-height: 16px; color: var(--text-3); }

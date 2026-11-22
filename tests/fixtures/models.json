@@ -21,6 +21,10 @@
         "n": 1,
         "from": "medium"
       },
+      "multCalc": {
+        "at": "2026-11-22",
+        "recheck": "2026-12-06"
+      },
       "levels": [
         {
           "id": "off",
@@ -32,24 +36,28 @@
           "id": "low",
           "label": "low",
           "effort": "low",
+          "mult": 0.25,
           "hint": "Быстро"
         },
         {
           "id": "medium",
           "label": "medium",
           "effort": "medium",
+          "mult": 0.25,
           "hint": "Обычно"
         },
         {
           "id": "xhigh",
           "label": "xhigh",
           "effort": "xhigh",
+          "mult": 1,
           "hint": "Глубоко"
         },
         {
           "id": "max",
           "label": "max",
           "effort": "max",
+          "mult": 3,
           "hint": "Максимально глубоко",
           "userHint": "Максимально тщательно"
         }
@@ -79,6 +87,11 @@
       ],
       "maxConcurrent": 8,
       "defaultLevel": "medium",
+      "mult": 17,
+      "multCalc": {
+        "at": "2026-11-22",
+        "recheck": "2026-12-06"
+      },
       "levels": [
         {
           "id": "off",
@@ -142,6 +155,11 @@
       ],
       "maxConcurrent": 4,
       "defaultLevel": "medium",
+      "mult": 70,
+      "multCalc": {
+        "at": "2026-11-22",
+        "recheck": "2026-12-06"
+      },
       "levels": [
         {
           "id": "low",
