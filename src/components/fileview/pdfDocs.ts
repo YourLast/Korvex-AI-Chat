@@ -18,7 +18,7 @@ export const pdfErrorCode = (e: unknown): string => (e instanceof PrepError ? e.
 
 async function fetchBytes(id: string, e: Entry, onPrep: () => void): Promise<ArrayBuffer> {
   for (let i = 0; i < 60 && !e.abort.signal.aborted; i++) {
-    const r = await fetch(`/api/files/${id}/pdf?wait=12000`, { credentials: 'same-origin', signal: e.abort.signal });
+    const r = await fetch(id.startsWith('/') ? id : `/api/files/${id}/pdf?wait=12000`, { credentials: 'same-origin', signal: e.abort.signal });
     if (r.status === 202) { onPrep(); continue; }
     if (!r.ok) { const j = await r.json().catch(() => ({} as { code?: string })); throw new PrepError(String((j as { code?: string }).code ?? r.status)); }
     return r.arrayBuffer();
@@ -33,7 +33,7 @@ function start(id: string, onPrep: () => void, ranged: boolean): Entry {
     const lib = await loadPdfjs();
     let doc: PDFDocumentProxy | null = null;
     if (ranged) {
-      try { const t = lib.getDocument(docUrlParams(`/api/files/${id}/pdf`)); e.task = t; doc = await t.promise; }
+      try { const t = lib.getDocument(docUrlParams(id.startsWith('/') ? id : `/api/files/${id}/pdf`)); e.task = t; doc = await t.promise; }
       catch { void e.task?.destroy().catch(() => {}); e.task = undefined; if (e.abort.signal.aborted) throw new PrepError('aborted'); }
     }
     if (!doc) {

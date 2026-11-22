@@ -5,6 +5,7 @@ import { markerName } from './upload/paths';
 export type Place = Pick<Source, 'kind' | 'sheet' | 'page' | 'page_to' | 'row' | 'row_to' | 'col' | 'slide' | 'line' | 'line_to' | 'quote' | 'attachment' | 'snippet'>;
 export type FileTarget = {
   id: string; name: string;
+  href?: string;
   at?: Place;
   marks?: Place[];
 };

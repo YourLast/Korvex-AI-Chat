@@ -4,6 +4,7 @@ import { useT } from '@/lib/i18n/react';
 import { previewKind } from '@/lib/previewKind';
 import { Icon } from './Icon';
 import { openDoc } from './iv';
+import { openFile } from '@/lib/fileView';
 import { SaveLink } from './SaveLink';
 
 const warmed = new Set<string>();
@@ -18,6 +19,7 @@ export function FileCard({ href, name, table, meta, children }: { href: string; 
   const [note, setNote] = useState<string | null>(null);
   const say = (s: string) => { setNote(s); setTimeout(() => setNote(null), 2600); };
   const kind = table ? null : previewKind(name);
+  const pdf = /\.pdf$/i.test(name);
   if (!kind) {
     return (
       <SaveLink className="dl" href={href} name={name} onNote={say} testid="file-card">
@@ -29,8 +31,8 @@ export function FileCard({ href, name, table, meta, children }: { href: string; 
   }
   return (
     <span className="dl dl-pv" data-testid="file-card" data-kind={kind}>
-      <button type="button" className="dl-open" onClick={(e) => openDoc({ href, name, kind }, e.currentTarget)} aria-label={t('doc.open', { name })} data-testid="file-open"
-        onPointerEnter={() => prewarm(href)} onPointerDown={() => prewarm(href)}>
+      <button type="button" className="dl-open" onClick={(e) => (pdf ? openFile({ id: href, name, href }) : openDoc({ href, name, kind }, e.currentTarget))} aria-label={t('doc.open', { name })} data-testid="file-open"
+        onPointerEnter={() => { if (!pdf) prewarm(href); }} onPointerDown={() => { if (!pdf) prewarm(href); }}>
         <span className="ficon"><Icon n={kind === 'slides' ? 'slides' : 'file-text'} /></span>
         <span className="fmeta"><b>{children}</b><small>{note ?? meta}</small></span>
       </button>

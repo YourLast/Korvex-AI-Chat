@@ -33,3 +33,24 @@ describe('вложения внутри поля (в)', () => {
     expect(r.container.querySelector<HTMLElement>('[data-testid=up-chip]')!.title).toMatch(/ток/);
   });
 });
+
+describe('PDF смотрим в чате', () => {
+  it('PDF в поле ввода открывается в панели «Файл» (pdf.js), а не картинками страниц', async () => {
+    const { getFileView, closeFile } = await import('@/lib/fileView');
+    const pdf: Up = { tmp: 'p', name: 'Договор_поставки_14.pdf', size: 25000, status: 'ready', chip: { id: 'pf1', name: 'Договор_поставки_14.pdf', size: 25000 } as never };
+    const r = render(wrap('user', createElement(UpRow, { items: [pdf], onRemove: () => {}, view: 'c' })));
+    expect(r.container.querySelector('.ft-tail')!.textContent).toBe('_14.pdf');
+    fireEvent.click(r.container.querySelector('[data-testid=up-doc-open]')!);
+    expect(getFileView().target).toMatchObject({ id: 'pf1', name: 'Договор_поставки_14.pdf' });
+    closeFile();
+  });
+  it('PDF от модели — в той же панели по прямому адресу; презентация — как раньше, слайдами', async () => {
+    const { getFileView, closeFile } = await import('@/lib/fileView');
+    const { FileCard } = await import('@/components/FileCard');
+    const href = '/out/0123456789abcdef0123456789abcdef/brief.pdf';
+    const r = render(wrap('user', createElement(FileCard, { href, name: 'brief.pdf', table: false, meta: 'PDF', children: 'brief.pdf' })));
+    fireEvent.click(r.getByTestId('file-open'));
+    expect(getFileView().target).toMatchObject({ id: href, href, name: 'brief.pdf' });
+    closeFile();
+  });
+});

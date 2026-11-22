@@ -841,3 +841,4 @@ div.ft-open { cursor: default; }
 .ft.is-uploading .ft-text, .ft.is-uploading img { opacity: .72; }
 @media (max-width: 760px) { .ft--doc { width: 200px; } .up-row--c { padding: 6px 4px 2px; } }
 @media (prefers-reduced-motion: reduce) { .ft { animation: none; } .ft-bar i { animation: none; width: 100%; opacity: .5; } }
+.ft-tail { white-space: nowrap; }

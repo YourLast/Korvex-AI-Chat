@@ -55,7 +55,7 @@ function ImgTile({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
 function DocChip({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
   const tx = useT();
   const simple = useSimple();
-  const kind = u.status === 'ready' && u.chip ? previewKind(u.name) : null;
+  const kind = u.status === 'ready' && u.chip ? (/\.pdf$/i.test(u.name) ? null : previewKind(u.name)) : null;
   const tok = useFileTok({ name: u.name, tokens: u.chip?.tokens, mime: u.chip?.mime, info: u.chip?.info });
   const parts = u.status === 'ready' ? [fmtBytes(u.size, tx.lang), tok && !simple ? tokText(tx.lang, tok) : ''].filter(Boolean) : [fmtBytes(u.size, tx.lang)];
   const prog = u.status === 'uploading' ? progText(tx, u.prog) : null;
@@ -102,7 +102,7 @@ function FileTile({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
   const pro = useCanAgents();
   const tok = useFileTok({ name: u.name, tokens: u.chip?.tokens, mime: u.chip?.mime, info: u.chip?.info });
   const src = u.img ? viewSrc(u) : undefined;
-  const kind = !u.img && u.status === 'ready' && u.chip ? previewKind(u.name) : null;
+  const kind = !u.img && u.status === 'ready' && u.chip ? (/\.pdf$/i.test(u.name) ? null : previewKind(u.name)) : null;
   const size = fmtBytes(u.size, tx.lang);
   const prog = u.status === 'uploading' ? progText(tx, u.prog) : null;
   const tip = [u.name, size, pro && tok && u.status === 'ready' ? tokText(tx.lang, tok) : ''].filter(Boolean).join(' · ');
@@ -125,7 +125,7 @@ function FileTile({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
   const body = (
     <>
       <span className="ft-type" data-tone={fileTone(u.name)}>{u.status === 'error' ? <Icon n="alert" sm /> : extOf(u.name)}</span>
-      <span className="ft-text"><b>{u.name}</b><small data-testid={prog ? 'up-prog' : undefined}>{meta}</small></span>
+      <span className="ft-text"><b>{nameParts(u.name).head}<span className="ft-tail">{nameParts(u.name).tail}</span></b><small data-testid={prog ? 'up-prog' : undefined}>{meta}</small></span>
     </>
   );
   const open = kind ? <button type="button" className="ft-open" aria-label={tx('doc.open', { name: u.name })} data-testid="up-doc-open" onClick={(e) => openDoc({ href: `/api/files/${u.chip!.id}`, name: u.name, kind }, e.currentTarget)}>{body}</button>
@@ -143,7 +143,7 @@ function FileLine({ u, onRemove, view }: { u: Up; onRemove: (u: Up) => void; vie
   const pro = useCanAgents();
   const tok = useFileTok({ name: u.name, tokens: u.chip?.tokens, mime: u.chip?.mime, info: u.chip?.info });
   const src = u.img ? viewSrc(u) : undefined;
-  const kind = !u.img && u.status === 'ready' && u.chip ? previewKind(u.name) : null;
+  const kind = !u.img && u.status === 'ready' && u.chip ? (/\.pdf$/i.test(u.name) ? null : previewKind(u.name)) : null;
   const size = fmtBytes(u.size, tx.lang);
   const prog = u.status === 'uploading' ? progText(tx, u.prog) : null;
   const meta = u.status === 'error' ? u.error ?? '' : prog ?? (u.status === 'uploading' ? tx('comp.reading') : size);

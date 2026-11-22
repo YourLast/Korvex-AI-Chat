@@ -129,16 +129,16 @@ describe('вложения у поля ввода: ряд миниатюр и ч
     expect(names()).toEqual(['a.jpg']);
   });
 
-  it('документ: презентация/документ/PDF после загрузки открываются просмотром страниц (openDoc), таблицы и текст — боковой панелью «Файл»', async () => {
+  it('документ: презентация/документ после загрузки открываются просмотром страниц (openDoc), таблицы, текст и PDF — боковой панелью «Файл»', async () => {
     mount();
-    await attach(pdf('отчёт.pdf'), pdf('таблица.xlsx'));
+    await attach(pdf('отчёт.docx'), pdf('таблица.xlsx'));
     await waitFor(() => expect(chipsOf().every((c) => c.dataset.status === 'ready')).toBe(true));
     const [a, b] = chipsOf();
     const open = a.querySelector<HTMLButtonElement>('[data-testid=up-doc-open]')!;
-    expect(open.getAttribute('aria-label')).toBe('Открыть «отчёт.pdf»');
+    expect(open.getAttribute('aria-label')).toBe('Открыть «отчёт.docx»');
     fireEvent.click(open);
     expect(viewer.openDoc).toHaveBeenCalledTimes(1);
-    expect(viewer.openDoc.mock.calls[0][0]).toEqual({ href: '/api/files/f-1', name: 'отчёт.pdf', kind: 'pages' });
+    expect(viewer.openDoc.mock.calls[0][0]).toEqual({ href: '/api/files/f-1', name: 'отчёт.docx', kind: 'pages' });
     expect(viewer.openDoc.mock.calls[0][1]).toBe(open);
     const grid = b.querySelector<HTMLButtonElement>('[data-testid=up-doc-open]')!;
     expect(grid.getAttribute('aria-label')).toBe('Открыть «таблица.xlsx»');

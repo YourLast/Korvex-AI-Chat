@@ -73,6 +73,10 @@ function Empty({ id, name, why }: { id: string; name: string; why: 'none' | 'err
 }
 
 function Body({ t, seq, onPlace }: { t: FileTarget; seq: number; onPlace: (s: string) => void }) {
+  if (t.href && viewKind(t.name) === 'pdf') return <Suspense fallback={<div className="fv-empty"><span className="up-spin fv-spin" /></div>}><PdfView id={t.href} name={t.name} at={t.at} marks={t.marks ?? []} seq={seq} onPlace={onPlace} /></Suspense>;
+  return <BodyInfo t={t} seq={seq} onPlace={onPlace} />;
+}
+function BodyInfo({ t, seq, onPlace }: { t: FileTarget; seq: number; onPlace: (s: string) => void }) {
   const tx = useT();
   const { info, err } = useInfo(t.id, t.name);
   const marks = useMemo<Place[]>(() => t.marks ?? [], [t.marks]);
@@ -232,7 +236,7 @@ export default function FileViewer() {
           </span>
         )}
         <button type="button" className="icon-btn fv-fullbtn" aria-pressed={panel.full} aria-label={tx(panel.full ? 'files.fullOff' : 'files.full')} title={tx(panel.full ? 'files.fullOff' : 'files.full')} data-testid="fv-full" onClick={() => panel.setFull((x) => !x)}><Icon n="expand" /></button>
-        <SaveLink className="icon-btn" href={`/api/files/${target.id}`} name={target.name} testid="fv-download" label={tx('files.download')}><Icon n="download" /></SaveLink>
+        <SaveLink className="icon-btn" href={target.href ?? `/api/files/${target.id}`} name={target.name} testid="fv-download" label={tx('files.download')}><Icon n="download" /></SaveLink>
         <button type="button" className="icon-btn" aria-label={tx('files.close')} data-fv-close data-testid="fv-close" onClick={closeFile}><Icon n="x" /></button>
       </header>
       {}
