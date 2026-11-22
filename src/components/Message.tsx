@@ -38,7 +38,8 @@ import { tokText, useFileTok } from '@/lib/fileTokens';
 import { baseName, dirName, groupByFolder } from '@/lib/upload/paths';
 import { BRAND_WORDS, OUT_PREFIX } from '@/ext/client';
 import { copyText } from '@/lib/clipboard';
-import { GuessLine, InviteLine, LetterCopy, letterOf } from './AnswerLines';
+import { GuessLine, InviteLine } from './AnswerLines';
+import { LettersList, lettersIn, withoutLetters } from './blocks/Letter';
 
 export function userError(e: string, lang: Lang = 'ru'): string {
   if (/^\d{3}:/.test(e) || /[a-z]{4,}/i.test(e.replace(BRAND_WORDS, ''))) return tr(lang, 'msg.noReply');
@@ -237,6 +238,8 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
   const waiting = m.streaming && !m.content && !m.reasoning;
   const sq = m.streaming && m.phase !== 'queued' ? m.squeue : null;
   const shown = useThrottled(m.content, 140, !!m.streaming);
+  const letters = useMemo(() => (m.streaming ? [] : lettersIn(m.content)), [m.content, m.streaming]);
+  const many = letters.length > 1;
   const simple = useSimple();
   const speed = simple ? null : speedText(m, tx.lang);
   const sources = useMemo(() => sourcesOf(meta.usage), [meta.usage]);
@@ -263,7 +266,8 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
       {sq && (readOnly ? <p className="t-cap" data-testid="squeued">{tx('squeue.admin')}</p> : <ServeQueueCard ahead={sq.ahead} eta={sq.eta} reason={sq.reason} />)}
       {}
       {waiting && m.phase !== 'queued' && !sq && <p className="t-cap ans-wait"><span className="ans-wait-ic" aria-hidden="true"><HeadMark live /></span><span className="shimmer">{tx('msg.thinking')}</span></p>}
-      {shown && <SrcCtx.Provider value={srcCtx}><BlockEnvCtx.Provider value={blockEnv}><Markdown text={shown} live={!!m.streaming} /></BlockEnvCtx.Provider></SrcCtx.Provider>}
+      {shown && <SrcCtx.Provider value={srcCtx}><BlockEnvCtx.Provider value={blockEnv}><Markdown text={many ? withoutLetters(shown) : shown} live={!!m.streaming} /></BlockEnvCtx.Provider></SrcCtx.Provider>}
+      {many && <LettersList list={letters} />}
       <SrcList sources={sources} live={!!m.streaming} />
       <SharedShots m={m} />
       <Results m={m} />
@@ -284,7 +288,6 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
         </div>
       )}
       {!m.streaming && meta.memUpd?.length ? <MemUpdated items={meta.memUpd as MemUpdItem[]} messageId={m.id} /> : null}
-      {!m.streaming && !bare && (() => { const l = letterOf(m.content); return l ? <LetterCopy text={l} /> : null; })()}
       {!m.streaming && !readOnly && !bare && meta.guesses?.length ? <GuessLine key={meta.guesses.map((g) => g.id).join()} items={meta.guesses} /> : null}
       {!m.streaming && !readOnly && !bare && meta.introInvite ? <InviteLine messageId={m.id} /> : null}
       {!m.streaming && meta.dayFix ? <div className="ans-line ans-line--fix" role="note" data-testid="day-fix">{meta.dayFix}</div> : null}

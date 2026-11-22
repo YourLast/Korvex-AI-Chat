@@ -189,3 +189,21 @@ html.kxb-full-open { overflow: hidden; }
   .kxb-full-scrim { padding: 0; }
   .kxb--full { border-radius: 0; padding: calc(var(--safe-t) + var(--s-4)) var(--s-4) calc(var(--safe-b) + var(--s-4)); }
 }
+
+.kxl-mode { margin-top: var(--s-3); color: var(--text-3); }
+.kxl-tab { padding: 0; border: 0; background: none; font: inherit; color: var(--text-3); cursor: pointer; }
+.kxl-tab.is-on { color: var(--text-strong); }
+@media (hover: hover) { .kxl-tab:hover { color: var(--text-1); } }
+.kxl-text { margin-top: var(--s-3); color: var(--text-1); font-size: var(--fs-body); line-height: var(--lh-body); letter-spacing: var(--ls-body); }
+.kxl-text p { margin: 0 0 var(--s-3); }
+.kxl-edit { display: block; width: 100%; box-sizing: border-box; margin-top: var(--s-3); padding: var(--s-2) 0; border: 0; border-bottom: 1px solid var(--line-2); background: none;
+  resize: vertical; font: inherit; font-size: var(--fs-body); line-height: var(--lh-body); color: var(--text-1); }
+.kxl-edit:focus { outline: none; border-bottom-color: var(--text-2); }
+.kxl-list { margin: 0; padding: 0; list-style: none; }
+.kxl-list > li { border-bottom: 1px solid var(--line-1); }
+.kxl-row { display: flex; align-items: baseline; gap: var(--s-3); width: 100%; padding: var(--s-3) 0; border: 0; background: none; text-align: left; font: inherit; color: var(--text-1); cursor: pointer; }
+.kxl-to { flex: none; font-weight: var(--fw-medium); }
+.kxl-subj { flex: 1; min-width: 0; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kxl-row .i { flex: none; color: var(--text-3); align-self: center; }
+.kxl-bare { margin: 0 0 var(--s-4); }
+@media (max-width: 760px) { .kxb--letter .kxb-head { flex-wrap: wrap; } .kxb--letter .kxb-acts { width: 100%; } }

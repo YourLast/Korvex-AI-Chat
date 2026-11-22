@@ -19,7 +19,7 @@ import { OUT_PREFIX } from '@/ext/client';
 import { copyText } from '@/lib/clipboard';
 import { KxFence, KxFile } from './blocks/KxEmbed';
 import { isKxbHref } from '@/lib/blocks/text';
-import '@/styles/user-memory.css';
+import { LetterView, parseLetter } from './blocks/Letter';
 
 const DL_RE = /📎\s*\[([^\]]+)\]\(([^)\s]+)\)(?:\s*\(([^)]+)\))?/g;
 const IMG_MD_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
@@ -128,27 +128,13 @@ function CopyBtn({ text }: { text: string }) {
   );
 }
 
-function Letter({ text }: { text: string }) {
-  const tx = useT();
-  const [ok, setOk] = useState(false);
-  const body = text.replace(/\n+$/, '');
-  return (
-    <div className="letter" data-testid="letter">
-      <div className="letter-body">{body.split(/\n{2,}/).map((p, i) => <p key={i}>{p.split('\n').map((l, k) => <span key={k}>{k > 0 && <br />}{l}</span>)}</p>)}</div>
-      <button type="button" className="ans-link" onClick={() => { void copyText(body).then((r) => { if (r) { setOk(true); setTimeout(() => setOk(false), 1600); } }); }} data-testid="letter-copy">
-        {tx(ok ? 'md.letterCopied' : 'md.letterCopy')}
-      </button>
-    </div>
-  );
-}
-
 let currentNum: boolean[] = [];
 const components: Components = {
   pre({ node, children }) {
     const code = (node as unknown as { children?: (H & { properties?: { className?: string[] } })[] })?.children?.[0];
     const lang = code?.properties?.className?.find((c) => c.startsWith('language-'))?.slice(9) ?? '';
     if (lang === 'korvex') return <KxFence raw={code ? textOf(code) : ''} />;
-    if (lang === 'letter') return <Letter text={code ? textOf(code) : ''} />;
+    if (lang === 'letter') { const l = parseLetter(code ? textOf(code) : ''); if (l) return <LetterView l={l} />; }
     return (
       <div className="code" data-testid="code-block">
         <div className="code-head"><span>{lang || <L k="md.code" />}</span><CopyBtn text={code ? textOf(code) : ''} /></div>

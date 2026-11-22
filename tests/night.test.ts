@@ -107,6 +107,7 @@ describe('ночной разбор', () => {
     N.nightSeen('n1');
     expect(N.nightNotice('n1')).toBeNull();
     expect((await N.nightPass()).done).toBe(0);
+    expect(M.memoryMeta('n2').night).toBeUndefined();
   });
   it('окно закрыто или люди на кластере — не начинает', async () => {
     const N = await import('@/lib/night');

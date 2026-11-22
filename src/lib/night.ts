@@ -188,7 +188,7 @@ export function ratingPatterns(userId: string, now = Date.now()): { section: 'st
   return out;
 }
 
-type Res = { notes: number; norms: number; searches: number; fixes: DayFix[] };
+type Res = { notes: number; norms: number; searches: number; fixes: DayFix[]; empty?: boolean };
 type SearchRes = { results?: { title?: string; url?: string; content?: string }[] };
 async function reviewOne(userId: string, now: number, budget: { searches: number }): Promise<Res | null> {
   const digest = dayDigest(userId, now);
@@ -207,7 +207,7 @@ async function reviewOne(userId: string, now: number, budget: { searches: number
     console.log(`[night] rating-pattern add=${w.ok ? w.action : `error:${w.error}`}`);
     if (w.ok && w.action !== 'same') notes++;
   }
-  if (!digest) return { notes, norms: 0, searches: 0, fixes };
+  if (!digest) return { notes, norms: 0, searches: 0, fixes, empty: true };
   const have = listMemory(userId).filter((r) => r.section === 'work' || r.section === 'style' || r.section === 'rules');
   const known = have.length ? `Уже записано (не повторяй и не пересказывай другими словами):\n${have.slice(0, 30).map((r) => `- ${r.text.slice(0, 100)}`).join('\n')}\n\n` : '';
   const day = parse<{ notes?: { section?: string; text?: string }[]; topics?: string[] }>(await chat(DAY_SYSTEM, known + digest, 400, 'night_day', DAY_SCHEMA));
@@ -282,6 +282,7 @@ export async function nightPass(now = Date.now()): Promise<{ done: number; stopp
       const t0 = Date.now();
       const r = await reviewOne(userId, Date.now(), budget);
       if (!r) continue;
+      if (r.empty && !r.notes && !r.fixes.length) continue;
       const prev = memoryMeta(userId).night;
       setMemoryMeta(userId, { night: { key, at: Date.now(), notes: r.notes, norms: r.norms, fixes: r.fixes.length ? r.fixes : undefined, seen: (r.notes + r.norms + r.fixes.length) ? undefined : prev?.seen } });
       console.log(`[night] user=${userId.slice(0, 8)} lang=${userLang(userId)} ms=${Date.now() - t0} notes=${r.notes} norms=${r.norms} searches=${r.searches} fixes=${r.fixes.length}`);
