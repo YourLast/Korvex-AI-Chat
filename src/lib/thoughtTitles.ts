@@ -4,22 +4,26 @@ import type { WItem, WKind, WStep } from './work';
 const LINE = /^[ \t]*(?:\[\[t:[ \t]*([^\]\n]{1,160}?)[ \t]*\]\]|#{2,3}[ \t]+([^\n]{2,79}?)[ \t#]*)[ \t]*$/gm;
 const clean = (s: string) => s.replace(/[*_`]+/g, '').replace(/\s+/g, ' ').trim().replace(/[.:;,]+$/, '');
 
-export function titlesIn(text: string): string[] {
-  const out: string[] = [];
+const cut = (t: string, n: number) => (t.length > n ? t.slice(0, n - 1).trimEnd() + '…' : t);
+export type Thought = { title: string; note?: string };
+export function thoughtsIn(text: string): Thought[] {
+  const out: Thought[] = [];
   for (const m of String(text ?? '').matchAll(LINE)) {
-    const t = clean(m[1] ?? m[2] ?? '');
-    if (t.length >= 2) out.push(t.length > 90 ? t.slice(0, 89).trimEnd() + '…' : t);
+    const [a, ...rest] = (m[1] ?? m[2] ?? '').split('|');
+    const title = clean(a), note = clean(rest.join('|'));
+    if (title.length >= 2) out.push({ title: cut(title, 90), ...(m[1] && note.length >= 2 ? { note: cut(note, 120) } : {}) });
   }
   return out;
 }
+export const titlesIn = (text: string): string[] => thoughtsIn(text).map((t) => t.title);
 
 export function titleMarkdown(text: string): string {
   return String(text ?? '')
-    .replace(/^[ \t]*\[\[t:[ \t]*([^\]\n]{1,160}?)[ \t]*\]\][ \t]*$/gm, (_a, x: string) => `\n**${clean(x)}**\n`)
+    .replace(/^[ \t]*\[\[t:[ \t]*([^\]\n]{1,160}?)[ \t]*\]\][ \t]*$/gm, (_a, x: string) => { const [a, ...r] = x.split('|'); const n = clean(r.join('|')); return `\n**${clean(a)}**${n ? ` — ${n}` : ''}\n`; })
     .replace(/^[ \t]*\[\[t:[^\]\n]*$/m, '');
 }
 
-export type BriefLine = { id: string; text: string; live: boolean; step?: WStep; model?: boolean };
+export type BriefLine = { id: string; text: string; live: boolean; step?: WStep; model?: boolean; note?: string };
 
 const KIND_KEY: Partial<Record<WKind, string>> = {
   python: 'think.k.calc', table: 'think.k.table', bash: 'think.k.files', web: 'think.k.web', memory: 'think.k.memory', usermem: 'think.k.memory',
@@ -37,8 +41,8 @@ export function briefOf(items: WItem[], live: boolean, lang: Lang = 'ru'): Brief
   items.forEach((it, i) => {
     const tail = i === items.length - 1;
     if (it.t === 'think') {
-      const ts = titlesIn(it.text);
-      ts.forEach((t, k) => push({ id: `${it.id}:${k}`, text: t, live: false, model: true }));
+      const ts = thoughtsIn(it.text);
+      ts.forEach((t, k) => push({ id: `${it.id}:${k}`, text: t.title, ...(t.note ? { note: t.note } : {}), live: false, model: true }));
       if (!ts.length && tail && it.live && !out.length) push({ id: `${it.id}:p`, text: tr(lang, 'think.pondering'), live: true });
       return;
     }

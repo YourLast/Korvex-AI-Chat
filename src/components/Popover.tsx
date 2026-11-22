@@ -95,7 +95,7 @@ export function Popover({ anchor, open, onClose, side = 'top', title, sub, icon,
     const down = (e: PointerEvent) => {
       if (mobile) return;
       const t = e.target as Node;
-      if (ref.current?.contains(t) || anchor?.contains(t)) return;
+      if (ref.current?.contains(t) || anchor?.contains(t) || (t as Element).closest?.('[data-pop-keep]')) return;
       onClose();
     };
     document.addEventListener('keydown', key);

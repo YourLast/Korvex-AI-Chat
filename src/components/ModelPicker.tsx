@@ -1,4 +1,6 @@
 'use client';
+import { ListPanel } from './PickerList';
+import { chipWarn } from '@/lib/levelMult';
 import { useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent as RPointerEvent, type ReactNode, type RefObject } from 'react';
 import type { PublicModel } from '@/lib/models';
 import { families, familyOf, intensityOf, pairFor, readPair, readPrefs, rememberLevel, variantFor, type Sel } from '@/lib/levels';
@@ -401,6 +403,7 @@ export function PickerButton({ models, compare = false, sel, pair, tab, onModel,
     const st = stateOf(s.modelId);
     return (
       <span className="mc-part"><ModelMark id={s.modelId} models={models} /><span className="mc-name"><Named l={lab} /></span><span className="mc-dot" aria-hidden="true">·</span><LevelText id={s.levelId} label={level} />
+        {chipWarn(models, s) && <Icon n="warn" sm className="mc-warn" />}{}
         {st && st !== 'ok' && (!word ? <i className={`st-dot st-dot--${st}`} title={tx(`state.${st}`)} data-state={st} data-testid={`chip-state-${s.modelId}`} /> : <StateTag state={st} className="mc-st" />)}
       </span>
     );
@@ -424,9 +427,11 @@ export function PickerButton({ models, compare = false, sel, pair, tab, onModel,
           <PickerPanel models={models} compare={compare} sel={sel} pair={pair} tab={tab} onModel={onModel} onTab={onTab} onLevel={onLevel} onPairModel={onPairModel} onCompare={onCompare ? toggleCompare : undefined} compareNote={compareNote} pageCompare={compare} pairAny={pairAny} />
         </Popover>
       ) : (
-        <Popover anchor={ref.current} open={open} onClose={close} title={tx('picker.title')} side="top" className="pop--picker pop--pkv" sheetClass="sheet--picker sheet--pkv" bodyClass="pk-body"
+        <Popover anchor={ref.current} open={open} onClose={close} title={tx('picker.title')} side="top" className={`pop--picker pop--pkv${pv === 'list' ? ' pop--pkl' : ''}`} sheetClass="sheet--picker sheet--pkv" bodyClass="pk-body"
           focusFirst={TRACK_FOCUS} instant={instant} testId="picker-pop">
-          <TrackPanel models={models} compare={compare} sel={sel} pair={pair} tab={tab} onModel={onModel} onTab={onTab} onLevel={onLevel} onPairModel={onPairModel} onCompare={onCompare ? toggleCompare : undefined} compareNote={compareNote} pageCompare={compare} pairAny={pairAny} />
+          {pv === 'list'
+            ? <ListPanel models={models} compare={compare} sel={sel} pair={pair} tab={tab} onModel={onModel} onTab={onTab} onLevel={onLevel} onPairModel={onPairModel} onCompare={onCompare ? toggleCompare : undefined} compareNote={compareNote} pageCompare={compare} pairAny={pairAny} />
+            : <TrackPanel models={models} compare={compare} sel={sel} pair={pair} tab={tab} onModel={onModel} onTab={onTab} onLevel={onLevel} onPairModel={onPairModel} onCompare={onCompare ? toggleCompare : undefined} compareNote={compareNote} pageCompare={compare} pairAny={pairAny} />}
         </Popover>
       )}
     </>

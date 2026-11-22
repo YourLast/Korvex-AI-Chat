@@ -29,9 +29,9 @@ function keyNav(e: KeyboardEvent, n: number, cur: number, go: (i: number) => voi
   requestAnimationFrame(() => box?.querySelectorAll<HTMLElement>(`[data-nav-item="${kind}"]`)[i]?.focus());
 }
 
-type Row = { fam: string; id: string; base: PublicModel; on: boolean; st: ModelState | null };
+export type Row = { fam: string; id: string; base: PublicModel; on: boolean; st: ModelState | null };
 
-function usePanel(p: PanelProps) {
+export function usePanel(p: PanelProps) {
   const tx = useT();
   const status = useContext(StatusCtx);
   const { models } = p;
@@ -58,12 +58,12 @@ function usePanel(p: PanelProps) {
   const groupLabel = cmp ? tx('picker.sideModel', { side: tab.toUpperCase() }) : tx('picker.model');
   return { tx, p, models, rows, curIdx, cur, cmp, tab, pickable, pick, many, note, canCompare, groupLabel };
 }
-type P = ReturnType<typeof usePanel>;
+export type P = ReturnType<typeof usePanel>;
 
-const blurbOf = (m: PublicModel) => m.blurb ?? m.tagline ?? m.fullName;
-const Sub = ({ r }: { r: Row }) => <>{blurbOf(r.base)}{r.st && r.st !== 'ok' && <StateTag state={r.st} className="pkv-st" />}</>;
+export const blurbOf = (m: PublicModel) => m.blurb ?? m.tagline ?? m.fullName;
+export const Sub = ({ r }: { r: Row }) => <>{blurbOf(r.base)}{r.st && r.st !== 'ok' && <StateTag state={r.st} className="pkv-st" />}</>;
 
-function SideTabs({ models, pair, tab, onTab }: { models: PublicModel[]; pair: Pair; tab: Side; onTab?: (s: Side) => void }) {
+export function SideTabs({ models, pair, tab, onTab }: { models: PublicModel[]; pair: Pair; tab: Side; onTab?: (s: Side) => void }) {
   const tx = useT();
   const pl = pairLabels(models, pair.a, pair.b);
   const sides: Side[] = ['a', 'b'];
@@ -83,7 +83,7 @@ function SideTabs({ models, pair, tab, onTab }: { models: PublicModel[]; pair: P
   );
 }
 
-function VariantPick({ P: { models, cur, cmp, tab, p, tx } }: { P: P }) {
+export function VariantPick({ P: { models, cur, cmp, tab, p, tx } }: { P: P }) {
   const fams = families(models);
   const fam = fams.find((f) => f.id === familyOf(models, cur.modelId));
   const show = !!fam && fam.variants.length > 1;
@@ -109,7 +109,7 @@ function VariantPick({ P: { models, cur, cmp, tab, p, tx } }: { P: P }) {
   );
 }
 
-function CompareAction({ P }: { P: P }) {
+export function CompareAction({ P }: { P: P }) {
   const id = useRef(`pkv-cmp-${Math.random().toString(36).slice(2, 8)}`).current;
   if (!P.canCompare || !P.p.onCompare) return null;
   const on = P.p.compare;

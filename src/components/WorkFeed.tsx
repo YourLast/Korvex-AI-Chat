@@ -379,7 +379,8 @@ function BriefList({ lines, live, onLive, onDecide, askInBar }: { lines: BriefLi
     <ol className="wk-list wk-brief" aria-label={t('work.title')} data-testid="work-brief">
       {lines.map((l) => (l.step
         ? <StepRow key={l.id} s={l.step} onLive={onLive} onDecide={onDecide} askInBar={askInBar} />
-        : <li key={l.id} className={`wk-bl${l.live && live ? ' is-live' : ''}`} data-testid="work-brief-line"><span className={l.live && live ? 'wk-shim' : undefined}>{l.text}</span></li>))}
+        : <li key={l.id} className={`wk-bl${l.live && live ? ' is-live' : ''}`} data-testid="work-brief-line"><span className={l.live && live ? 'wk-shim' : undefined}>{l.text}</span>
+            {l.note && <small className="wk-bl-note">{l.note}</small>}</li>))}
     </ol>
   );
 }

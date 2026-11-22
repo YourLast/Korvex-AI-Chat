@@ -50,3 +50,13 @@ describe('лента в ответе — коротко по умолчанию'
     expect(html).not.toMatch(/шаг|Okay, the user/);
   });
 });
+
+describe('формат A: «[[t: заголовок | пояснение]]»', () => {
+  it('пояснение отдельно от заголовка; в кратком виде — строкой под ним, в полном — после тире', async () => {
+    const { thoughtsIn } = await import('@/lib/thoughtTitles');
+    expect(thoughtsIn('[[t: Сверяю выписку с 1С | ищу платежи без документа]]')).toEqual([{ title: 'Сверяю выписку с 1С', note: 'ищу платежи без документа' }]);
+    expect(titleMarkdown('[[t: Сверяю | ищу платежи]]')).toBe('\n**Сверяю** — ищу платежи\n');
+    const lines = briefOf(buildFeed('[[t: Сверяю выписку с 1С | ищу платежи без документа]]\nok\n', [], false, true, 'ru'), false, 'ru');
+    expect(lines[0]).toMatchObject({ text: 'Сверяю выписку с 1С', note: 'ищу платежи без документа' });
+  });
+});

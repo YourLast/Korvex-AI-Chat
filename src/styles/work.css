@@ -214,3 +214,4 @@ button.wk-head:active { background: var(--surface-press); }
 .wk-bl { position: relative; min-width: 0; padding: 2px 0 2px calc(var(--icon-sm) + var(--s-2)); font-size: var(--fs-ui); line-height: var(--lh-ui); letter-spacing: var(--ls-ui); color: var(--text-3); overflow-wrap: anywhere; }
 .wk-bl.is-live { color: var(--text-2); }
 .wk-sum:disabled { cursor: default; opacity: 1; color: inherit; }
+.wk-bl-note { display: block; font-size: var(--fs-cap); line-height: var(--lh-cap); color: var(--text-4, var(--text-3)); opacity: .9; }
