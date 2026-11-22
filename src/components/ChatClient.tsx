@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useRouter } from 'next/navigation';
 import { autoLevel } from '@/lib/autoLevel';
-import { QuickActions } from './QuickActions';
+import { AFTER_ALL_SET, ANSWER_SET, HOME_SET, QuickActions } from './QuickActions';
+const afterAll = (answer: string, ask: string) => !ask.trim() || /Чего не хватает/u.test(answer);
 import { IntroInvite } from './IntroInvite';
 import dynamic from 'next/dynamic';
 import type { PublicModel } from '@/lib/models';
@@ -568,7 +569,7 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
     return (
       <AssistantMsg key={m.id} m={m} models={models} last={m === lastAssistant && !m.meta?.lane} canRegen={!busy} fileNames={fileNames}
         footSlot={m === lastAssistant && !busy && !m.streaming && !preview && msgs[i - 1]?.role === 'user' && (msgs[i - 1].files?.length ?? 0) > 0 && m.content.trim()
-          ? <QuickActions lead={tx('quick.more')} testId="quick-ans" onAct={(text) => void doSend(text, [])} /> : undefined}
+          ? <QuickActions lead={tx('quick.more')} testId="quick-ans" ids={afterAll(m.content, msgs[i - 1].content) ? AFTER_ALL_SET : ANSWER_SET} onAct={(text) => void doSend(text, [])} /> : undefined}
         onRegenerate={() => doSend('', [], { mode: 'regenerate' })} onContinue={() => doSend('', [], { mode: 'continue', use: answerSel(m) })} onSwitch={(id) => threadId && switchTo(threadId, id)}
         onAlt={m.meta?.altModel && msgs[i - 1]?.role === 'user' && msgs[i - 1].id.startsWith('u-') ? (alt) => retryOn(alt, msgs[i - 1], m) : undefined} />
     );
@@ -606,7 +607,8 @@ export function ChatClient({ models: modelsProp, thread, initial, fileNames: ini
                   : tx('chat.heroDocs')}</p>
               </div>
               {}
-              {!cmpOn && !temp && <QuickActions testId="quick-home" onAct={(text, needsFiles) => { if (needsFiles) { comp.current?.setText(text); comp.current?.pick(); comp.current?.focus(); } else void doSend(text, []); }} />}
+              {!cmpOn && !temp && <QuickActions testId="quick-home" ids={HOME_SET.map((x) => x.id)} how={(id) => HOME_SET.find((x) => x.id === id)?.how ?? 'send'}
+                onAct={(text, how) => { if (how === 'send') { void doSend(text, []); return; } comp.current?.setText(text); comp.current?.focus(); if (how === 'files') comp.current?.pick(); }} />}
             </div>
             {agents && !cmpOn && !threadId && !preview && (
               <div className="home-pane" data-pane="code" aria-hidden={!codeMode || undefined} inert={!codeMode || undefined}>

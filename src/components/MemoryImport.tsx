@@ -3,12 +3,11 @@ import { useEffect, useState } from 'react';
 import type { MemoryState } from '@/lib/memoryView';
 import type { ImportItem } from '@/lib/memoryImport';
 import { useT } from '@/lib/i18n/react';
-import { Button, CopyButton, Field, Group, Row, toast } from './Kit';
+import { Button, CopyButton, toast } from './Kit';
 import { Icon } from './Icon';
 import '@/styles/user-memory.css';
 
 const SKIP_KEY = { secret: 'tools.memset.imp.skipSecret', rules: 'tools.memset.imp.skipRules', client: 'tools.memset.imp.skipClient', sensitive: 'tools.memset.imp.skipSensitive', dup: 'tools.memset.imp.skipDup' } as const;
-export type ImportVariant = 'a' | 'b';
 
 function useImport(onSaved: (s: MemoryState) => void) {
   const t = useT();
@@ -49,52 +48,8 @@ type Flow = ReturnType<typeof useImport>;
 
 const Tick = ({ on }: { on: boolean }) => (on ? <Icon n="check" sm className="mim-tick is-on" /> : <span className="mim-tick" aria-hidden="true" />);
 
-export function MemoryImportBlock({ onSaved, variant = 'b' }: { onSaved: (s: MemoryState) => void; variant?: ImportVariant }) {
-  const f = useImport(onSaved);
-  return variant === 'b' ? <VariantB f={f} /> : <VariantA f={f} />;
-}
-
-function VariantA({ f }: { f: Flow }) {
-  const { t } = f;
-  if (!f.open) return (
-    <Group foot={t('tools.memset.imp.foot')} testId="mem-import-group">
-      <Row title={t('tools.memset.imp.row')} sub={t('tools.memset.imp.rowSub')} icon="download" chevron onClick={() => f.setOpen(true)} testId="mem-import" />
-    </Group>
-  );
-  if (!f.items) return (
-    <>
-      <Group title={t('tools.memset.imp.title')} aside={<button type="button" className="mim-x" onClick={f.close} aria-label={t('common.close')} data-testid="mem-import-close"><Icon n="x" sm /></button>} testId="mem-import-a">
-        <Row title={<><span className="mim-n">1</span>{t('tools.memset.imp.step1')}</>} right={<CopyButton text={f.prompt} label={t('tools.memset.imp.copy')} kind="plain" testId="mem-import-copy" />} />
-        <Row title={<><span className="mim-n">2</span>{t('tools.memset.imp.step2')}</>} />
-        <div className="mim-field"><Field label={t('tools.memset.imp.paste')} value={f.text} multiline rows={6} maxLength={20000} onChange={f.setText} placeholder={t('tools.memset.imp.pastePh')} testId="mem-import-text" /></div>
-      </Group>
-      <div className="mim-acts">
-        <Button kind="primary" onClick={() => void f.parse()} busy={f.busy} disabled={!f.text.trim()} testId="mem-import-parse">{t('tools.memset.imp.parse')}</Button>
-        <p className="mim-note">{t('tools.memset.imp.note')}</p>
-      </div>
-    </>
-  );
-  const take = f.items.map((x, i) => ({ x, i })).filter(({ x }) => !x.skip), skip = f.items.filter((x) => x.skip);
-  return (
-    <>
-      <Group title={t('tools.memset.imp.pick')} aside={f.n} testId="mem-import-list">
-        {take.length ? take.map(({ x, i }) => (
-          <Row key={i} className={`mim-row${f.on[i] ? ' is-on' : ''}`} title={<><Tick on={!!f.on[i]} />{x.text}</>}
-            sub={<span className="mim-sub">{x.unsure ? `${t('tools.memset.imp.unsure')} · ` : ''}{t(`tools.memset.s.${x.section}` as never)}</span>}
-            onClick={() => f.toggle(i)} testId="mem-import-check" />
-        )) : <Row title={t('tools.memset.imp.none')} tone="muted" testId="mem-import-none" />}
-      </Group>
-      {skip.length > 0 && (
-        <Group title={t('tools.memset.imp.skipped')} testId="mem-import-skipped">
-          {skip.map((x, i) => <Row key={i} tone="muted" className="mim-row" title={<><span className="mim-tick mim-tick--none" aria-hidden="true" />{x.text || '•••'}</>} sub={<span className="mim-sub">{t(SKIP_KEY[x.skip!])}</span>} />)}
-        </Group>
-      )}
-      <div className="mim-acts">
-        <Button kind="primary" onClick={() => void f.save()} busy={f.busy} disabled={!f.n} testId="mem-import-save">{t('tools.memset.imp.save', { n: f.n })}</Button>
-        <Button onClick={() => f.setItems(null)} testId="mem-import-back">{t('tools.memset.imp.back')}</Button>
-      </div>
-    </>
-  );
+export function MemoryImportBlock({ onSaved }: { onSaved: (s: MemoryState) => void }) {
+  return <VariantB f={useImport(onSaved)} />;
 }
 
 function VariantB({ f }: { f: Flow }) {

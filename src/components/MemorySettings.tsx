@@ -11,7 +11,7 @@ import { Button, DestructiveButton, EmptyState, Field, Group, KPage, PickerRow, 
 import { Icon } from './Icon';
 import { MemoryIntro } from './MemoryIntro';
 import { RulesNow } from './RulesNow';
-import { MemoryImportBlock, type ImportVariant } from './MemoryImport';
+import { MemoryImportBlock } from './MemoryImport';
 import '@/styles/user-memory.css';
 
 const SECTION_IDS = ['who', 'work', 'style', 'rules', 'knowledge', 'interests', 'facts'] as const;
@@ -44,8 +44,6 @@ async function call(url: string, method: string, body?: unknown): Promise<{ ok: 
 }
 
 export function MemorySettings({ initial }: { initial: MemoryState }) {
-  const [impVariant, setImpVariant] = useState<ImportVariant>('b');
-  useEffect(() => { try { if (new URL(window.location.href).searchParams.get('imp') === 'a') setImpVariant('a'); } catch {  } }, []);
   const t = useT();
   const SECTIONS = sectionsOf(t);
   const err = (e: string | undefined, fallback: string) => (e ? errText(t.lang, e) : fallback);
@@ -154,7 +152,7 @@ export function MemorySettings({ initial }: { initial: MemoryState }) {
         </Group>
       )}
 
-      {on && <MemoryImportBlock variant={impVariant} onSaved={(j) => setSt({ prefs: j.prefs, items: j.items, callName: j.callName })} />}
+      {on && <MemoryImportBlock onSaved={(j) => setSt({ prefs: j.prefs, items: j.items, callName: j.callName })} />}
 
       {n === 0 ? (
         <EmptyState icon="memory" title={t('tools.memset.emptyTitle')} testId="mem-empty"

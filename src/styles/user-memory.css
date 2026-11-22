@@ -100,15 +100,9 @@
 .rate-slot:empty { display: none; }
 .mim-tick { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: var(--s-3); vertical-align: -3px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--line-3); }
 .mim-tick.is-on { box-shadow: none; color: var(--text-strong); border-radius: 0; }
-.mim-row .k-row-m { min-width: 0; }
-.mim-row .k-row-t { display: flex; align-items: flex-start; }
-.mim-row .k-row-s { padding-left: calc(16px + var(--s-3)); }
-.mim-row:not(.is-on):not(.k-row--muted) .k-row-t { color: var(--text-2); }
-.mim-sub { color: var(--text-3); }
 .mim-n { display: inline-block; min-width: 1.4em; color: var(--text-3); font-variant-numeric: tabular-nums; }
 .mim-x { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; background: none; color: var(--text-3); cursor: pointer; }
 .mim-x:hover { color: var(--text-1); }
-.mim-field { padding: 0 var(--s-4) var(--s-4); }
 .mim-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); margin: calc(var(--s-2) * -1) 0 var(--s-6); padding: 0 var(--s-4); }
 .mim-note { margin: 0; flex: 1 1 260px; color: var(--text-3); font-size: var(--fs-ui); line-height: var(--lh-ui); letter-spacing: var(--ls-ui); }
 .mimb { margin: 0 0 var(--s-6); padding: 0 var(--s-4); }

@@ -1,4 +1,5 @@
 'use client';
+import { useSimple } from './Shell';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as RPointerEvent } from 'react';
 import { useBackClose } from '@/lib/backClose';
 import { closeFile, getChatFiles, openCompare, useChatFiles, useFileView, type FileTarget, type Place } from '@/lib/fileView';
@@ -161,6 +162,7 @@ function ResizeHandle({ onSet }: { onSet: (w: number) => void }) {
 
 export default function FileViewer() {
   const tx = useT();
+  const simple = useSimple();
   const st = useFileView();
   const t = st.target;
   const cmp = st.compare;
@@ -221,7 +223,7 @@ export default function FileViewer() {
       <header className="fv-top">
         <span className="fv-title" title={target.name}>
           <b>{baseName(target.name)}</b>
-          <small>{[dirName(target.name), place || atLabel, size ? fmtBytes(size, tx.lang) : '', tok ? tokText(tx.lang, tok) : ''].filter(Boolean).join(' · ')}</small>
+          <small>{[dirName(target.name), place || atLabel, size ? fmtBytes(size, tx.lang) : '', tok && !simple ? tokText(tx.lang, tok) : ''].filter(Boolean).join(' · ')}</small>
         </span>
         {canCmp && (
           <span className="fv-cmpwrap">

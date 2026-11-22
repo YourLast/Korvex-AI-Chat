@@ -320,3 +320,9 @@ button.k-row:disabled .k-row-t { color: var(--text-3); }
 .set-theme { padding: var(--s-3) var(--s-4); }
 .set-theme .k-seg { grid-auto-columns: minmax(0, auto); grid-template-columns: auto 1fr 1fr; }
 .set-theme .k-seg > button { padding: 0 var(--s-3); }
+
+html .btn, html .btn--lg, html .k-btn, html .sb-find, html .fld-card-btn, html .ins-primary, html .ins-plain, html .ins-secondary,
+html .mi-restart-btn, html .od-quick button, html .od-sel button, html .od-types button, html .od-scen button, html .ist-week button,
+html .pair-vote-opt, html .find-sub .find-more, html .model-chip, html .lvl-btn, html .k-seg, html .k-seg > button, html .seg, html .seg > button,
+html .mem-undo, html .why-chip { border-radius: 4px; }
+html .hm-pill { border-radius: 3px; }

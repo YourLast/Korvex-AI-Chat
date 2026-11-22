@@ -1,4 +1,5 @@
 'use client';
+import { useSimple } from './Shell';
 import { useLayoutEffect, useRef } from 'react';
 import { fmtBytes } from '@/lib/format';
 import { useT } from '@/lib/i18n/react';
@@ -53,9 +54,10 @@ function ImgTile({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
 
 function DocChip({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
   const tx = useT();
+  const simple = useSimple();
   const kind = u.status === 'ready' && u.chip ? previewKind(u.name) : null;
   const tok = useFileTok({ name: u.name, tokens: u.chip?.tokens, mime: u.chip?.mime, info: u.chip?.info });
-  const parts = u.status === 'ready' ? [fmtBytes(u.size, tx.lang), tok ? tokText(tx.lang, tok) : ''].filter(Boolean) : [fmtBytes(u.size, tx.lang)];
+  const parts = u.status === 'ready' ? [fmtBytes(u.size, tx.lang), tok && !simple ? tokText(tx.lang, tok) : ''].filter(Boolean) : [fmtBytes(u.size, tx.lang)];
   const prog = u.status === 'uploading' ? progText(tx, u.prog) : null;
   const pieces = (xs: string[]) => xs.map((x, i) => <span key={i}>{i > 0 ? ' ' : ''}<span className="fm-nb">{x}{i < xs.length - 1 ? '\u00a0·' : ''}</span></span>);
   const meta = prog ? pieces(prog.split(' · ')) : u.status === 'uploading' ? tx('comp.reading') : u.status === 'error' ? u.error : pieces(parts);

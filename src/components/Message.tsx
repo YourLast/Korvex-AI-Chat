@@ -38,7 +38,7 @@ import { tokText, useFileTok } from '@/lib/fileTokens';
 import { baseName, dirName, groupByFolder } from '@/lib/upload/paths';
 import { BRAND_WORDS, OUT_PREFIX } from '@/ext/client';
 import { copyText } from '@/lib/clipboard';
-import { GuessLine, InviteLine } from './AnswerLines';
+import { GuessLine, InviteLine, LetterCopy, letterOf } from './AnswerLines';
 
 export function userError(e: string, lang: Lang = 'ru'): string {
   if (/^\d{3}:/.test(e) || /[a-z]{4,}/i.test(e.replace(BRAND_WORDS, ''))) return tr(lang, 'msg.noReply');
@@ -81,7 +81,8 @@ export function FileCard({ f }: { f: FileChip }) {
   const fmt = (f.info?.format as string | undefined) ?? '';
   const dir = dirName(f.name);
   const tok = useFileTok(f);
-  const sub = [dir, fmtBytes(f.size, tx.lang), f.info?.pages ? tx(fmt === 'xlsx' ? 'msg.pagesSheets' : 'msg.pagesPages', { n: Number(f.info.pages) }) : '', tok ? tokText(tx.lang, tok) : ''].filter(Boolean).join(' · ');
+  const simple = useSimple();
+  const sub = [dir, fmtBytes(f.size, tx.lang), f.info?.pages ? tx(fmt === 'xlsx' ? 'msg.pagesSheets' : 'msg.pagesPages', { n: Number(f.info.pages) }) : '', tok && !simple ? tokText(tx.lang, tok) : ''].filter(Boolean).join(' · ');
   return (
     <button type="button" className="attach attach--open" title={f.name} aria-label={tx('files.openFile', { name: f.name })} data-testid="sent-file" onClick={() => openFile({ id: f.id, name: f.name })}>
       <span className="ficon"><Icon n={fmt === 'xlsx' || fmt === 'csv' ? 'table' : 'file-text'} /></span>
@@ -283,6 +284,7 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
         </div>
       )}
       {!m.streaming && meta.memUpd?.length ? <MemUpdated items={meta.memUpd as MemUpdItem[]} messageId={m.id} /> : null}
+      {!m.streaming && !bare && (() => { const l = letterOf(m.content); return l ? <LetterCopy text={l} /> : null; })()}
       {!m.streaming && !readOnly && !bare && meta.guesses?.length ? <GuessLine key={meta.guesses.map((g) => g.id).join()} items={meta.guesses} /> : null}
       {!m.streaming && !readOnly && !bare && meta.introInvite ? <InviteLine messageId={m.id} /> : null}
       {!m.streaming && meta.dayFix ? <div className="ans-line ans-line--fix" role="note" data-testid="day-fix">{meta.dayFix}</div> : null}

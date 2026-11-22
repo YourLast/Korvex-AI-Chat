@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { copyText } from '@/lib/clipboard';
 import { useT } from '@/lib/i18n/react';
 import '@/styles/user-memory.css';
 
@@ -78,6 +79,27 @@ export function InviteLine({ messageId }: { messageId: string }) {
       <button type="button" className="ans-link" onClick={() => { setOn(false); router.push('/settings/memory#intro'); }} data-testid="invite-go">{t('msg.inviteGo')}</button>
       <span aria-hidden="true"> · </span>
       <button type="button" className="ans-link" onClick={later} data-testid="invite-later">{t('msg.inviteLater')}</button>
+    </div>
+  );
+}
+
+export function letterOf(content: string): string | null {
+  if (/```letter/.test(content)) return null;
+  const at = content.search(/Письмо клиенту/u);
+  if (at < 0) return null;
+  const m = content.slice(at).match(/(Добрый день![\s\S]*?Спасибо!)/u);
+  if (!m) return null;
+  return m[1].split('\n').map((l) => l.replace(/^\s*>\s?/, '').replace(/\*\*|__/g, '')).join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+export function LetterCopy({ text }: { text: string }) {
+  const t = useT();
+  const [ok, setOk] = useState(false);
+  return (
+    <div className="ans-line" data-testid="letter-line">
+      <button type="button" className="ans-link" onClick={() => { void copyText(text).then((r) => { if (r) { setOk(true); setTimeout(() => setOk(false), 1600); } }); }} data-testid="letter-copy">
+        {t(ok ? 'md.letterCopied' : 'md.letterCopy')}
+      </button>
     </div>
   );
 }

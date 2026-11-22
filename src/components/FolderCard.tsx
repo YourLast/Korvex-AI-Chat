@@ -1,4 +1,5 @@
 'use client';
+import { useSimple } from './Shell';
 import { useState } from 'react';
 import { fmtBytes } from '@/lib/format';
 import { useT } from '@/lib/i18n/react';
@@ -13,6 +14,7 @@ const SHOW = 400;
 
 export function FolderCard({ g }: { g: FolderGroup<FileChip> }) {
   const tx = useT();
+  const simple = useSimple();
   const [open, setOpen] = useState(false);
   const o = g.items.map((f) => (f.info as { origin?: Origin } | undefined)?.origin).find(Boolean);
   const ex = useExactTokens();
@@ -31,7 +33,7 @@ export function FolderCard({ g }: { g: FolderGroup<FileChip> }) {
             <li key={f.id}>
               <button type="button" className="fcard-file" title={f.name} aria-label={tx('files.openFile', { name: f.name })} data-testid="folder-file" onClick={() => openFile({ id: f.id, name: f.name })}>
                 <span>{baseName(f.name)}{dirName(f.name).slice(g.root.length + 1) ? <small> · {dirName(f.name).slice(g.root.length + 1)}</small> : null}</span>
-                <small>{[fmtBytes(f.size, tx.lang), (() => { const t = fileTok(f, ex); return t ? tokText(tx.lang, t) : ''; })()].filter(Boolean).join(' · ')}</small>
+                <small>{[fmtBytes(f.size, tx.lang), (() => { const t = fileTok(f, ex); return t && !simple ? tokText(tx.lang, t) : ''; })()].filter(Boolean).join(' · ')}</small>
               </button>
             </li>
           ))}
