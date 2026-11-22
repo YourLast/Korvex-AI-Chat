@@ -35,3 +35,4 @@
 .lad-role { color: var(--text-3); }
 @media (prefers-reduced-motion: reduce) { .lad-track i { transition: none; } }
 .lad-in { padding: 0 var(--s-4); }
+.lim-hours { margin: 0 0 var(--s-2); font-size: var(--fs-body); line-height: var(--lh-body); color: var(--text-1); }

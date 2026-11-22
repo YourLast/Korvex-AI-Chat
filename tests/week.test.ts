@@ -105,6 +105,26 @@ describe('состояние лимита', () => {
     delete process.env.KX_WEEK_LIMIT; delete process.env.KX_WEEK_MODE;
     expect([W.weekLimit(), W.weekHard(), W.weekMode()]).toEqual([54_000, 108_000, 'soft']);
   });
+  it('жёсткий режим: человеку — часы лимита (15 ч, ×2 — 30 ч, ×5 — 75 ч); мягкий — без часов', () => {
+    process.env.KX_WEEK_MODE = 'hard';
+    const u = user(), u2 = user({ weekMult: 2 } as never), u5 = user({ weekMult: 5 } as never);
+    expect(W.weekView(u, NOW)).toMatchObject({ limited: true, hard: true, hours: 15 });
+    expect(W.weekView(u2, NOW).hours).toBe(30);
+    expect(W.weekView(u5, NOW).hours).toBe(75);
+    expect(W.weekView(user({ role: 'admin' } as never), NOW)).toMatchObject({ limited: false });
+    delete process.env.KX_WEEK_MODE;
+    expect(W.weekView(u, NOW).hours).toBeUndefined();
+    expect(W.resetDay(Date.UTC(2026, 10, 23, 21), 'Europe/Moscow', 'ru-RU')).toBe('24 ноября');
+  });
+  it('жёсткий режим: исчерпан до понедельника 00:00 в поясе человека, с понедельника — снова можно', () => {
+    process.env.KX_WEEK_MODE = 'hard'; process.env.KX_WEEK_LIMIT = '1000';
+    const u = user({ timezone: 'Europe/Moscow' } as never);
+    job(u.id, NOW, { cardS: 1000 });
+    const s = W.weekState(u, NOW);
+    expect(s.phase).toBe('blocked');
+    expect(W.weekState(u, s.resetAt - 60_000).phase).toBe('blocked');
+    expect(W.weekState(u, s.resetAt + 60_000)).toMatchObject({ phase: 'ok', used: 0 });
+  });
   it('администратор не ограничен; множитель ×2 / без лимита; «сбросить эту неделю»', () => {
     process.env.KX_WEEK_LIMIT = '1000'; process.env.KX_WEEK_HARD = '2000';
     const a = user({ role: 'admin' });

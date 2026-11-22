@@ -86,10 +86,14 @@ export function weekState(u: Pick<User, 'id' | 'role' | 'timezone' | 'weekMult' 
   return { mode, limited, used, limit, hard, pct, phase, resetAt: w.end, key: w.key };
 }
 
-export type WeekView = { limited: boolean; pct: number; phase: WeekPhase; resetAt: number; tz: string };
+export function resetDay(ts: number, tz: string, locale: string): string {
+  try { return new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'long', timeZone: tz }); } catch { return new Date(ts).toLocaleDateString(locale, { day: 'numeric', month: 'long' }); }
+}
+
+export type WeekView = { limited: boolean; pct: number; phase: WeekPhase; resetAt: number; tz: string; hours?: number; hard?: boolean };
 export function weekView(u: Pick<User, 'id' | 'role' | 'timezone' | 'weekMult' | 'weekResetAt'>, now = Date.now()): WeekView {
   const s = weekState(u, now), tz = tzOf(u);
-  if (s.limited) return { limited: true, pct: s.pct, phase: s.phase, resetAt: s.resetAt, tz };
+  if (s.limited) return { limited: true, pct: s.pct, phase: s.phase, resetAt: s.resetAt, tz, ...(s.mode === 'hard' ? { hard: true, hours: Math.round(s.limit / 3600) } : {}) };
   const w = weekRange(now, tz);
   const used = weekUsed(u.id, Math.max(w.start, u.weekResetAt ?? 0), w.end);
   return { limited: false, pct: Math.floor((used / weekLimit()) * 100), phase: 'ok', resetAt: w.end, tz };

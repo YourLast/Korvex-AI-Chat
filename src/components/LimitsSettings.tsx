@@ -6,7 +6,7 @@ import { Group, KPage, Notice, Row } from './Kit';
 import { Icon } from './Icon';
 import '@/styles/limits.css';
 
-export type LimitsData = { limited: boolean; pct: number; phase: WeekPhase; resetAt: number; tz: string; support: { tg: string; handle: string; email: string } };
+export type LimitsData = { limited: boolean; pct: number; phase: WeekPhase; resetAt: number; tz: string; hours?: number; hard?: boolean; support: { tg: string; handle: string; email: string } };
 
 const PHASE_TEXT = { warn: 'week.80', over: 'week.soft', blocked: 'week.hard' } as const;
 
@@ -23,6 +23,7 @@ export function LimitsSettings({ d }: { d: LimitsData }) {
     <KPage title={t('shell.limits')} testId="limits">
       <Group title={t('lim.week')} foot={t('lim.about')} testId="lim-week">
         <div className="lim-week" data-phase={d.limited ? d.phase : 'none'}>
+          {d.limited && d.hard && d.hours ? <p className="lim-hours" data-testid="lim-hours">{t('lim.hours', { h: String(d.hours) })}</p> : null}
           <div className="lim-top">
             <span className="lim-pct" data-testid="lim-pct">{d.limited ? t('lim.used', { pct: String(shown) }) : t('lim.none')}</span>
           </div>

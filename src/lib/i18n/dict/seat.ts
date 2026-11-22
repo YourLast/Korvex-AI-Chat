@@ -25,6 +25,10 @@ export default {
     'Недельный лимит исчерпан, новые сообщения — с понедельника. Если вам нужно больше для работы, напишите нам в поддержку: в некоторых случаях мы можем бесплатно поднять лимит для вас. Обещать не можем, но посмотрим.',
     "You've used up your weekly limit. You can send new messages from Monday. If you need more for work, contact support: in some cases we can raise your limit for free. We can't promise, but we'll take a look.",
     'Nedeljni limit je potrošen, nove poruke — od ponedeljka. Ako vam treba više za posao, pišite nam u podršku: u nekim slučajevima možemo besplatno da podignemo vaš limit. Ne možemo da obećamo, ali ćemo pogledati.'],
+  'week.hardDate': [
+    'Недельный лимит исчерпан, новые сообщения — с понедельника, {date}. Если вам нужно больше для работы, напишите нам в поддержку: в некоторых случаях мы можем бесплатно поднять лимит для вас. Обещать не можем, но посмотрим.',
+    "You've used up your weekly limit. You can send new messages from Monday, {date}. If you need more for work, contact support: in some cases we can raise your limit for free. We can't promise, but we'll take a look.",
+    'Nedeljni limit je potrošen, nove poruke — od ponedeljka, {date}. Ako vam treba više za posao, pišite nam u podršku: u nekim slučajevima možemo besplatno da podignemo vaš limit. Ne možemo da obećamo, ali ćemo pogledati.'],
   'support.line': [
     'Поддержка: Telegram {tg}, почта {email}',
     'Support: Telegram {tg}, email {email}',
@@ -39,6 +43,7 @@ export default {
     "This week you've used {pct}% of your weekly limit",
     'Ove nedelje iskorišćeno je {pct}% nedeljnog limita'],
   'lim.week': ['Недельный лимит', 'Weekly limit', 'Nedeljni limit'],
+  'lim.hours': ['Недельный лимит — {h} ч. Когда он закончится, новые запросы будут доступны с понедельника', 'Weekly limit — {h} h. When it runs out, new requests will be available from Monday', 'Nedeljni limit — {h} h. Kada se potroši, novi zahtevi biće dostupni od ponedeljka'],
   'lim.used': ['Использовано {pct}%', '{pct}% used', 'Iskorišćeno {pct}%'],
   'lim.reset': ['Обновится в понедельник, {date}, в 00:00', 'Resets Monday, {date}, at 00:00', 'Obnavlja se u ponedeljak, {date}, u 00:00'],
   'lim.none': ['Без лимита', 'No limit', 'Bez limita'],

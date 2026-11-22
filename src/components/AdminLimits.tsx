@@ -64,7 +64,8 @@ export function AdminLimits({ d }: { d: Data }) {
               title={m === 1 ? (base ? admf('Обычный · {0}', usd(base.amount)) : adm('Обычный')) : `×${m}`} />
           ))}
         </div>
-        {!alpha && <p className="lad-note" data-testid="lad-hard">{base
+        {}
+        {!alpha && d.mode !== 'hard' && <p className="lad-note" data-testid="lad-hard">{base
           ? admf('Жёсткий порог обычного тарифа — {0} ч: дальше новые ходы не принимаются (безубыточность при {1} в месяц).', hrs(d.hard), usd(base.amount))
           : admf('Жёсткий порог обычного тарифа — {0} ч: дальше новые ходы не принимаются.', hrs(d.hard))}</p>}
         {modeNote && !alpha && <p className="lad-note">{modeNote}</p>}

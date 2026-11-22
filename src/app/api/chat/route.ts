@@ -10,7 +10,8 @@ import { introTurn } from '@/lib/intro';
 import { reqLang } from '@/lib/i18n/server';
 import { tr } from '@/lib/i18n/core';
 import { addNotice, recordTurn } from '@/lib/seat';
-import { weekState } from '@/lib/week';
+import { localeOf } from '@/lib/i18n/core';
+import { resetDay, tzOf, weekState } from '@/lib/week';
 import { withSupport } from '@/lib/support';
 
 export const runtime = 'nodejs';
@@ -47,14 +48,17 @@ export async function POST(req: Request) {
     }
     const wk = weekState(a.user);
     if (wk.phase === 'blocked') {
-      return NextResponse.json({ error: withSupport(reqLang(req, a.user.lang), tr(reqLang(req, a.user.lang), 'week.hard')), code: 'week_limit', resetAt: wk.resetAt }, { status: 429 });
+      const lang = reqLang(req, a.user.lang);
+      const date = resetDay(wk.resetAt, tzOf(a.user), localeOf(lang));
+      return NextResponse.json({ error: withSupport(lang, tr(lang, 'week.hardDate', { date })), code: 'week_limit', resetAt: wk.resetAt }, { status: 429 });
     }
     const over = wk.phase === 'over';
     const after = async (jobs: (string | null | undefined)[]) => {
       await recordTurn(a.user, req, jobs);
       try {
         const w2 = weekState(a.user);
-        if (w2.limited && w2.phase === 'over') addNotice(a.user.id, 'week_soft', w2.key);
+        if (w2.limited && w2.phase === 'blocked') addNotice(a.user.id, 'week_hard', w2.key);
+        else if (w2.limited && w2.phase === 'over') addNotice(a.user.id, 'week_soft', w2.key);
         else if (w2.limited && w2.phase === 'warn') addNotice(a.user.id, 'week80', w2.key);
       } catch (e) { console.error('[week]', (e as Error).message); }
     };

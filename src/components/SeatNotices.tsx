@@ -7,7 +7,7 @@ import type { Key } from '@/lib/i18n/core';
 
 type Notice = { id: string; kind: string };
 type Support = { handle: string; email: string };
-const KEY: Record<string, Key> = { seat_warn: 'seat.warn', week80: 'week.80', week_soft: 'week.soft' };
+const KEY: Record<string, Key> = { seat_warn: 'seat.warn', week80: 'week.80', week_soft: 'week.soft', week_hard: 'week.hard' };
 
 export function SeatNotices() {
   const t = useT();

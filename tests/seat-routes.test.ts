@@ -32,9 +32,18 @@ describe('/api/chat и недельный лимит', () => {
     expect(r.status).toBe(429);
     const j = (await r.json()) as { error: string; code: string; resetAt: number };
     expect(j.code).toBe('week_limit');
-    expect(j.error).toContain("You've used up your weekly limit. You can send new messages from Monday.");
+    expect(j.error).toMatch(/You've used up your weekly limit\. You can send new messages from Monday, \S+ \S+\. If you need more/);
     expect(j.error).toContain('Support: Telegram @korvex_support_test, email support@example.com');
     expect(j.resetAt).toBeGreaterThan(Date.now());
+  });
+  it('KX_WEEK_MODE=hard — отказ уже с лимита, мягкой зоны нет', async () => {
+    cur = 'u';
+    process.env.KX_WEEK_LIMIT = '300'; process.env.KX_WEEK_MODE = 'hard';
+    const r = await post();
+    expect(((await r.json().catch(() => ({}))) as { code?: string }).code).not.toBe('week_limit');
+    db.insert(schema.jobs).values({ id: 'big2', userId: 'u', kind: 'chat', modelId: 'm', levelId: 'low', status: 'done', createdAt: Date.now(), cardS: 60 }).run();
+    const r2 = await post();
+    expect(r2.status).toBe(429);
   });
   it('KX_WEEK_MODE=off — лимит не мешает (ход доходит до обычной проверки, а не до 429 лимита)', async () => {
     process.env.KX_WEEK_LIMIT = '100'; process.env.KX_WEEK_HARD = '200'; process.env.KX_WEEK_MODE = 'off';
