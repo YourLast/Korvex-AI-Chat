@@ -22,6 +22,7 @@ const seatRoles = () => (process.env.KX_SEAT_ROLES ?? 'user,alpha').split(',').m
 export const seatApplies = (role: string | null | undefined) => seatOn() && !!role && role !== 'admin' && seatRoles().includes(role);
 const switches = () => num('KX_SHARE_SWITCHES', 6);
 const concurrents = () => num('KX_SHARE_CONCURRENT', 3);
+export const seatConf = () => ({ on: seatOn(), roles: seatRoles(), switches: switches(), concurrent: concurrents(), windowMin: 60 });
 
 let netKey: Buffer | null = null;
 const subKey = () => (netKey ??= createHmac('sha256', deviceKey()).update('kx-seat-net').digest());
