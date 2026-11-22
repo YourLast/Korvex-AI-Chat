@@ -13,7 +13,8 @@ export const fmtIntL = (lang: Lang, n: number): string => (lang === 'ru' ? fmtIn
 export const fmtTokL = fmtTokLang;
 
 export function filesCount(m: MemoryInfo) {
-  return (m.files || 0) + (m.inline_files || 0) + (m.images || 0);
+  const files = m.file_list?.length ? m.file_list.filter((f) => f.kind !== 'tool' && f.kind !== 'image').length : (m.files || 0);
+  return files + (m.inline_files || 0) + (m.images || 0);
 }
 
 export function memoryLines(t: ReturnType<typeof useT>, m: MemoryInfo, usage?: Record<string, unknown> | null): string[] {

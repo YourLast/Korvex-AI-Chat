@@ -8,6 +8,7 @@ import { Group, KPage } from './Kit';
 import '@/styles/limits.css';
 
 const MONTH_WEEKS = 365 / 12 / 7;
+const TIERS = [1, 2, 5] as const;
 const pctOf = (a: number, b: number) => (b > 0 ? Math.floor((a / b) * 100) : 0);
 
 function Bar({ title, used, limit, sub, loc, testId }: { title: string; used: number; limit: number; sub?: string; loc: string; testId: string }) {
@@ -45,20 +46,26 @@ export function AdminLimits({ d }: { d: Data }) {
     return { label: admf('{0} в месяц', p.cur === 'USD' ? usd(p.amount) : rub(p.amount)), week: share, month: share * MONTH_WEEKS };
   };
   const total = d.people.reduce((a, p) => ({ used: a.used + p.used, usd: a.usd + p.usd }), { used: 0, usd: 0 });
+  const base = d.prices.find((p) => p.cur === 'USD');
   const modeNote = d.mode === 'off' ? adm('Недельный лимит выключен для всех (KX_WEEK_MODE=off): пороги ниже — для сведения.')
-    : d.mode === 'hard' ? adm('Режим hard: отказ уже с мягкого порога.') : null;
+    : d.mode === 'hard' ? adm('Режим hard: новые ходы не принимаются уже с недельного лимита тарифа.') : null;
 
   return (
     <KPage title={t('shell.limits')} testId="limits">
-      <Group title={adm('Недельный лимит')} plain testId="lad-week"
-        foot={admf('Администратор не ограничен: его расход считается так же, как у людей, и сравнивается с обычными порогами. Неделя обновится {0}.', reset)}>
+      <Group title={adm('Недельный лимит по тарифам')} plain testId="lad-week"
+        foot={admf('Администратор не ограничен: его расход считается так же, как у людей, и сравнивается с лимитом каждого тарифа. Неделя обновится {0}.', reset)}>
         <div className="lad-in">
         <div className="lad-bars">
-          <Bar loc={loc} testId="lad-soft" title={adm('Мягкий порог')} used={d.used} limit={d.soft}
-            sub={adm('KX_WEEK_LIMIT. Дальше ходы человека принимаются, но идут в очереди после других людей.')} />
-          <Bar loc={loc} testId="lad-hard" title={adm('Жёсткий порог')} used={d.used} limit={d.hard}
-            sub={adm('KX_WEEK_HARD. Дальше новые ходы не принимаются; порог — наша безубыточность на одного человека.')} />
+          {
+}
+          {TIERS.map((m) => (
+            <Bar key={m} loc={loc} testId={`lad-tier-${m}`} used={d.used} limit={d.soft * m}
+              title={m === 1 ? (base ? admf('Обычный · {0}', usd(base.amount)) : adm('Обычный')) : `×${m}`} />
+          ))}
         </div>
+        <p className="lad-note" data-testid="lad-hard">{base
+          ? admf('Жёсткий порог обычного тарифа — {0} ч: дальше новые ходы не принимаются (безубыточность при {1} в месяц).', hrs(d.hard), usd(base.amount))
+          : admf('Жёсткий порог обычного тарифа — {0} ч: дальше новые ходы не принимаются.', hrs(d.hard))}</p>
         {modeNote && <p className="lad-note">{modeNote}</p>}
         </div>
       </Group>

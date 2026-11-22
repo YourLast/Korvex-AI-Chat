@@ -873,4 +873,11 @@ export const ADM: Record<string, readonly [string, string?]> = {
   "; администратору — никогда": ["; never to admins"],
   "Приём документов организации": ["Organization document intake"],
   "{0} файлов в сутки": ["{0} files a day"],
+  "Недельный лимит по тарифам": ["Weekly limit by plan"],
+  "Администратор не ограничен: его расход считается так же, как у людей, и сравнивается с лимитом каждого тарифа. Неделя обновится {0}.": ["Admins are not limited: their usage is counted the same way as everyone's and compared with each plan's limit. The week resets on {0}."],
+  "Обычный · {0}": ["Standard · {0}"],
+  "Обычный": ["Standard"],
+  "Жёсткий порог обычного тарифа — {0} ч: дальше новые ходы не принимаются (безубыточность при {1} в месяц).": ["Hard cap of the standard plan: {0} h; past it, new turns are refused (break-even at {1} a month)."],
+  "Жёсткий порог обычного тарифа — {0} ч: дальше новые ходы не принимаются.": ["Hard cap of the standard plan: {0} h; past it, new turns are refused."],
+  "Режим hard: новые ходы не принимаются уже с недельного лимита тарифа.": ["Hard mode: new turns are refused from the plan's weekly limit on."],
 };
