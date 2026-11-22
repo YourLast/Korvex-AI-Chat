@@ -72,6 +72,11 @@
   --pj-green: #4cc38a;
   --pj-yellow: #e8c547;
   --pj-coral: #f2836b;
+  --ft-sheet: #6fae86;
+  --ft-pdf: #d27a70;
+  --ft-doc: #7f9fd4;
+  --ft-slides: #d39a5c;
+  --ft-text: #9a9a9a;
 }
 
 @media (prefers-color-scheme: light) {
@@ -148,6 +153,11 @@
     --pj-green: #1f9d5c;
     --pj-yellow: #b38600;
     --pj-coral: #e0583d;
+    --ft-sheet: #2f7a4f;
+    --ft-pdf: #b2483d;
+    --ft-doc: #3d64a8;
+    --ft-slides: #a9632a;
+    --ft-text: #6b6b6b;
   }
 }
 
@@ -224,6 +234,11 @@
     --pj-green: #1f9d5c;
     --pj-yellow: #b38600;
     --pj-coral: #e0583d;
+    --ft-sheet: #2f7a4f;
+    --ft-pdf: #b2483d;
+    --ft-doc: #3d64a8;
+    --ft-slides: #a9632a;
+    --ft-text: #6b6b6b;
 }
 
 .kx-dark, .blv, .iv, .ia {
@@ -299,4 +314,9 @@
   --pj-green: #4cc38a;
   --pj-yellow: #e8c547;
   --pj-coral: #f2836b;
+  --ft-sheet: #6fae86;
+  --ft-pdf: #d27a70;
+  --ft-doc: #7f9fd4;
+  --ft-slides: #d39a5c;
+  --ft-text: #9a9a9a;
 }

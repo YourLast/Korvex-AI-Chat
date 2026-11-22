@@ -805,3 +805,39 @@ div.fl-in { cursor: default; }
 .fl--b .fl-x { width: 24px; height: 24px; }
 @media (max-width: 760px) { .fl--a { height: 40px; } .fl--b { height: 32px; } .fl-x { width: 36px; height: 36px; } }
 @media (prefers-reduced-motion: reduce) { .fl-spin { animation: none; } }
+
+.up-row--c { --ft-h: 60px; display: flex; flex-wrap: nowrap; gap: var(--s-2); margin: 0 0 var(--s-1); padding: 6px 6px 2px; overflow-x: auto; overflow-y: visible; scrollbar-width: none; }
+.up-row--c::-webkit-scrollbar { display: none; }
+.ft { position: relative; flex: none; height: var(--ft-h); border-radius: 12px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-1);
+  animation: ft-in 320ms var(--ease-out) both; }
+@keyframes ft-in { from { opacity: 0; filter: blur(6px); transform: scale(.97); } to { opacity: 1; filter: none; transform: none; } }
+.ft--doc { width: 224px; }
+.ft--img { width: var(--ft-h); overflow: hidden; }
+.ft-open { display: flex; align-items: center; gap: 10px; width: 100%; height: 100%; padding: 0 28px 0 10px; border: 0; border-radius: inherit; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+div.ft-open { cursor: default; }
+.ft--img .ft-open { padding: 0; }
+.ft--img img, .ft-ph { display: block; width: 100%; height: 100%; object-fit: cover; }
+.ft-ph { background: var(--surface-3); }
+.ft-open:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.ft-type { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 8px; font-size: 10.5px; line-height: 1; font-weight: var(--fw-medium); letter-spacing: .02em;
+  color: var(--tone); background: color-mix(in srgb, var(--tone) 14%, transparent); --tone: var(--ft-text); }
+.ft-type[data-tone="sheet"] { --tone: var(--ft-sheet); } .ft-type[data-tone="pdf"] { --tone: var(--ft-pdf); } .ft-type[data-tone="doc"] { --tone: var(--ft-doc); } .ft-type[data-tone="slides"] { --tone: var(--ft-slides); }
+.ft.is-error .ft-type { --tone: var(--neg); }
+.ft-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ft-text b { font-weight: var(--fw-medium); font-size: var(--fs-ui); line-height: 1.25; color: var(--text-1); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; }
+.ft-text small { font-size: var(--fs-cap); line-height: var(--lh-cap); color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.ft.is-error .ft-text small { color: var(--neg); }
+.ft-x { position: absolute; top: 4px; right: 4px; width: 20px; height: 20px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: color-mix(in srgb, var(--surface-pop) 82%, transparent); box-shadow: 0 0 0 1px var(--line-2); color: var(--text-2); cursor: pointer; transition: opacity var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease); }
+.ft-x .i { width: 11px; height: 11px; }
+.ft-x::after { content: ""; position: absolute; inset: -10px; }
+@media (hover: hover) and (pointer: fine) { .ft .ft-x { opacity: 0; } .ft:hover .ft-x, .ft:focus-within .ft-x { opacity: 1; } .ft-x:hover { color: var(--text-strong); } }
+.ft-x:focus-visible { opacity: 1; outline: var(--focus-ring); }
+.ft-err { position: absolute; inset: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--bg) 55%, transparent); color: var(--neg); pointer-events: none; }
+.ft-bar { position: absolute; left: 10px; right: 10px; bottom: 5px; height: 2px; border-radius: 2px; background: var(--line-1); overflow: hidden; }
+.ft--img .ft-bar { left: 6px; right: 6px; }
+.ft-bar i { position: absolute; top: 0; bottom: 0; width: 38%; border-radius: 2px; background: var(--text-2); animation: ft-run 1.2s var(--ease) infinite; }
+@keyframes ft-run { from { transform: translateX(-100%); } to { transform: translateX(270%); } }
+.ft.is-uploading .ft-text, .ft.is-uploading img { opacity: .72; }
+@media (max-width: 760px) { .ft--doc { width: 200px; } .up-row--c { padding: 6px 4px 2px; } }
+@media (prefers-reduced-motion: reduce) { .ft { animation: none; } .ft-bar i { animation: none; width: 100%; opacity: .5; } }

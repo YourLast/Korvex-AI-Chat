@@ -81,8 +81,8 @@ function DocChip({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
   );
 }
 
-export type FileView = 0 | 'a' | 'b';
-export const FILE_VIEW = 0 as FileView;
+export type FileView = 0 | 'a' | 'b' | 'c';
+export const FILE_UI = { view: 'c' as FileView };
 
 const EXT = /(\.[A-Za-z0-9]{1,6})$/;
 export function nameParts(name: string): { head: string; tail: string } {
@@ -92,6 +92,51 @@ export function nameParts(name: string): { head: string; tail: string } {
   return { head: stem.slice(0, -3), tail: stem.slice(-3) + ext };
 }
 const typeIcon = (name: string): string => (/\.(xlsx?|xlsm|csv|ods|tsv)$/i.test(name) ? 'table' : /\.(pptx?|odp|key)$/i.test(name) ? 'slides' : 'file-text');
+
+const FT: [RegExp, string][] = [[/\.(xlsx?|xlsm|csv|ods|tsv)$/i, 'sheet'], [/\.pdf$/i, 'pdf'], [/\.(docx?|odt|rtf)$/i, 'doc'], [/\.(pptx?|odp|key)$/i, 'slides']];
+export const fileTone = (name: string): string => FT.find(([re]) => re.test(name))?.[1] ?? 'text';
+const extOf = (name: string) => (name.match(EXT)?.[1] ?? '').slice(1).toUpperCase().slice(0, 4) || '—';
+
+function FileTile({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
+  const tx = useT();
+  const pro = useCanAgents();
+  const tok = useFileTok({ name: u.name, tokens: u.chip?.tokens, mime: u.chip?.mime, info: u.chip?.info });
+  const src = u.img ? viewSrc(u) : undefined;
+  const kind = !u.img && u.status === 'ready' && u.chip ? previewKind(u.name) : null;
+  const size = fmtBytes(u.size, tx.lang);
+  const prog = u.status === 'uploading' ? progText(tx, u.prog) : null;
+  const tip = [u.name, size, pro && tok && u.status === 'ready' ? tokText(tx.lang, tok) : ''].filter(Boolean).join(' · ');
+  const x = <button type="button" className="ft-x" aria-label={tx('comp.removeNamed', { name: u.name })} title={tx('comp.removeFile')} data-testid="up-remove" onClick={() => onRemove(u)}><Icon n="x" sm /></button>;
+  const bar = u.status === 'uploading' && <span className="ft-bar" aria-hidden="true"><i /></span>;
+  if (u.img) {
+    return (
+      <div className={`ft ft--img is-${u.status}`} data-testid="up-chip" data-name={u.name} data-status={u.status} title={tip}>
+        <button type="button" className="ft-open" disabled={!src} aria-label={tx('msg.openImage', { name: u.name })}
+          {...(src ? { 'data-iv': '', 'data-iv-src': src, 'data-iv-name': u.name, 'data-iv-size': size } : {})} onClick={(e) => { if (src) thumbClick(e, src); }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {u.preview ? <img src={u.preview} alt="" draggable={false} decoding="async" /> : <span className="ft-ph" />}
+        </button>
+        {u.status === 'error' && <span className="ft-err" title={u.error}><Icon n="alert" sm /></span>}
+        {bar}{x}
+      </div>
+    );
+  }
+  const meta = u.status === 'error' ? u.error ?? '' : prog ?? (u.status === 'uploading' ? tx('comp.reading') : size);
+  const body = (
+    <>
+      <span className="ft-type" data-tone={fileTone(u.name)}>{u.status === 'error' ? <Icon n="alert" sm /> : extOf(u.name)}</span>
+      <span className="ft-text"><b>{u.name}</b><small data-testid={prog ? 'up-prog' : undefined}>{meta}</small></span>
+    </>
+  );
+  const open = kind ? <button type="button" className="ft-open" aria-label={tx('doc.open', { name: u.name })} data-testid="up-doc-open" onClick={(e) => openDoc({ href: `/api/files/${u.chip!.id}`, name: u.name, kind }, e.currentTarget)}>{body}</button>
+    : u.status === 'ready' && u.chip && viewKind(u.name) !== 'none' ? <button type="button" className="ft-open" aria-label={tx('files.openFile', { name: u.name })} data-testid="up-doc-open" onClick={() => openFile({ id: u.chip!.id, name: u.name })}>{body}</button>
+    : <div className="ft-open">{body}</div>;
+  return (
+    <div className={`ft ft--doc is-${u.status}`} data-testid="up-chip" data-name={u.name} data-status={u.status} title={tip}>
+      {open}{bar}{x}
+    </div>
+  );
+}
 
 function FileLine({ u, onRemove, view }: { u: Up; onRemove: (u: Up) => void; view: 'a' | 'b' }) {
   const tx = useT();
@@ -142,7 +187,7 @@ function FolderChipUp({ name, n, ups, onRemove }: { name: string; n: number; ups
   );
 }
 
-export function UpRow({ items, onRemove, view = FILE_VIEW }: { view?: FileView; items: Up[]; admin?: boolean ; onRemove: (u: Up) => void }) {
+export function UpRow({ items, onRemove, view = FILE_UI.view }: { view?: FileView; items: Up[]; admin?: boolean ; onRemove: (u: Up) => void }) {
   const tx = useT();
   const folded = items.length > 12 ? groupByFolder(items.filter((u) => u.status === 'ready' && u.chip).map((u) => ({ name: u.name, size: u.size, u }))) : { groups: [], rest: [] as { name: string; size: number; u: Up }[] };
   const inGroup = new Set(folded.groups.flatMap((g) => g.items.map((x) => x.u)));
@@ -159,7 +204,7 @@ export function UpRow({ items, onRemove, view = FILE_VIEW }: { view?: FileView; 
     <>
       <div className={`up-row${view ? ` up-row--${view}` : ''}`} ref={row} role="group" aria-label={tx('comp.attachments')} data-iv-scope="" data-testid="up-row" data-view={view || undefined}>
         {folded.groups.map((g) => <FolderChipUp key={'g-' + g.root} name={g.root} n={g.items.length} ups={g.items.map((x) => x.u)} onRemove={onRemove} />)}
-        {items.map((u) => (view ? <FileLine key={u.tmp} u={u} onRemove={onRemove} view={view} /> : u.img ? <ImgTile key={u.tmp} u={u} onRemove={onRemove} /> : <DocChip key={u.tmp} u={u} onRemove={onRemove} />))}
+        {items.map((u) => (view === 'c' ? <FileTile key={u.tmp} u={u} onRemove={onRemove} /> : view ? <FileLine key={u.tmp} u={u} onRemove={onRemove} view={view} /> : u.img ? <ImgTile key={u.tmp} u={u} onRemove={onRemove} /> : <DocChip key={u.tmp} u={u} onRemove={onRemove} />))}
       </div>
       {!view && items.filter((u) => u.img && u.status === 'error').map((u) => (
         <div className="up-note" role="alert" data-testid="up-err" key={'e-' + u.tmp}><Icon n="alert" sm /><span>{u.name}: {u.error}</span></div>

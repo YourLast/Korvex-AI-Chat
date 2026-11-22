@@ -4,6 +4,7 @@ import type { PublicModel } from '@/lib/models';
 import type { ModelState } from '@/lib/announce';
 import { families, familyOf, readPrefs, variantFor, type Sel } from '@/lib/levels';
 import { useT } from '@/lib/i18n/react';
+import { modelMult } from '@/lib/levelMult';
 import { Icon } from './Icon';
 import { StateTag, StatusCtx } from './Announce';
 import { ModelMark } from './ModelMark';
@@ -146,6 +147,7 @@ function ModelTrack({ P }: { P: P }) {
             data-testid={`model-${r.fam}`} data-model={r.id}
             onClick={() => { setMsg(null); P.pick(r.id); }} onKeyDown={(e) => keyNav(e, rows.length, curIdx, (j) => P.pick(rows[j].id), 'model')}>
             <ModelMark id={r.id} models={models} /><span>{r.base.name}</span>
+            {(() => { const x = modelMult(models.find((m) => m.id === r.id)); return x ? <small className="pkv-mx" data-testid={`model-mult-${r.fam}`}>×{x}</small> : null; })()}{}
           </button>
         ))}
         {locked.map((l) => (

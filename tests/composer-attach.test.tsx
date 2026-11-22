@@ -3,8 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createElement } from 'react';
 import { Composer } from '@/components/Composer';
-import { UpRow, viewSrc, type Up } from '@/components/UpRow';
+import { FILE_UI, UpRow, viewSrc, type Up } from '@/components/UpRow';
 import type { FileChip } from '@/lib/types';
+FILE_UI.view = 0;
 
 const viewer = vi.hoisted(() => ({ thumbClick: vi.fn(), openDoc: vi.fn() }));
 vi.mock('@/components/iv', async (orig) => ({ ...(await orig<typeof import('@/components/iv')>()), openDoc: viewer.openDoc }));

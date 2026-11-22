@@ -6,12 +6,13 @@ import { I18nProvider } from '@/lib/i18n/react';
 import type { Lang } from '@/lib/i18n/core';
 import { exactTokens, fileTok, setExactTokens, sumTok, tokText, type ExactTok } from '@/lib/fileTokens';
 import { FileCard } from '@/components/Message';
-import { UpRow, type Up } from '@/components/UpRow';
+import { FILE_UI, UpRow, type Up } from '@/components/UpRow';
 import { FolderCard } from '@/components/FolderCard';
 import FileViewer from '@/components/FileViewer';
 import { _resetFileView, closeFile, openFile, setChatFiles } from '@/lib/fileView';
 import { groupByFolder } from '@/lib/upload/paths';
 import type { FileChip, MemoryInfo } from '@/lib/types';
+FILE_UI.view = 0;
 
 vi.mock('@/components/fileview/PdfView', () => ({ PdfView: () => null }));
 

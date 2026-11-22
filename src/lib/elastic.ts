@@ -2,7 +2,7 @@ import { MARK, type Tip } from './glint';
 import { haptic as vibrate } from './haptic';
 
 export type ELevel = { id: string; label: string; hint?: string; mult?: number };
-export type EMult = { view: 'head' | 'cells'; fmt: (x: number) => string; note: (x: number, uniform: boolean) => string };
+export type EMult = { view: 'head' | 'cells' | 'warm'; fmt: (x: number) => string; note: (x: number, uniform: boolean) => string; tip?: (x: number) => string };
 export type EOpts = {
   levels: ELevel[];
   value: string;
@@ -155,8 +155,27 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
   const uniform = () => { const ms = mults().filter((x) => x > 0); return ms.length > 0 && ms.every((x) => x === ms[0]) && ms.length === n; };
   const anyMult = () => !!o.mult && mults().some((x) => x > 0);
   const inCells = () => anyMult() && o.mult!.view === 'cells' && !uniform();
+  const warmAt = () => (anyMult() && o.mult!.view === 'warm' && !uniform() ? levels.findIndex((l) => l.id === 'max' && (l.mult ?? 0) > 1) : -1);
   const buildMults = () => {
     mrow.textContent = '';
+    const w = warmAt();
+    if (w >= 0) {
+      mrow.hidden = false;
+      levels.forEach((l, i) => {
+        const c = document.createElement('span');
+        c.className = 'kxe-m kxe-m--warm';
+        if (i === w) {
+          const b = document.createElement('span'); b.className = 'kxe-warm'; b.tabIndex = 0; b.dataset.testid = 'lvl-warm';
+          b.innerHTML = '<svg class="i i--sm" aria-hidden="true" focusable="false"><use href="#i-warn"/></svg>';
+          b.append(document.createTextNode(o.mult!.fmt(l.mult!)));
+          const tip = o.mult!.tip?.(l.mult!);
+          if (tip) { const t = document.createElement('span'); t.className = 'kxe-tip'; t.setAttribute('role', 'tooltip'); t.textContent = tip; b.append(t); b.setAttribute('aria-label', tip); }
+          c.append(b);
+        }
+        mrow.append(c);
+      });
+      return;
+    }
     mrow.hidden = !inCells();
     if (!inCells()) return;
     for (const l of levels) {
@@ -201,7 +220,7 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
     cap.textContent = o.caption;
     valL.textContent = l?.label ?? '';
     valH.textContent = l?.hint ?? '';
-    const m = l?.mult && anyMult() && !inCells() ? l.mult : 0;
+    const m = l?.mult && anyMult() && !inCells() && o.mult!.view !== 'warm' ? l.mult : 0;
     mul.textContent = m ? o.mult!.fmt(m) : '';
     mul.hidden = !m;
     mul.classList.toggle('is-max', !!m && l?.id === 'max' && !uniform());

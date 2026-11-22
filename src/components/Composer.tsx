@@ -13,7 +13,7 @@ import { VoiceStrip } from './VoiceStrip';
 import { WordReveal } from './WordReveal';
 import { REVEAL_MAX_WORDS, REVEAL_MAX_WORDS_TOUCH, holdProgress, joinText, readAutoSend, revealFrom, revealPlan } from '@/lib/voiceLogic';
 import { thumbSrc } from './OutImage';
-import { UpRow, type Up } from './UpRow';
+import { FILE_UI, UpRow, type Up } from './UpRow';
 import { UploadCard } from './UploadCard';
 import { holdState, heldFiles, failedNote, fileErrKind, type FileErrKind, type Hold } from '@/lib/sendHold';
 import type { HeldView } from './HeldTurn';
@@ -359,10 +359,12 @@ export const Composer = forwardRef<ComposerHandle, {
           {shownBatches.map((b) => <UploadCard key={b.id} batch={b} onRemove={() => { b.dispose(); setBatches((x) => x.filter((y) => y !== b)); }} />)}
         </div>
       )}
-      <UpRow items={shown} onRemove={(u) => { dropPreview(u); setUps((x) => x.filter((y) => y.tmp !== u.tmp)); }} />
+      {FILE_UI.view !== 'c' && <UpRow items={shown} onRemove={(u) => { dropPreview(u); setUps((x) => x.filter((y) => y.tmp !== u.tmp)); }} />}
       {err && <div className="err-box" role="alert"><Icon n="alert" sm /><span>{err}</span></div>}
       <WeekLine />
       <div className={`composer${voice ? ' composer--voice' : ''}`} ref={box} style={voice && v.lockH ? { height: v.lockH } : undefined}>
+        {}
+        {!voice && FILE_UI.view === 'c' && <UpRow items={shown} onRemove={(u) => { dropPreview(u); setUps((x) => x.filter((y) => y.tmp !== u.tmp)); }} />}
         {voice ? <VoiceStrip v={v} /> : (
           <div className="ta-wrap">
           <textarea

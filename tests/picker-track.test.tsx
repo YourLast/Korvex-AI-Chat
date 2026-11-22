@@ -29,8 +29,8 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('вид меню', () => {
-  it('по умолчанию — список по референсу Claude (22.11, PickerList); вид c — пилюля с искрой мощности; откат одной строкой (PICKER_VARIANT = 0) возвращает и прежнюю строку пилюль', () => {
-    expect(PICKER_VARIANT).toBe('list');
+  it('по умолчанию — вид c с пилюлей и искрой мощности (список по референсу Claude product отклонил 22.11); откат одной строкой (PICKER_VARIANT = 0) возвращает и прежнюю строку пилюль', () => {
+    expect(PICKER_VARIANT).toBe('c');
     expect(LEVEL_CONTROL).toBe('p2b');
     expect(levelControl('c')).toBe('p2b');
     expect(levelControl(0)).toBe('pill');

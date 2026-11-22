@@ -19,7 +19,10 @@ import {
 import { COLLAPSE_MS, SETTLE_MS, atBottom, easeOut, holdOf, initView, reduceView, userInput, viewOf, type ViewState } from '@/lib/workView';
 import { iconState } from '@/lib/actIcons';
 import type { HmPose } from '@/lib/headMark';
-import { briefOf, liveTitle, titleMarkdown, type BriefLine } from '@/lib/thoughtTitles';
+import { briefOf, liveTitle, titleMarkdown } from '@/lib/thoughtTitles';
+import { timelineOf } from '@/lib/thoughtTimeline';
+import { turnUrls } from '@/lib/webmark';
+import { LiveTitle, ThinkTimeline } from './ThinkTimeline';
 import { useThinkFull } from '@/lib/thinkPref';
 import '@/styles/work.css';
 
@@ -373,18 +376,6 @@ export function WorkList({ items, live, onLive, onDecide, steps, askInBar }: { i
   );
 }
 
-function BriefList({ lines, live, onLive, onDecide, askInBar }: { lines: BriefLine[]; live: boolean; onLive?: (s: WStep) => void; onDecide?: (s: WStep, d: Decision) => void; askInBar?: boolean }) {
-  const t = useT();
-  return (
-    <ol className="wk-list wk-brief" aria-label={t('work.title')} data-testid="work-brief">
-      {lines.map((l) => (l.step
-        ? <StepRow key={l.id} s={l.step} onLive={onLive} onDecide={onDecide} askInBar={askInBar} />
-        : <li key={l.id} className={`wk-bl${l.live && live ? ' is-live' : ''}`} data-testid="work-brief-line"><span className={l.live && live ? 'wk-shim' : undefined}>{l.text}</span>
-            {l.note && <small className="wk-bl-note">{l.note}</small>}</li>))}
-    </ol>
-  );
-}
-
 export type WorkMsg = { id?: string; reasoning?: string | null; steps?: StepEvent[] | null; streaming?: boolean; rStartedAt?: number | null; reasoningMs?: number | null; startedAt?: number; phase?: string; content?: string; meta?: { durationMs?: number; error?: string | null; errorUser?: string | null; stopped?: boolean } | null };
 
 export function useFeed(m: WorkMsg): WItem[] {
@@ -410,6 +401,8 @@ export function WorkFeed({ m, onLive, onDecide, askInBar }: { m: WorkMsg; onLive
   const waiting = steps.some((s) => s.status === 'wait');
   const full = useThinkFull();
   const brief = useMemo(() => (full ? [] : briefOf(items, working, t.lang)), [full, items, working, t.lang]);
+  const tlUrls = useMemo(() => (full ? [] : turnUrls([m.reasoning, ...(m.steps ?? []).map((x) => (x as { detail?: string }).detail)])), [full, m.reasoning, m.steps]);
+  const rows = useMemo(() => (full ? [] : timelineOf(items, working, t.lang, tlUrls)), [full, items, working, t.lang, tlUrls]);
   const [vs, setVs] = useState<ViewState>(() => initView(live));
   const view = full ? viewOf(vs, waiting) : waiting ? 'full' : vs.user ? 'full' : 'line';
   const vsRef = useRef(vs), viewRef = useRef(view);
@@ -546,7 +539,7 @@ export function WorkFeed({ m, onLive, onDecide, askInBar }: { m: WorkMsg; onLive
   const sum = full ? summaryLine(items, ms, (x) => fmtDur(x, t.lang), t.lang, simple) : `${t('work.sum.thought')}${ms && ms > 0 ? ` ${fmtDur(ms, t.lang)}` : ''}`;
   const low = (x: string) => x.charAt(0).toLowerCase() + x.slice(1);
   const open = view !== 'line';
-  const empty = !full && !working && brief.length === 0;
+  const empty = !full && !working && rows.length === 0;
   const endPose: HmPose | null = working ? null : failed ? 'error' : stopped ? 'stop' : errs ? 'error' : null;
   return (
     <section ref={sec} className={`wk${working ? ' wk--live' : ''}${open ? ' is-open' : ''}${view === 'window' ? ' is-win' : ''}`} data-testid="reasoning" data-work="" data-view={view} aria-label={t('work.title')}>
@@ -555,7 +548,8 @@ export function WorkFeed({ m, onLive, onDecide, askInBar }: { m: WorkMsg; onLive
         <span className="wk-sum-ic wk-sum-ic--mark" aria-hidden="true" data-end={endPose ?? undefined}><HeadMark live={working} end={endPose} calm={working && open && now?.kind === 'step'} /></span>
         {working ? (
           <span className="wk-sum-t" data-testid="work-now">
-            <b className={working ? 'wk-shim' : undefined}>{(!full && liveTitle(brief)) || (n ? t('work.working') : t('work.thinking'))}</b>
+            {full ? <b className={working ? 'wk-shim' : undefined}>{n ? t('work.working') : t('work.thinking')}</b>
+              : <b><LiveTitle text={liveTitle(brief) || (n ? t('work.working') : t('work.thinking'))} /></b>}
             {m.startedAt ? <Elapsed since={m.startedAt} min={0} /> : null}
           </span>
         ) : (
@@ -564,11 +558,15 @@ export function WorkFeed({ m, onLive, onDecide, askInBar }: { m: WorkMsg; onLive
         )}
         {!empty && <Icon n="chev-right" sm className="wk-chev" />}
       </button>
-      {open && !empty && (
+      {!full && !empty && (
+        <div className="wk-tl" data-open={open || undefined} aria-hidden={!open || undefined} data-testid="work-body">
+          <div className="wk-tl-in"><ThinkTimeline rows={rows} onLive={openLive} onDecide={onDecide} askInBar={askInBar} /></div>
+        </div>
+      )}
+      {full && open && !empty && (
         <div ref={win} className={`wk-body${view === 'window' ? ' is-win' : ''}`} data-testid="work-body" onScroll={view === 'window' ? onWinScroll : undefined} onClickCapture={view === 'window' ? onWinClick : undefined}
           onWheel={touched} onTouchStart={touched} onTouchMove={touched} onPointerDown={touched} onKeyDown={touched}>
-          {full ? <WorkList items={items} live={live} onLive={openLive} onDecide={onDecide} steps={n} askInBar={askInBar} />
-            : <BriefList lines={brief} live={working} onLive={openLive} onDecide={onDecide} askInBar={askInBar} />}
+          <WorkList items={items} live={live} onLive={openLive} onDecide={onDecide} steps={n} askInBar={askInBar} />
         </div>
       )}
     </section>

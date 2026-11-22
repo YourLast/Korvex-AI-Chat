@@ -67,3 +67,19 @@ describe('множители лимита', () => {
     expect(host.querySelector<HTMLElement>('.kxe-note')!.hidden).toBe(true);
   });
 });
+
+describe("'warm': только тёплая метка под max и подсказка", () => {
+  it('у Alpha под max «⚠ ×3» с подсказкой, у других уровней пусто; строки пояснения и множителя в строке подписи нет; у Gamma (один множитель) — ничего', () => {
+    const host = document.createElement('div'); document.body.append(host); hosts.push(host);
+    const h = mountElastic(host, { levels: ET, value: 'xhigh', caption: 'c', label: 'l', onChange: vi.fn(), mult: { view: 'warm', fmt: (x) => `×${x}`, note: () => '', tip: (x) => `в ${x} раза больше` } });
+    const w = host.querySelectorAll('[data-testid=lvl-warm]');
+    expect(w).toHaveLength(1);
+    expect(w[0].textContent).toBe('×3в 3 раза больше');
+    expect(w[0].getAttribute('aria-label')).toBe('в 3 раза больше');
+    expect(host.querySelector<HTMLElement>('.kxe-mult')!.hidden).toBe(true);
+    expect(host.querySelector<HTMLElement>('.kxe-note')!.hidden).toBe(true);
+    h.update({ levels: ['low', 'max'].map((id) => ({ id, label: id, mult: 17 })), value: 'max' });
+    expect(host.querySelector('[data-testid=lvl-warm]')).toBeNull();
+    expect(host.querySelector<HTMLElement>('.kxe-mult')!.hidden).toBe(true);
+  });
+});
