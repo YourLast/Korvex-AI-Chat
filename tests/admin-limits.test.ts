@@ -54,4 +54,12 @@ describe('страница администратора', () => {
     expect(d.idle).toBe(1); expect(d.people.some((p) => p.id === idle.id)).toBe(false);
     expect(d.seat.switches).toBeGreaterThan(0); expect(d.orgDay).toBeGreaterThan(0);
   });
+  it('«Альфа»: свои часы и лимиты тарифов, без цен, людей и технических порогов (в данных их нет)', async () => {
+    process.env.KX_WEEK_LIMIT = '36000'; process.env.KX_ADMIN_PRICES = '25 USD';
+    const al = user({ role: 'alpha' }), other = user();
+    job(al.id, NOW - 3_600_000, { cardS: 7200 });
+    job(other.id, NOW - 3_600_000, { cardS: 9000 });
+    const d = L.alphaLimits(al, NOW);
+    expect(d).toMatchObject({ view: 'alpha', used: 7200, soft: 36000, prices: [], people: [], lanes: [], usd: 0, rate: null, orgDay: 0 });
+  });
 });

@@ -46,14 +46,15 @@ export function AdminLimits({ d }: { d: Data }) {
     return { label: admf('{0} в месяц', p.cur === 'USD' ? usd(p.amount) : rub(p.amount)), week: share, month: share * MONTH_WEEKS };
   };
   const total = d.people.reduce((a, p) => ({ used: a.used + p.used, usd: a.usd + p.usd }), { used: 0, usd: 0 });
-  const base = d.prices.find((p) => p.cur === 'USD');
+  const alpha = d.view === 'alpha';
+  const base = alpha ? undefined : d.prices.find((p) => p.cur === 'USD');
   const modeNote = d.mode === 'off' ? adm('Недельный лимит выключен для всех (KX_WEEK_MODE=off): пороги ниже — для сведения.')
     : d.mode === 'hard' ? adm('Режим hard: новые ходы не принимаются уже с недельного лимита тарифа.') : null;
 
   return (
     <KPage title={t('shell.limits')} testId="limits">
       <Group title={adm('Недельный лимит по тарифам')} plain testId="lad-week"
-        foot={admf('Администратор не ограничен: его расход считается так же, как у людей, и сравнивается с лимитом каждого тарифа. Неделя обновится {0}.', reset)}>
+        foot={alpha ? admf('Неделя обновится {0}.', reset) : admf('Администратор не ограничен: его расход считается так же, как у людей, и сравнивается с лимитом каждого тарифа. Неделя обновится {0}.', reset)}>
         <div className="lad-in">
         <div className="lad-bars">
           {
@@ -63,15 +64,16 @@ export function AdminLimits({ d }: { d: Data }) {
               title={m === 1 ? (base ? admf('Обычный · {0}', usd(base.amount)) : adm('Обычный')) : `×${m}`} />
           ))}
         </div>
-        <p className="lad-note" data-testid="lad-hard">{base
+        {!alpha && <p className="lad-note" data-testid="lad-hard">{base
           ? admf('Жёсткий порог обычного тарифа — {0} ч: дальше новые ходы не принимаются (безубыточность при {1} в месяц).', hrs(d.hard), usd(base.amount))
-          : admf('Жёсткий порог обычного тарифа — {0} ч: дальше новые ходы не принимаются.', hrs(d.hard))}</p>
-        {modeNote && <p className="lad-note">{modeNote}</p>}
+          : admf('Жёсткий порог обычного тарифа — {0} ч: дальше новые ходы не принимаются.', hrs(d.hard))}</p>}
+        {modeNote && !alpha && <p className="lad-note">{modeNote}</p>}
         </div>
       </Group>
 
+      {!alpha && <>
       <Group title={adm('Деньги этой недели')} plain testId="lad-money"
-        foot={admf('Час карты ≈ {0} (src/lib/week.ts); ходы Claude — по прайсу Claude API (cost_usd).', usd(d.hourUsd))}>
+        foot={admf('Час видеокарты ≈ {0}; ходы Claude — по цене Claude.', usd(d.hourUsd))}>
         <div className="lad-in">
         <dl className="lad-dl">
           <div className="lad-dl-r lad-dl-r--sum" data-testid="lad-usd"><dt>{adm('Всего')}</dt>
@@ -104,16 +106,16 @@ export function AdminLimits({ d }: { d: Data }) {
         <div className="lad-in">
         {d.people.length ? (
           <table className="lad-tbl" data-testid="lad-people-tbl">
-            <thead><tr><th>{adm('Человек')}</th><th>{adm('Неделя, ч')}</th><th>{adm('Мягкий')}</th><th>{adm('Жёсткий')}</th><th>$</th></tr></thead>
+            <thead><tr><th>{adm('Человек')}</th><th>{adm('Неделя, ч')}</th>{TIERS.map((m) => <th key={m}>{m === 1 ? adm('Обычный') : `×${m}`}</th>)}<th>$</th></tr></thead>
             <tbody>
               {d.people.map((p) => (
                 <tr key={p.id}>
                   <td><a href={`/admin/users/${p.id}`}>{p.name}</a><span className="lad-role">{p.limited ? (p.mult > 1 ? ` · ×${p.mult}` : '') : ` · ${p.role === 'admin' ? adm(roleRu('admin')) : adm('без лимита')}`}</span></td>
-                  <td>{hrs(p.used)}</td><td>{pctOf(p.used, p.soft)} %</td><td>{pctOf(p.used, p.hard)} %</td><td>{usd(p.usd)}</td>
+                  <td>{hrs(p.used)}</td>{TIERS.map((m) => <td key={m}>{pctOf(p.used, d.soft * m)} %</td>)}<td>{usd(p.usd)}</td>
                 </tr>
               ))}
             </tbody>
-            <tfoot><tr><td>{adm('Всего')}</td><td>{hrs(total.used)}</td><td /><td /><td>{usd(total.usd)}</td></tr></tfoot>
+            <tfoot><tr><td>{adm('Всего')}</td><td>{hrs(total.used)}</td>{TIERS.map((m) => <td key={m} />)}<td>{usd(total.usd)}</td></tr></tfoot>
           </table>
         ) : <p className="lad-note">{adm('На этой неделе ходов ни у кого нет.')}</p>}
         </div>
@@ -129,6 +131,7 @@ export function AdminLimits({ d }: { d: Data }) {
         </dl>
         </div>
       </Group>
+      </>}
     </KPage>
   );
 }

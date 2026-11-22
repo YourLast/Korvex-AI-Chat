@@ -47,6 +47,7 @@ export type AdminLimits = {
   seat: ReturnType<typeof seatConf>;
   orgDay: number;
   people: PersonWeek[]; idle: number;
+  view: 'admin' | 'alpha';
 };
 
 function personWeek(u: User, now: number): PersonWeek {
@@ -72,6 +73,13 @@ export async function adminLimits(me: User, now = Date.now()): Promise<AdminLimi
   return {
     mode: weekMode(), soft: weekLimit(), hard: weekHard(), used, resetAt: w.end, tz,
     lanes, usd: lanes.reduce((a, l) => a + l.usd, 0), hourUsd: cardUsd(3600), rate, prices, seat: seatConf(), orgDay: ORG_DAY_LIMIT,
-    people, idle: all.length - people.length,
+    people, idle: all.length - people.length, view: 'admin',
   };
+}
+
+export function alphaLimits(me: User, now = Date.now()): AdminLimits {
+  const w = weekRange(now, tzOf(me));
+  const used = weekUsed(me.id, Math.max(w.start, me.weekResetAt ?? 0), w.end);
+  return { mode: weekMode(), soft: weekLimit(), hard: weekHard(), used, resetAt: w.end, tz: tzOf(me), lanes: [], usd: 0, hourUsd: 0, rate: null, prices: [],
+    seat: { on: false, roles: [], switches: 0, concurrent: 0, windowMin: 0 }, orgDay: 0, people: [], idle: 0, view: 'alpha' };
 }
