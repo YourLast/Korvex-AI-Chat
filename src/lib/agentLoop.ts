@@ -99,6 +99,7 @@ export type Steer = { id: string; text: string; mode: 'next' | 'now'; at: number
 export type LoopHost = {
   jobId: string; userId: string; threadId: string; folderId: string | null; messageId: string | null;
   kind: 'chat' | 'automation'; modelId: string; depth: number;
+  blocks?: string[] | null;
   model: ModelCfg; level: Level; tz: string; session: string;
   signal: AbortSignal;
   messages: OaiMsg[];
@@ -230,7 +231,7 @@ export async function runAgentLoop(h: LoopHost): Promise<LoopResult> {
       let got = false, again = false;
       err = null;
       try {
-        for await (const ev of up({ model: h.model, level: h.level, chatId: h.session, messages: [], signal: ac.signal, timezone: h.tz, sources: true, org: orgHeader(h.userId, h.folderId),
+        for await (const ev of up({ model: h.model, level: h.level, chatId: h.session, messages: [], signal: ac.signal, timezone: h.tz, sources: true, blocks: h.blocks, org: orgHeader(h.userId, h.folderId),
           agent: { messages: msgs, tools: schemas, toolChoice: 'auto', header: path === 'agent' } })) {
           if (ev.t === 'tc') { got = true; mergeCalls(calls, ev.d); continue; }
           if (ev.t === 'c') text += ev.d;
@@ -436,7 +437,7 @@ async function modelWork(h: LoopHost, c: Call, round: number, transcript: OaiMsg
       let got = false, again = false;
       err = null;
       try {
-        for await (const ev of up({ model: h.model, level: h.level, chatId: h.session, messages: h.chatMessages(extra), signal: ac.signal, timezone: h.tz, sources: true, org: orgHeader(h.userId, h.folderId) })) {
+        for await (const ev of up({ model: h.model, level: h.level, chatId: h.session, messages: h.chatMessages(extra), signal: ac.signal, timezone: h.tz, sources: true, blocks: h.blocks, org: orgHeader(h.userId, h.folderId) })) {
           if (ev.t === 'c') text += ev.d;
           if (ev.t === 'err') { err = ev.message; if (retry.want(ev, got, () => servStepsIn(h.reasoningFrom(mark.r)))) { again = true; break; } continue; }
           if (ev.t === 'r' || ev.t === 'c') got = true;

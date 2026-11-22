@@ -33,7 +33,7 @@ describe('признаки запроса', () => {
     expect(S.netOf('2001:db8:1:1::1')).toBe(S.netOf('2001:db8:1:ffff:aaaa::2'));
     expect(S.netOf('2001:db8:2::1')).not.toBe(S.netOf('2001:db8:1::1'));
     expect(S.netOf('::ffff:203.0.113.9')).toBe(a);
-    expect(a).not.toContain('203');
+    expect(a).not.toMatch(/203\.0\.113|cb007100|cb0071/);
   });
   it('браузер/ОС — грубо, ≤ 40 символов', () => {
     expect(S.uaFamily('Mozilla/5.0 (Windows NT 10.0; Win64) AppleWebKit/537.36 Chrome/120.0 Safari/537.36')).toBe('Chrome/Windows');

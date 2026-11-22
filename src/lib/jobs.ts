@@ -592,6 +592,7 @@ async function runTools(j: Live, model: ModelCfg, level: Level, tz: string, h: R
   const r = await runAgentLoop({
     jobId: j.id, userId: j.userId, threadId: j.threadId!, folderId: j.folderId, messageId: j.messageId, kind: j.kind === 'automation' ? 'automation' : 'chat',
     modelId: j.modelId, depth: j.depth, model, level, tz, session: h.session, signal: j.ac.signal,
+    blocks: j.kind !== 'api' && !j.apiKeyId ? blocksFor(j.userId, j.folderId) : null,
     messages: path === 'agent' ? agentHistory(h.hist ?? [], model, j.userId, tz, h.folderSys, true, pctx) : chatToOai(h.messages, pctx, { model, tz, folderSys: h.folderSys }),
     chatMessages: (extra) => withExtra(h.messages, extra),
     round: () => { endServeQueue(j); j.sepR = j.sepC = true; j.rBase = j.rMs; },
