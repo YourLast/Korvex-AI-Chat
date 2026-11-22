@@ -1,12 +1,12 @@
 import { z } from 'zod';
 import { fail, json } from '@/lib/api';
 import { adminOrKey } from '@/lib/adminAuth';
-import { FEATURE_IDS, featureDefault, featureOn, featureWarn, setFeature, type FeatureId } from '@/lib/features';
+import { FEATURE_IDS, featureDefault, featureOn, featureWarn, setFeature, shownFeatures, type FeatureId } from '@/lib/features';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const view = () => FEATURE_IDS.map((id) => ({ id, on: featureOn(id), default: featureDefault(id), ...(featureWarn(id) ? { warn: featureWarn(id) } : {}) }));
+const view = () => shownFeatures().map((id) => ({ id, on: featureOn(id), default: featureDefault(id), ...(featureWarn(id) ? { warn: featureWarn(id) } : {}) }));
 
 export async function GET(req: Request) {
   const a = await adminOrKey(req);

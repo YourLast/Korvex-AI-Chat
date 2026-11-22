@@ -22,8 +22,10 @@ const DEFS: Record<FeatureId, Def> = {
   blocks: { id: 'blocks', def: () => cfg('KX_BLOCKS') === '1' },
 };
 
-export const featureDefault = (id: FeatureId): boolean => DEFS[id].def();
-export const featureOn = (id: FeatureId): boolean => getSetting<boolean>(`feature.${id}`, DEFS[id].def()) === true;
+export const codeGone = (): boolean => cfg('KX_CODE_GONE') !== '0';
+export const shownFeatures = (): FeatureId[] => FEATURE_IDS.filter((id) => !(id === 'code' && codeGone()));
+export const featureDefault = (id: FeatureId): boolean => (id === 'code' && codeGone() ? false : DEFS[id].def());
+export const featureOn = (id: FeatureId): boolean => (id === 'code' && codeGone() ? false : getSetting<boolean>(`feature.${id}`, DEFS[id].def()) === true);
 export function featureFor(id: FeatureId, userId?: string | null, who?: ReturnType<typeof whoOf>): boolean {
   if (!featureOn(id)) return false;
   const rule = ruleOf('feature', id);

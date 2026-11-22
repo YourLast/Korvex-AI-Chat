@@ -1,3 +1,4 @@
+import { featureOn } from '@/lib/features';
 import { currentUser } from '@/lib/auth';
 import { modelsFor } from '@/lib/levelPolicy';
 import { pageLang } from '@/lib/i18n/server';
@@ -12,5 +13,5 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ n
   const user = await currentUser();
   const ms = modelsFor(user?.role, await pageLang(user), user?.id);
   if (!ms.length) return <NoModels admin={user?.role === 'admin'} />;
-  return <ChatClient key={(sp.new ?? 'home') + (sp.temp ? ':t' : '') + (sp.mode ? `:${sp.mode}` : '')} models={ms} thread={null} initial={[]} fileNames={[]} startTemp={sp.temp === '1'} startCode={sp.mode === 'code' && canAgents(user?.role)} />;
+  return <ChatClient key={(sp.new ?? 'home') + (sp.temp ? ':t' : '') + (sp.mode ? `:${sp.mode}` : '')} models={ms} thread={null} initial={[]} fileNames={[]} startTemp={sp.temp === '1'} startCode={sp.mode === 'code' && canAgents(user?.role) && featureOn('code')} />;
 }

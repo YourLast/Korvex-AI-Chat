@@ -7,6 +7,7 @@ import { randomUUID } from 'node:crypto';
 import { tmpData } from './helpers';
 // @ts-expect-error — .mjs без типов
 import { toolPlan, streamPlan } from './e2e/mock_tools.mjs';
+process.env.KX_CODE_GONE = '0';
 
 const dir = tmpData();
 delete process.env.KX_AGENT_TOOLS;

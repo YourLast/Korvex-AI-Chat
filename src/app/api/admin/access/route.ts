@@ -3,7 +3,7 @@ import { fail, json } from '@/lib/api';
 import { adminOrKey } from '@/lib/adminAuth';
 import { getDb, schema } from '@/lib/db';
 import { getModels } from '@/lib/models';
-import { FEATURE_IDS } from '@/lib/features';
+import { FEATURE_IDS, shownFeatures } from '@/lib/features';
 import { ruleOf, setRule } from '@/lib/access';
 import { mcpServer, mcpServers } from '@/lib/mcp/servers';
 
@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 function view() {
   const db = getDb();
   const models = getModels().filter((m) => !m.hidden).map((m) => ({ id: m.id, name: m.name, roles: m.roles ?? null, rule: ruleOf('model', m.id) }));
-  const features = FEATURE_IDS.filter((id) => id !== 'signup').map((id) => ({ id, rule: ruleOf('feature', id) }));
+  const features = shownFeatures().filter((id) => id !== 'signup').map((id) => ({ id, rule: ruleOf('feature', id) }));
   const users = db.select({ id: schema.users.id, name: schema.users.name, email: schema.users.email, role: schema.users.role }).from(schema.users).all();
   const invites = db.select({ id: schema.invites.id, note: schema.invites.note, role: schema.invites.role, uses: schema.invites.uses, createdAt: schema.invites.createdAt }).from(schema.invites).all()
     .filter((i) => (i.uses ?? 0) > 0).sort((a, b) => b.createdAt - a.createdAt);

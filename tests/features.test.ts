@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tmpData } from './helpers';
+process.env.KX_CODE_GONE = '0';
 
 tmpData();
 let cur: { id: string } | null = null;

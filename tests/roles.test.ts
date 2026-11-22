@@ -3,6 +3,7 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { isValidElement, type ReactElement } from 'react';
 import { eq } from 'drizzle-orm';
 import { tmpData } from './helpers';
+process.env.KX_CODE_GONE = '0';
 
 const jar = new Map<string, string>();
 vi.mock('next/headers', () => ({
