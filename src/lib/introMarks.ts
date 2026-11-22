@@ -20,6 +20,6 @@ export function introVoice(text: string): string {
   const [first, ...rest] = t.split(/\n\n/);
   const sents = first.split(/(?<=[.!?…])\s+/);
   if (sents.length > 1) { const keep = sents.filter((x) => !PRAISE_SENT.test(x)); if (keep.length && keep.length < sents.length) t = [keep.join(' '), ...rest].join('\n\n'); }
-  for (const [re, to] of FEM) t = t.replace(re, to);
+  t = t.split(/(«[^»\n]*»|"[^"\n]*"|“[^”\n]*”|„[^“”\n]*[“”])/u).map((part, i) => (i % 2 ? part : FEM.reduce((x, [re, to]) => x.replace(re, to), part))).join('');
   return t;
 }
