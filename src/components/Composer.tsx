@@ -171,7 +171,10 @@ export const Composer = forwardRef<ComposerHandle, {
           preview = URL.createObjectURL(p.blob);
           fd.append('file', p.blob, p.name); fd.append('w', String(p.w)); fd.append('h', String(p.h));
           patchUp(tmp, (x) => ({ ...x, name: p.name, size: p.blob.size, preview, w: p.w, h: p.h }));
-        } else { fd.append('file', f0); if (modelId) fd.append('model', modelId); }
+        } else {
+          fd.append('file', f0); if (modelId) fd.append('model', modelId);
+          if (/\.pdf$/i.test(f0.name)) { preview = URL.createObjectURL(f0); patchUp(tmp, (x) => ({ ...x, preview })); }
+        }
         let stopProg: (() => void) | null = null;
         if (!isImg) { const pid = newPid(); fd.append('pid', pid); stopProg = pollProgress(pid, (p) => patchUp(tmp, (x) => (x.status === 'uploading' ? { ...x, prog: p } : x))); }
         let kind: FileErrKind = 'net';

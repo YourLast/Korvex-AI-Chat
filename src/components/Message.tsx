@@ -1,4 +1,5 @@
 'use client';
+import { PdfThumb, isPdf } from './PdfThumb';
 import Link from 'next/link';
 import { genTokens } from '@/lib/genspeed';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -86,7 +87,7 @@ export function FileCard({ f }: { f: FileChip }) {
   const sub = [dir, fmtBytes(f.size, tx.lang), f.info?.pages ? tx(fmt === 'xlsx' ? 'msg.pagesSheets' : 'msg.pagesPages', { n: Number(f.info.pages) }) : '', tok && !simple ? tokText(tx.lang, tok) : ''].filter(Boolean).join(' · ');
   return (
     <button type="button" className="attach attach--open" title={f.name} aria-label={tx('files.openFile', { name: f.name })} data-testid="sent-file" onClick={() => openFile({ id: f.id, name: f.name })}>
-      <span className="ficon"><Icon n={fmt === 'xlsx' || fmt === 'csv' ? 'table' : 'file-text'} /></span>
+      <span className="ficon">{isPdf(f.name) ? <PdfThumb src={`/api/files/${f.id}`}><Icon n="file-text" /></PdfThumb> : <Icon n={fmt === 'xlsx' || fmt === 'csv' ? 'table' : 'file-text'} />}</span>
       <span className="fmeta"><b>{baseName(f.name)}</b><small>{sub}</small></span>
     </button>
   );

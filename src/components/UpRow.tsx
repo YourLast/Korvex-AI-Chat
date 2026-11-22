@@ -1,4 +1,5 @@
 'use client';
+import { PdfThumb, isPdf } from './PdfThumb';
 import { useCanAgents, useSimple } from './Shell';
 import { useLayoutEffect, useRef } from 'react';
 import { fmtBytes } from '@/lib/format';
@@ -124,7 +125,10 @@ function FileTile({ u, onRemove }: { u: Up; onRemove: (u: Up) => void }) {
   const meta = u.status === 'error' ? u.error ?? '' : prog ?? (u.status === 'uploading' ? tx('comp.reading') : size);
   const body = (
     <>
-      <span className="ft-type" data-tone={fileTone(u.name)}>{u.status === 'error' ? <Icon n="alert" sm /> : extOf(u.name)}</span>
+      {}
+      {u.status !== 'error' && isPdf(u.name) && (u.preview || u.chip)
+        ? <PdfThumb src={u.preview ?? `/api/files/${u.chip!.id}`} px={38} className="ft-thumb"><span className="ft-type" data-tone="pdf">{extOf(u.name)}</span></PdfThumb>
+        : <span className="ft-type" data-tone={fileTone(u.name)}>{u.status === 'error' ? <Icon n="alert" sm /> : extOf(u.name)}</span>}
       <span className="ft-text"><b>{nameParts(u.name).head}<span className="ft-tail">{nameParts(u.name).tail}</span></b><small data-testid={prog ? 'up-prog' : undefined}>{meta}</small></span>
     </>
   );

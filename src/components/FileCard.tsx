@@ -1,4 +1,5 @@
 'use client';
+import { PdfThumb } from './PdfThumb';
 import { useState, type ReactNode } from 'react';
 import { useT } from '@/lib/i18n/react';
 import { previewKind } from '@/lib/previewKind';
@@ -33,7 +34,7 @@ export function FileCard({ href, name, table, meta, children }: { href: string; 
     <span className="dl dl-pv" data-testid="file-card" data-kind={kind}>
       <button type="button" className="dl-open" onClick={(e) => (pdf ? openFile({ id: href, name, href }) : openDoc({ href, name, kind }, e.currentTarget))} aria-label={t('doc.open', { name })} data-testid="file-open"
         onPointerEnter={() => { if (!pdf) prewarm(href); }} onPointerDown={() => { if (!pdf) prewarm(href); }}>
-        <span className="ficon"><Icon n={kind === 'slides' ? 'slides' : 'file-text'} /></span>
+        <span className="ficon">{pdf ? <PdfThumb src={href}><Icon n="file-text" /></PdfThumb> : <Icon n={kind === 'slides' ? 'slides' : 'file-text'} />}</span>
         <span className="fmeta"><b>{children}</b><small>{note ?? meta}</small></span>
       </button>
       <SaveLink className="btn" href={href} name={name} onNote={say} testid="file-dl"><Icon n="download" />{t('md.download')}</SaveLink>

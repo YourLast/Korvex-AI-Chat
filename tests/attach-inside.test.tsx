@@ -54,3 +54,14 @@ describe('PDF смотрим в чате', () => {
     closeFile();
   });
 });
+
+describe('миниатюра первой страницы PDF', () => {
+  it('пока рисуется (или не вышло) — прежний квадрат «PDF»; у CSV — квадрат как раньше', () => {
+    const pdf: Up = { tmp: 'p2', name: 'Скан.pdf', size: 1000, status: 'ready', preview: 'blob:x', chip: { id: 'pf2', name: 'Скан.pdf', size: 1000 } as never };
+    const csv: Up = { tmp: 'c2', name: 'a.csv', size: 10, status: 'ready', chip: { id: 'cf2', name: 'a.csv', size: 10 } as never };
+    const r = render(wrap('user', createElement(UpRow, { items: [pdf, csv], onRemove: () => {}, view: 'c' })));
+    const types = [...r.container.querySelectorAll('.ft-type')].map((e) => [e.textContent, e.getAttribute('data-tone')]);
+    expect(types).toEqual([['PDF', 'pdf'], ['CSV', 'sheet']]);
+    expect(r.container.querySelector('[data-testid=pdf-thumb]')).toBeNull();
+  });
+});

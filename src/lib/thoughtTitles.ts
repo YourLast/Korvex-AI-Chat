@@ -10,7 +10,7 @@ export function thoughtsIn(text: string): Thought[] {
   const out: Thought[] = [];
   for (const m of String(text ?? '').matchAll(LINE)) {
     const [a, ...rest] = (m[1] ?? m[2] ?? '').split('|');
-    const title = clean(a).replace(/^\d{1,2}\s*[.)](?!\d)\s*/, ''), note = clean(rest.join('|'));
+    const title = clean(a).replace(/^\d{1,2}\s*[.)](?!\d)\s*/, '').replace(/^\d{1,2}(?=[А-ЯЁA-Z][а-яёa-z])/, '') , note = clean(rest.join('|'));
     if (title.length >= 2) out.push({ title: cut(title, 90), ...(m[1] && note.length >= 2 ? { note: cut(note, 120) } : {}) });
   }
   return out;

@@ -842,3 +842,7 @@ div.ft-open { cursor: default; }
 @media (max-width: 760px) { .ft--doc { width: 200px; } .up-row--c { padding: 6px 4px 2px; } }
 @media (prefers-reduced-motion: reduce) { .ft { animation: none; } .ft-bar i { animation: none; width: 100%; opacity: .5; } }
 .ft-tail { white-space: nowrap; }
+.pdf-thumb { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top center; border-radius: inherit; animation: ft-in 320ms var(--ease-out) both; }
+.ft-thumb.pdf-thumb { flex: none; width: 38px; height: 38px; border-radius: 8px; box-shadow: 0 0 0 1px var(--line-1); }
+.ficon .pdf-thumb { border-radius: inherit; }
+@media (prefers-reduced-motion: reduce) { .pdf-thumb { animation: none; } }
