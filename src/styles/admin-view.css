@@ -69,10 +69,6 @@
 .adm-tick[data-cur] { height: 8px; margin-top: -4px; outline: 2px solid var(--text-strong); outline-offset: 1px; z-index: 1; }
 .adm-tick:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
 
-.ans[data-rated] { position: relative; }
-.ans[data-rated]::before { content: ""; position: absolute; left: calc(var(--s-3) * -1); top: 0; bottom: 0; width: 2px; border-radius: 2px; }
-.ans[data-rated="down"]::before { background: var(--neg); }
-.ans[data-rated="up"]::before { background: var(--pos); }
 .ans-pick > .adm-mark { flex: 1; min-width: 0; }
 .adm-mark { display: flex; flex-direction: column; gap: var(--s-1); padding: var(--s-3) var(--s-4); border-radius: var(--r-3); background: color-mix(in srgb, var(--neg) 11%, transparent); }
 .adm-mark--up { background: color-mix(in srgb, var(--pos) 11%, transparent); }
@@ -104,7 +100,6 @@
   .adm-tick { top: 0; bottom: 0; left: calc(var(--p) * 100%); right: auto; width: 4px; height: auto; margin: 0 0 0 -2px; }
   .adm-tick::after { inset: -8px -10px; }
   .adm-tick[data-cur] { width: 8px; height: auto; margin-left: -4px; }
-  .ans[data-rated]::before { left: calc(var(--s-3) * -1 + 2px); }
   .adm-ugear { width: var(--hit); }
   .adm-ulink { flex-wrap: wrap; row-gap: var(--s-1); }
   .adm-ulink > .k-row-m { flex: 1 1 100%; }

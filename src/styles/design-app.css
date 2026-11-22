@@ -203,7 +203,7 @@ symbol *, svg.i * { vector-effect: non-scaling-stroke; }
 .think > summary .chev { transition: transform var(--dur-base) var(--ease); }
 .think[open] > summary .chev { transform: rotate(90deg); }
 .think > summary span.tnum { color: var(--text-3); }
-.think-body { margin: var(--s-1) 0 0 var(--s-2); padding: var(--s-1) 0 var(--s-1) var(--s-4); border-left: 1px solid var(--line-2);
+.think-body { margin: var(--s-1) 0 0 var(--s-2); padding: var(--s-1) 0 var(--s-1) var(--s-4);
   display: flex; flex-direction: column; gap: var(--s-2); color: var(--text-2); font-size: var(--fs-ui); line-height: var(--lh-ui); letter-spacing: var(--ls-ui); }
 
 .prose { color: var(--text-1); font-size: var(--fs-body); line-height: var(--lh-body); letter-spacing: var(--ls-body); }

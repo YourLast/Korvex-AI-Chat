@@ -82,9 +82,9 @@ button.k-row:disabled .k-row-t { color: var(--text-3); }
   font: inherit; font-size: var(--fs-body); line-height: var(--lh-body); letter-spacing: var(--ls-body); font-variant-numeric: tabular-nums; }
 .k-field textarea { resize: vertical; min-height: calc(var(--lh-body) * 2); }
 .k-field input::placeholder, .k-field textarea::placeholder { color: var(--text-3); }
-.k-field:focus-within { background: rgba(var(--ink), .03); box-shadow: inset 2px 0 0 var(--text-strong); }
+.k-field:focus-within { background: rgba(var(--ink), .05); }
 .k-field[data-invalid] .k-field-l { color: var(--neg); }
-.k-field[data-invalid] { box-shadow: inset 2px 0 0 var(--neg); }
+.k-field[data-invalid] { background: color-mix(in srgb, var(--neg) 8%, transparent); }
 .k-field--mono input, .k-field--mono textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
 @media (max-width: 760px) { .k-field input, .k-field textarea { font-size: 16px; } }
 

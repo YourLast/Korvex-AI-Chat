@@ -27,7 +27,7 @@
 
 .wk-list, .wk-sublist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; min-width: 0; }
 .wk-list { gap: 2px; }
-.wk-sublist { gap: 0; margin: 2px 0 var(--s-1) calc(var(--icon-sm) + var(--s-2)); padding-left: var(--s-2); border-left: 1px solid var(--line-1); }
+.wk-sublist { gap: 0; margin: 2px 0 var(--s-1) calc(var(--icon-sm) + var(--s-2)); padding-left: var(--s-2); }
 .wk-step { min-width: 0; border-radius: var(--r-2); }
 .wk-row { display: flex; align-items: center; min-width: 0; border-radius: var(--r-2); transition: background var(--dur-fast) var(--ease); }
 .wk-head { flex: 1; display: flex; align-items: center; gap: var(--s-2); min-width: 0; min-height: var(--ctl-lg); padding: 0 var(--s-2) 0 var(--s-1); margin-left: calc(-1 * var(--s-1));
@@ -185,7 +185,7 @@ button.wk-head:active { background: var(--surface-press); }
 .wk-think .md-fig { max-width: min(100%, 320px); }
 .wk-think .md-fig .md-img { max-height: 220px; }
 
-.wk-step.is-shown > .wk-row > .wk-head, .wk-group.is-shown > .wk-row > .wk-head { background: var(--surface-2); box-shadow: inset 2px 0 0 var(--text-1); border-radius: var(--r-1); }
+.wk-step.is-shown > .wk-row > .wk-head, .wk-group.is-shown > .wk-row > .wk-head { background: var(--surface-2); border-radius: var(--r-1); }
 .wk-step.is-shown .wk-title { color: var(--text-1); }
 
 .wk-search { max-height: min(60vh, 520px); overflow-y: auto; overscroll-behavior: contain; padding: var(--s-2) var(--s-3); border: 1px solid var(--line-1); border-radius: var(--r-2); background: var(--surface-1); }
