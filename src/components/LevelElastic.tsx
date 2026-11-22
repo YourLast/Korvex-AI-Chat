@@ -9,6 +9,14 @@ import '@/styles/elastic.css';
 
 export const multFmt = (x: number, lang: string) => new Intl.NumberFormat(lang === 'en' ? 'en-US' : lang === 'sr' ? 'sr-Latn' : 'ru-RU', { maximumFractionDigits: 2 }).format(x);
 
+const times = (n: number) => (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'few' : 'many');
+export function multNote(tx: ReturnType<typeof useT>, lang: string, x: number, uniform: boolean): string {
+  if (x === 1) return tx('picker.multSame');
+  const n = x > 1 ? x : Math.round(1 / x);
+  const v = { n: multFmt(n, lang), w: tx(times(n) === 'few' ? 'picker.timesFew' : 'picker.timesMany') };
+  return x > 1 ? tx(uniform ? 'picker.multFaster' : 'picker.multFasterWeek', v) : tx('picker.multSlower', v);
+}
+
 export function LevelElastic({ model, value, onChange }: { model: PublicModel; value: string; onChange: (levelId: string) => void }) {
   const tx = useT();
   const lang = useLang();
@@ -17,7 +25,7 @@ export function LevelElastic({ model, value, onChange }: { model: PublicModel; v
   const live = useRef(onChange);
   live.current = onChange;
   const opts = { levels: model.levels, value, caption: tx('picker.thinkLevel'), label: tx('picker.thinkLevelOf', { model: model.name }), testId: `levels-${model.id}`,
-    ...(MULT_VIEW ? { mult: { view: MULT_VIEW, fmt: (x: number) => tx('picker.mult', { n: multFmt(x, lang) }), note: tx('picker.multNote') } } : {}) };
+    ...(MULT_VIEW ? { mult: { view: MULT_VIEW, fmt: (x: number) => tx('picker.mult', { n: multFmt(x, lang) }), note: (x: number, uniform: boolean) => multNote(tx, lang, x, uniform) } } : {}) };
   useEffect(() => {
     if (!host.current) return;
     const handle = mountElastic(host.current, { ...opts, onChange: (id) => live.current(id) });

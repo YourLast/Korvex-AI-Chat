@@ -2,7 +2,7 @@ import { MARK, type Tip } from './glint';
 import { haptic as vibrate } from './haptic';
 
 export type ELevel = { id: string; label: string; hint?: string; mult?: number };
-export type EMult = { view: 'head' | 'cells'; fmt: (x: number) => string; note: string };
+export type EMult = { view: 'head' | 'cells'; fmt: (x: number) => string; note: (x: number, uniform: boolean) => string };
 export type EOpts = {
   levels: ELevel[];
   value: string;
@@ -158,8 +158,6 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
   const buildMults = () => {
     mrow.textContent = '';
     mrow.hidden = !inCells();
-    note.hidden = !anyMult();
-    note.textContent = anyMult() ? o.mult!.note : '';
     if (!inCells()) return;
     for (const l of levels) {
       const c = document.createElement('span');
@@ -207,6 +205,9 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
     mul.textContent = m ? o.mult!.fmt(m) : '';
     mul.hidden = !m;
     mul.classList.toggle('is-max', !!m && l?.id === 'max' && !uniform());
+    const nt = l?.mult && anyMult() ? o.mult!.note(l.mult, uniform()) : '';
+    note.textContent = nt;
+    note.hidden = !nt;
     zone.setAttribute('aria-label', o.label);
     zone.setAttribute('aria-valuemax', String(Math.max(0, n - 1)));
     zone.setAttribute('aria-valuenow', String(near));
@@ -332,7 +333,7 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
 
   return {
     update(u) {
-      const key = () => levels.map((l) => `${l.id}:${l.mult ?? ''}`).join(',') + `|${o.mult?.view ?? ''}|${o.mult?.note ?? ''}`;
+      const key = () => levels.map((l) => `${l.id}:${l.mult ?? ''}`).join(',') + `|${o.mult?.view ?? ''}`;
       const prevIds = key(), prevVal = levels[near]?.id;
       o = { ...o, ...u };
       levels = o.levels; n = levels.length;

@@ -2,14 +2,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import { mountElastic, type ELevel, type EMult } from '@/lib/elastic';
-import { multFmt } from '@/components/LevelElastic';
+import { multFmt, multNote } from '@/components/LevelElastic';
+import { tr } from '@/lib/i18n/core';
 import { publicModels } from '@/lib/models';
 
 const cfgPath = process.env.MODELS_CONFIG || 'tests/fixtures/models.json';
 const cfg = JSON.parse(fs.readFileSync(cfgPath, 'utf8')) as { models: { id: string; mult?: number; multCalc?: { at: string; recheck: string }; levels: { id: string; mult?: number }[] }[] };
 let hosts: HTMLElement[] = [];
 afterEach(() => { hosts.forEach((x) => x.remove()); hosts = []; });
-const mult = (view: EMult['view']): EMult => ({ view, fmt: (x) => `×${multFmt(x, 'ru')}`, note: 'пояснение' });
+const tx = ((k: string, v?: Record<string, string>) => tr('ru', k as never, v as never)) as never;
+const mult = (view: EMult['view']): EMult => ({ view, fmt: (x) => `×${multFmt(x, 'ru')}`, note: (x, u) => multNote(tx, 'ru', x, u) });
 function mount(levels: ELevel[], value: string, view: EMult['view']) {
   const host = document.createElement('div'); document.body.append(host); hosts.push(host);
   const h = mountElastic(host, { levels, value, caption: 'c', label: 'l', onChange: vi.fn(), mult: mult(view) });
@@ -37,9 +39,12 @@ describe('множители лимита', () => {
     const m = host.querySelector<HTMLElement>('.kxe-mult')!;
     expect(m.textContent).toBe('×3'); expect(m.classList.contains('is-max')).toBe(true);
     expect(host.querySelector<HTMLElement>('.kxe-mrow')!.hidden).toBe(true);
-    expect(host.querySelector('.kxe-note')!.textContent).toBe('пояснение');
+    const note = host.querySelector<HTMLElement>('.kxe-note')!;
+    expect(note.textContent).toBe('Тратит недельный лимит в 3 раза быстрее');
     h.update({ value: 'xhigh' }); expect(m.textContent).toBe('×1'); expect(m.classList.contains('is-max')).toBe(false);
-    h.update({ value: 'off' }); expect(m.hidden).toBe(true);
+    expect(note.textContent).toBe('Обычный расход лимита');
+    h.update({ value: 'low' }); expect(note.textContent).toBe('Тратит лимит примерно в 4 раза медленнее');
+    h.update({ value: 'off' }); expect(m.hidden).toBe(true); expect(note.hidden).toBe(true);
   });
   it("'cells': под каждой подписью свой множитель, выбранный is-on; один множитель на все уровни — в строке подписи, без ячеек и без «теплее»", () => {
     const { h, host } = mount(ET, 'low', 'cells');
@@ -52,6 +57,9 @@ describe('множители лимита', () => {
     expect(host.querySelector<HTMLElement>('.kxe-mrow')!.hidden).toBe(true);
     const m = host.querySelector<HTMLElement>('.kxe-mult')!;
     expect(m.textContent).toBe('×70'); expect(m.classList.contains('is-max')).toBe(false);
+    expect(host.querySelector('.kxe-note')!.textContent).toBe('Тратит лимит в 70 раз быстрее');
+    h.update({ levels: ['low', 'max'].map((id) => ({ id, label: id, mult: 17 })), value: 'low' });
+    expect(host.querySelector('.kxe-note')!.textContent).toBe('Тратит лимит в 17 раз быстрее');
   });
   it('без множителей у модели — ни строки, ни ячеек, ни пояснения', () => {
     const { host } = mount([{ id: 'off', label: 'off' }, { id: 'on', label: 'on' }], 'on', 'cells');

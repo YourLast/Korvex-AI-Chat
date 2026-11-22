@@ -424,8 +424,11 @@ export function ModeSwitch({ code, onChange }: { code: boolean; onChange: (code:
   useEffect(() => setOn(code), [code]);
   const pick = (v: boolean) => { if (on === v) return; setOn(v); startTransition(() => onChange(v)); };
   return (
-    <div className="hm-tabs" role="radiogroup" aria-label={t('work.code.modeAria')} data-testid="home-mode">
-      {opts.map((o) => <button key={o.id} type="button" role="radio" aria-checked={on === o.v} data-testid={o.id} onClick={() => pick(o.v)}>{o.label}</button>)}
+    <div className="k-seg hm-seg" role="radiogroup" aria-label={t('work.code.modeAria')} data-testid="home-mode" style={{ ['--i' as string]: on ? 1 : 0 }}>
+      <span className="hm-pill" aria-hidden="true" />
+      {opts.map((o) => (
+        <button key={o.id} type="button" role="radio" aria-checked={on === o.v} data-testid={o.id} onClick={() => pick(o.v)}>{o.label}</button>
+      ))}
     </div>
   );
 }

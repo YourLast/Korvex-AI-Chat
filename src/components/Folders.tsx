@@ -87,12 +87,17 @@ export function FolderSection({ folders, threads, row, onChanged, setFolders }: 
       </div>
       {card !== 'off' && (
         <div className={`fld-card${card === 'leaving' ? ' is-leaving' : ''}`} data-testid="folders-empty" aria-hidden={card === 'leaving' ? true : undefined}>
-          {}
-          <div className="fld-card-in">
-            <button type="button" className="nav fld-hint" onClick={() => setEdit('new')} title={t('fld.new')} tabIndex={card === 'leaving' ? -1 : undefined} data-testid="folder-new-card">
-              <Icon n="plus" sm /><span className="nav-t">{t('fld.card')}</span>
-            </button>
-          </div>
+          <div className="fld-card-in"><div className="fld-card-box">
+            <div className="fld-card-row">
+              {}
+              <svg className="fld-art" viewBox="0 0 40 40" width="40" height="40" aria-hidden="true" focusable="false">
+                <rect className="fa-b" x="4.5" y="4.5" width="22" height="22" rx="5.5" />
+                <rect className="fa-a" x="13.5" y="13.5" width="22" height="22" rx="5.5" />
+              </svg>
+              <p className="fld-card-t">{t('fld.card')}</p>
+            </div>
+            <button type="button" className="fld-card-btn" onClick={() => setEdit('new')} tabIndex={card === 'leaving' ? -1 : undefined} data-testid="folder-new-card"><Icon n="plus" sm /><span>{t('fld.new')}</span></button>
+          </div></div>
         </div>
       )}
       {folders.map((f) => {

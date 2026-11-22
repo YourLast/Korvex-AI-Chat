@@ -100,13 +100,13 @@ describe('карточка пустого раздела «Проекты»', ()
   const props = { threads: [] as ThreadLite[], row: () => null, onChanged: () => {}, setFolders: () => {} };
   const folder = { id: 'f1', name: 'Ремонт', color: 'blue', instruction: '', visible: true, collapsed: false, n: 0 } as never;
 
-  it('на трёх языках: одна тихая строка, нажатие — новый проект; старого серого абзаца нет', () => {
+  it('на трёх языках: одна строка, кнопка «Новый проект» открывает окно; старого серого абзаца нет', () => {
     for (const [lang, line, btn] of [['ru', 'Чаты по теме — в одном месте', 'Новый проект'], ['en', 'Keep related chats in one place', 'New project'], ['sr', 'Čatovi po temi na jednom mestu', 'Novi projekat']] as const) {
       render(wrap(lang, createElement(FolderSection, { ...props, folders: [] })));
       const card = screen.getByTestId('folders-empty');
-      expect(screen.getByTestId('folder-new-card').textContent).toBe(line);
-      expect(screen.getByTestId('folder-new-card').getAttribute('title')).toBe(btn);
-      expect(card.querySelector('svg.fld-art, .fld-card-box')).toBeNull();
+      expect(card.textContent).toContain(line);
+      expect(screen.getByTestId('folder-new-card').textContent).toBe(btn);
+      expect(card.querySelector('svg.fld-art')).not.toBeNull();
       expect(document.querySelector('.fld-empty')).toBeNull();
       cleanup();
     }
