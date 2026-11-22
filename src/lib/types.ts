@@ -43,6 +43,9 @@ export type AssistantMeta = {
   jobId?: string;
   lane?: 'a' | 'b';
   blocks?: import('./blocks/text').Snapshots | null;
+  guesses?: { id: string; text: string }[];
+  introInvite?: boolean;
+  dayFix?: string;
   memUpd?: { op: string; text: string; id?: string; maybe?: boolean; fix?: boolean; section?: string; prev?: { text: string; section: string; sure: number; key?: string | null; origin?: string } | null; undone?: boolean }[];
 };
 

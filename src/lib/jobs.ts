@@ -31,7 +31,8 @@ import type { StepEvent } from './tools/types';
 import type { MemoryInfo } from './types';
 import { fileSnapshots, hasBlocks, snapshotRates } from './blocks/snapshot';
 import { INTRO, hasIntroMarks, introAfterTurn, markIntroEnd, memoryAllowed, memoryBlockInfo, stripIntroMarks } from './memory';
-import { turnNotes } from './introInvite';
+import { inviteUnder, turnNotes } from './introInvite';
+import { guessesFor } from './guessConfirm';
 import { runClaude } from './anthropic/run';
 import { isClaudeUsage, sumClaudeUsage } from './anthropic/price';
 import type { ClaudeRecord } from './anthropic/history';
@@ -719,6 +720,17 @@ async function run(j: Live) {
 
 function safeSnap(userId: string, content: string) { try { return fileSnapshots(userId, content); } catch (err) { console.error('[blocks] snapshot', (err as Error).message); return {}; } }
 
+function answerExtras(j: Live, messageId: string): { guesses?: { id: string; text: string }[]; introInvite?: true } {
+  if (j.kind !== 'chat' || j.lane || !j.threadId) return {};
+  try {
+    const th = getDb().select({ id: schema.threads.id, temporary: schema.threads.temporary, createdAt: schema.threads.createdAt }).from(schema.threads).where(eq(schema.threads.id, j.threadId)).get();
+    if (!th || th.temporary || !memoryAllowed(j.userId, th)) return {};
+    const g = guessesFor(j.userId, j.content);
+    const inv = inviteUnder(j.userId, messageId, j.content);
+    return { ...(g.length ? { guesses: g } : {}), ...(inv ? { introInvite: true as const } : {}) };
+  } catch (e) { console.error('[memory] answer extras', (e as Error).message); return {}; }
+}
+
 function finalize(j: Live, status: JobStatus) {
   const e = ex();
   if (j.status === 'done' || j.status === 'error' || j.status === 'cancelled') return;
@@ -766,7 +778,8 @@ function finalize(j: Live, status: JobStatus) {
           durationMs, finish: j.finish, error: j.error, errorUser, stopped, status, jobId: j.id,
           ...(j.steps.size || j.base.meta.steps ? { steps: stepList(j) } : {}), ...(j.agent ? { agent: j.agent } : {}), ...(j.claude ? { claude: j.claude } : {}),
           ...(hasBlocks(j.content) ? ((files) => (Object.keys(files).length ? { blocks: { ...((j.base.meta.blocks as object | undefined) ?? {}), files } } : {}))(safeSnap(j.userId, j.content)) : {}),
-          gen: j.gen.t0 ? { ms: j.gen.act, n: j.gen.n, c: j.gen.c, tps: serverTps(j.usage), tokens: typeof j.usage?.completion_tokens === 'number' ? j.usage.completion_tokens : null } : (j.base.meta.gen ?? null) };
+          gen: j.gen.t0 ? { ms: j.gen.act, n: j.gen.n, c: j.gen.c, tps: serverTps(j.usage), tokens: typeof j.usage?.completion_tokens === 'number' ? j.usage.completion_tokens : null } : (j.base.meta.gen ?? null),
+          ...(status === 'done' && !stopped ? answerExtras(j, row.id) : {}) };
         db.update(schema.messages).set({ content: j.content, reasoning: j.reasoning || null, reasoningMs: j.rMs || null, meta }).where(eq(schema.messages.id, row.id)).run();
       }
       if (j.threadId) db.update(schema.threads).set({ updatedAt: Date.now(), ...(status === 'done' || status === 'error' ? { answeredAt: Date.now() } : {}) }).where(eq(schema.threads.id, j.threadId)).run();

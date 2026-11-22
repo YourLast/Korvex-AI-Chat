@@ -38,6 +38,7 @@ import { tokText, useFileTok } from '@/lib/fileTokens';
 import { baseName, dirName, groupByFolder } from '@/lib/upload/paths';
 import { BRAND_WORDS, OUT_PREFIX } from '@/ext/client';
 import { copyText } from '@/lib/clipboard';
+import { GuessLine, InviteLine } from './AnswerLines';
 
 export function userError(e: string, lang: Lang = 'ru'): string {
   if (/^\d{3}:/.test(e) || /[a-z]{4,}/i.test(e.replace(BRAND_WORDS, ''))) return tr(lang, 'msg.noReply');
@@ -281,6 +282,9 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
         </div>
       )}
       {!m.streaming && meta.memUpd?.length ? <MemUpdated items={meta.memUpd as MemUpdItem[]} messageId={m.id} /> : null}
+      {!m.streaming && !readOnly && !bare && meta.guesses?.length ? <GuessLine key={meta.guesses.map((g) => g.id).join()} items={meta.guesses} /> : null}
+      {!m.streaming && !readOnly && !bare && meta.introInvite ? <InviteLine messageId={m.id} /> : null}
+      {!m.streaming && meta.dayFix ? <div className="ans-line ans-line--fix" role="note" data-testid="day-fix">{meta.dayFix}</div> : null}
       {!m.streaming && (
         <div className="ans-foot">
           {meta.memory && !bare ? <MemoryLine memory={meta.memory} usage={meta.usage} fileNames={fileNames} /> : <span />}
@@ -289,7 +293,7 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
               <button type="button" className="btn btn--ghost" data-testid="continue" onClick={onContinue}>{tx('msg.continue')}</button>
             )}
             {onSwitch && <Versions s={m.siblings} onSwitch={onSwitch} />}
-            <button type="button" className="icon-btn" aria-label={tx('msg.copy')} onClick={() => { copyText(stripWebMarks(stripMarkers(blocksAsText(m.content, tx.lang, meta.blocks ?? undefined), 'plain', tx.lang))).then((ok) => { if (ok) setCopied(true); setTimeout(() => setCopied(false), 1200); }); }}>
+            <button type="button" className="icon-btn" aria-label={tx('msg.copy')} onClick={() => { if (!readOnly && !m.id.startsWith('a-')) void fetch(`/api/messages/${encodeURIComponent(m.id)}/copied`, { method: 'POST' }).catch(() => {}); copyText(stripWebMarks(stripMarkers(blocksAsText(m.content, tx.lang, meta.blocks ?? undefined), 'plain', tx.lang))).then((ok) => { if (ok) setCopied(true); setTimeout(() => setCopied(false), 1200); }); }}>
               <Icon n={copied ? 'check' : 'copy'} sm />
             </button>
             {!readOnly && last && canRegen && <button type="button" className="icon-btn" aria-label={tx('msg.regen')} onClick={onRegenerate} data-testid="regen"><Icon n="retry" sm /></button>}
@@ -298,6 +302,7 @@ export function AssistantMsg({ m, models, col, headSlot, footSlot, markSlot, las
         </div>
       )}
       {!m.streaming && footSlot && <div className="ans-pick">{footSlot}</div>}
+      {!m.streaming && !readOnly && <div id={`rate-why-${m.id}`} className="rate-slot" />}
     </div>
   );
 }

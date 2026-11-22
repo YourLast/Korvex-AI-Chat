@@ -35,6 +35,9 @@ export function sliceTail(rows: Message[], opts: LoadOpts): { rows: Message[]; h
 }
 
 export function loadThread(userId: string, threadId: string, opts: LoadOpts = {}) {
+  let open: Set<string> | null = null;
+  const openGuesses = () => (open ??= new Set(getDb().select({ id: schema.userMemory.id }).from(schema.userMemory)
+    .where(and(eq(schema.userMemory.userId, userId), eq(schema.userMemory.sure, 0))).all().map((r) => r.id)));
   const db = getDb();
   const thread = db.select().from(schema.threads).where(and(eq(schema.threads.id, threadId), eq(schema.threads.userId, userId))).get();
   if (!thread) return null;
@@ -69,7 +72,9 @@ export function loadThread(userId: string, threadId: string, opts: LoadOpts = {}
         ...(p ? { pair: { a: p.a, b: p.b, pick: p.pick ?? null, vote: votes.get(`${p.a}|${p.b}`) ?? null } } : {}) };
     }
     const steps = (m.meta as { steps?: MsgView['steps'] } | null)?.steps;
-    const v: MsgView = { id: m.id, role: 'assistant', content: m.content, reasoning: m.reasoning, reasoningMs: m.reasoningMs, meta: viewMeta(m.meta), siblings, rating: rates.get(m.id) ?? null, ...(steps?.length ? { steps } : {}) };
+    const gs = (m.meta as { guesses?: { id: string; text: string }[] } | null)?.guesses;
+    const liveGuesses = gs?.length ? gs.filter((g) => openGuesses().has(g.id)) : null;
+    const v: MsgView = { id: m.id, role: 'assistant', content: m.content, reasoning: m.reasoning, reasoningMs: m.reasoningMs, meta: liveGuesses ? { ...viewMeta(m.meta), guesses: liveGuesses.length ? liveGuesses : undefined } : viewMeta(m.meta), siblings, rating: rates.get(m.id) ?? null, ...(steps?.length ? { steps } : {}) };
     const lv = liveOfMessage(m.id);
     if (lv) {
       Object.assign(v, {

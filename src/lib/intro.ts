@@ -4,7 +4,7 @@ import { getDb, schema } from './db';
 import { cfg } from './cfg';
 import { getModels } from './models';
 import type { Thread } from './db/schema';
-import { INTRO, introMarked, introProgress, introRemembered, isSecret, listMemory, memoryAllowed, memoryMeta, ruleConflict, setMemoryMeta, threadAnswers, threadUserTexts } from './memory';
+import { INTRO, lateIntroEnd, introMarked, introProgress, introRemembered, isSecret, listMemory, memoryAllowed, memoryMeta, ruleConflict, setMemoryMeta, threadAnswers, threadUserTexts } from './memory';
 import { cancelThreadJobs, jobOfThread, submitTurn, type Submitted } from './jobs';
 import { considerIntro } from './curator';
 import { activePath, allMessages } from './tree';
@@ -38,6 +38,7 @@ export type IntroView = { threadId: string | null; messages: MsgView[]; busy: bo
 
 export function introView(userId: string): IntroView {
   if (!memoryAllowed(userId, null)) return { threadId: null, messages: [], busy: false, off: true };
+  lateIntroEnd(userId);
   const t = introThread(userId);
   if (!t) return { threadId: null, messages: [], busy: false };
   const v = loadThread(userId, t.id, { turns: 200 });

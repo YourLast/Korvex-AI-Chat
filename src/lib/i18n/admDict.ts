@@ -882,4 +882,5 @@ export const ADM: Record<string, readonly [string, string?]> = {
   "Режим hard: новые ходы не принимаются уже с недельного лимита тарифа.": ["Hard mode: new turns are refused from the plan's weekly limit on."],
   "Неделя обновится {0}.": ["The week resets on {0}."],
   "Час видеокарты ≈ {0}; ходы Claude — по цене Claude.": ["One GPU hour ≈ {0}; Claude turns at Claude prices."],
+  "длинно": ["too long"],
 };

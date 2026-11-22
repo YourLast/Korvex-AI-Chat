@@ -15,7 +15,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
   const p = Body.safeParse(await req.json().catch(() => null));
   if (!p.success) return fail(400, 'bad body');
-  const r = p.data.sure && p.data.text === undefined && p.data.section === undefined ? updateMemory(a.user.id, id, { sure: true }) : updateMemory(a.user.id, id, { text: p.data.text, section: p.data.section as never, origin: 'manual' });
+  const r = p.data.sure && p.data.text === undefined && p.data.section === undefined ? updateMemory(a.user.id, id, { sure: true }) : updateMemory(a.user.id, id, { text: p.data.text, section: p.data.section as never, origin: 'manual', ...(p.data.sure ? { sure: true } : {}) });
   if (!r) return fail(404, 'not found');
   if (!r.ok) return fail(400, r.message);
   publish(a.user.id, { t: 'memory', action: 'updated' });

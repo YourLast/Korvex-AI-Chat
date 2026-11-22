@@ -86,3 +86,52 @@
   .iiv.is-out { animation: fade-out 90ms linear forwards; }
   .iiv-body, .mi-prog { animation: none; }
 }
+.ans-line { margin-top: var(--s-2); font-size: var(--fs-ui); line-height: var(--lh-ui); letter-spacing: var(--ls-ui); color: var(--text-3); }
+.ans-link { padding: 6px 0; margin: -6px 0; border: 0; background: none; font: inherit; color: var(--text-2); text-decoration: underline; text-decoration-color: var(--line-3);
+  text-underline-offset: 3px; cursor: pointer; }
+.ans-link:hover { color: var(--text-1); text-decoration-color: currentColor; }
+.ans-link:disabled { opacity: .5; cursor: default; }
+.ans-link:focus-visible { outline: 2px solid var(--focus, var(--text-1)); outline-offset: 2px; border-radius: 2px; }
+.ans-line--edit { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-2) var(--s-3); }
+.ans-line-in { flex: 1 1 220px; min-width: 0; padding: 2px 0; border: 0; border-bottom: 1px solid var(--line-2); background: none; font: inherit; color: var(--text-1); }
+.ans-line-in:focus { outline: none; border-bottom-color: var(--text-2); }
+.ans-line--fix { color: var(--text-1); }
+.ans-link--quiet { color: var(--text-3); }
+.rate-slot:empty { display: none; }
+.mim-tick { flex: none; display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: var(--s-3); vertical-align: -3px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--line-3); }
+.mim-tick.is-on { box-shadow: none; color: var(--text-strong); border-radius: 0; }
+.mim-row .k-row-m { min-width: 0; }
+.mim-row .k-row-t { display: flex; align-items: flex-start; }
+.mim-row .k-row-s { padding-left: calc(16px + var(--s-3)); }
+.mim-row:not(.is-on):not(.k-row--muted) .k-row-t { color: var(--text-2); }
+.mim-sub { color: var(--text-3); }
+.mim-n { display: inline-block; min-width: 1.4em; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.mim-x { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; background: none; color: var(--text-3); cursor: pointer; }
+.mim-x:hover { color: var(--text-1); }
+.mim-field { padding: 0 var(--s-4) var(--s-4); }
+.mim-acts { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); margin: calc(var(--s-2) * -1) 0 var(--s-6); padding: 0 var(--s-4); }
+.mim-note { margin: 0; flex: 1 1 260px; color: var(--text-3); font-size: var(--fs-ui); line-height: var(--lh-ui); letter-spacing: var(--ls-ui); }
+.mimb { margin: 0 0 var(--s-6); padding: 0 var(--s-4); }
+.mimb-open { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: var(--s-3) 0; border: 0; border-top: 1px solid var(--line-1); border-bottom: 1px solid var(--line-1); background: none; text-align: left; font: inherit; cursor: pointer; }
+.mimb-t { color: var(--text-1); font-size: var(--fs-body); line-height: var(--lh-body); }
+.mimb-s, .mimb-lead--quiet { color: var(--text-3); font-size: var(--fs-ui); line-height: var(--lh-ui); }
+.mimb-h { display: flex; align-items: center; justify-content: space-between; }
+.mimb-h h2 { margin: 0; font-size: var(--fs-ui); line-height: var(--lh-ui); font-weight: var(--fw-medium); color: var(--text-2); }
+.mimb-steps { margin: var(--s-3) 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--s-2); color: var(--text-1); font-size: var(--fs-body); line-height: var(--lh-body); }
+.mimb-steps li { padding-left: 2px; }
+.mimb-steps li span { margin-right: var(--s-2); }
+.mimb-area { display: block; width: 100%; box-sizing: border-box; padding: var(--s-2) 0; border: 0; border-top: 1px solid var(--line-1); border-bottom: 1px solid var(--line-2); background: none; resize: vertical;
+  font: inherit; font-size: var(--fs-ui); line-height: var(--lh-ui); color: var(--text-1); }
+.mimb-area:focus { outline: none; border-bottom-color: var(--text-2); }
+.mimb-lead { margin: var(--s-3) 0 var(--s-1); color: var(--text-2); font-size: var(--fs-ui); line-height: var(--lh-ui); }
+.mimb-list { margin: 0; padding: 0; list-style: none; }
+.mimb-list > li { border-bottom: 1px solid var(--line-1); }
+.mimb-it { display: flex; align-items: flex-start; width: 100%; padding: var(--s-2) 0; border: 0; background: none; text-align: left; font: inherit; cursor: pointer; }
+.mimb-it .mim-tick { margin-top: 3px; }
+.mimb-tx { display: flex; flex-direction: column; gap: 2px; color: var(--text-2); font-size: var(--fs-body); line-height: var(--lh-body); }
+.mimb-it.is-on .mimb-tx { color: var(--text-1); }
+.mimb-tx small { color: var(--text-3); font-size: var(--fs-ui); line-height: var(--lh-ui); }
+.mimb-list--skip .mimb-it { cursor: default; }
+.mimb-list--skip .mimb-tx { color: var(--text-3); }
+.mim-acts--b { margin: var(--s-4) 0 0; padding: 0; }
+.mim-tick--none { box-shadow: none; }

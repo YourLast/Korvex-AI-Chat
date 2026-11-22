@@ -137,50 +137,49 @@ describe('знакомство — постоянный разговор', () =>
     expect(J.jobOfThread(v2.threadId!)).toBeNull();
   });
 
-  it('всё известное уже спросили — знакомство закончено («Спасибо, мне хватит»), модель вопросы не придумывает; не ответил — не переспрашивает; бухгалтер — свой блок', async () => {
+  it('v4 (знакомство v2, 22.11): ядро — 3 вопроса (участок, режимы и программы, формат с «ты»/«вы»), хвост — до 2 уточнений, если отвечает охотно; конец — итог «Спасибо, запомнила: …»', async () => {
     const M = await import('@/lib/memory');
     const rows = (over: Partial<Record<string, string>>) => [
       ['who', 'name', 'Зовут Мила'], ['work', 'role', 'Дизайнер'], ['interests', null, 'велосипед'], ['style', 'length', 'Коротко'],
       ['style', 'address', 'На «ты»'], ['style', 'tone', 'С юмором'], ['who', 'city', 'Казань'],
     ].filter(([, k]) => !(k && over[k] === 'skip')).map(([section, key, text], i) => ({ id: `x${i}`, userId: 'z', section, key, text, origin: 'auto', sure: 1, threadId: null, messageId: null, createdAt: 1, updatedAt: 1 }));
-    const Q = ['С какими задачами чаще всего будешь приходить?', 'В чём работаешь — какие программы и инструменты?', 'В каком виде тебе удобно получать ответы — таблицей или по шагам?', 'Что тебе важнее всего проверять в ответе?', 'Если удобно, прикрепи пример своего документа?'];
-    const all = M.introNote(rows({}) as never, new Set(), Q);
+    const Q = ['С какими программами и форматами ты работаешь?'];
+    const all = M.introNote(rows({}) as never, new Set(), Q, 'ru', ['Figma и PDF']);
     expect(all).toContain('Знакомство закончено');
-    expect(all).toContain('«Спасибо, мне хватит.»');
-    expect(all).toContain('пунктов не перечисляй');
+    expect(all).toContain('«Спасибо, запомнила: <2–3 главных факта его же словами>. Буду отвечать так. Поправить можно в «Памяти».»');
     expect(all).not.toContain('Ещё не знаешь');
-    const adr = M.introNote(rows({ address: 'skip' }) as never, new Set(), [...Q, 'Тебе удобнее на «ты» или на «вы»?']);
-    expect(adr).toContain('Знакомство закончено (о «на «ты» или на «вы»» он отвечать не стал — не переспрашивай)');
-    const left = M.introNote(rows({}) as never, new Set(), []);
-    expect(left).toContain('Ещё не знаешь (по порядку): в каком виде ему удобно получать ответы и расчёты и как он сам считает и работает');
-    expect(left).toContain('пример его документа');
-    expect(M.introNote(rows({}) as never, new Set(), Q.slice(0, 2))).toContain('Осталось 3 вопроса вместе с этим');
-    expect(M.introNote(rows({}) as never, new Set(), Q.slice(0, 4))).toContain('Это последний вопрос');
-    expect(left.split('Ещё не знаешь')[1]).not.toMatch(/город|интересно|юмор/);
-    expect(M.INTRO_RULES).toContain('«Спасибо, мне хватит.»');
+    const left = M.introNote([] as never, new Set(), []);
+    const todo = left.split('Ещё не знаешь (по порядку): ')[1];
+    expect(todo.indexOf('чем он занимается')).toBeLessThan(todo.indexOf('с какими программами'));
+    expect(todo.indexOf('с какими программами')).toBeLessThan(todo.indexOf('как ему удобнее получать ответы'));
+    expect(todo).toContain('на «ты» или на «вы»');
+    expect(todo).not.toMatch(/пример его документа|город|интересно|юмор/);
+    expect(left).toContain('Осталось 3 вопроса вместе с этим');
+    expect(M.introNote([] as never, new Set(), ['Чем вы занимаетесь?', 'С какими программами и форматами вы работаете?'], 'ru', ['юрист', 'Word'])).toContain('Это последний вопрос');
+    expect(M.INTRO_RULES).toContain('вопроса три и это полминуты');
+    expect(M.INTRO_RULES).toContain('«Спасибо, запомнила:');
     expect(M.INTRO_RULES).toContain('пока заметка называет темы, знакомство не заканчивай');
     expect(M.INTRO_RULES).toContain('вопросом не заканчивай');
-    expect(M.INTRO_RULES).toContain('я скажу, когда хватит');
     expect(M.INTRO_RULES).toContain('без канцелярита');
     expect(M.introNote(rows({}) as never, new Set(), Q, 'ru', [], true)).toContain('знакомство уже закончено');
     const acc = [{ id: 'a1', userId: 'z', section: 'work', key: 'role', text: 'Главный бухгалтер на аутсорсе', origin: 'auto', sure: 1, threadId: null, messageId: null, createdAt: 1, updatedAt: 1 }];
     const an = M.introNote(acc as never, new Set(), []);
-    expect(an).toContain('на каких режимах');
-    expect(an).toContain('1С');
-    expect(an).not.toContain('с какими задачами чаще всего');
-    expect(an).not.toContain('в какой сфере');
-    const accQ = ['На каких режимах клиенты — УСН, ОСНО?', 'В какой 1С работаете?', 'Что чаще всего считаете?', 'Как удобнее получать ответ — коротко или подробно?', 'Прикрепите пример отчёта, если удобно?', 'На «ты» или на «вы»?'];
-    const eager = ['веду учёт пятнадцати ООО на упрощёнке', 'в основном торговля и пара производств'];
-    const tail = M.introNote(acc as never, new Set(), accQ, 'ru', eager);
-    expect(tail).toContain('что постоянно проверяет и где');
-    expect(tail).toContain('главное я знаю');
+    expect(an).toContain('на каких режимах его компании и в какой программе');
+    expect(an).toContain('УСН 6 %, 1С:Бухгалтерия 3.0');
+    const accQ = ['На каких режимах ваши компании и в какой программе вы ведёте учёт?', 'Как вам удобнее получать ответы: коротко или подробно? На «ты» или на «вы»?'];
+    expect(M.introProgress(acc as never, accQ.slice(0, 1), ['УСН и 1С'])).toEqual({ left: 1, tail: false, end: false });
     expect(M.introNote(acc as never, new Set(), accQ, 'ru', ['да', 'нет'])).toContain('Знакомство закончено');
+    const eager = ['веду учёт пятнадцати ООО на упрощёнке, всё в 1С', 'коротко с итогом в первой строке, на вы'];
+    const t1 = M.introNote(acc as never, new Set(), accQ, 'ru', eager);
+    expect(t1).toContain('одно уточнение по его же словам');
+    expect(t1).toContain('Главное уже есть');
+    expect(M.introProgress(acc as never, accQ, eager)).toEqual({ left: 0, tail: true, end: false });
+    expect(M.introProgress(acc as never, ['Вы сказали «15 ООО» — все на УСН 6 %?', ...accQ], ['да, все 6 %', ...eager])).toEqual({ left: 0, tail: true, end: false });
+    expect(M.introProgress(acc as never, ['А торговля — опт или розница?', 'Вы сказали «15 ООО» — все на УСН 6 %?', ...accQ], ['опт', 'да, все 6 %', ...eager]).end).toBe(true);
     expect(M.isAccountant([] as never, ['я бухгалтер, веду пять ООО'])).toBe(true);
     expect(M.isAccountant([] as never, ['я программист'])).toBe(false);
-    expect(M.introProgress(acc as never, ['На каких режимах клиенты — УСН, ОСНО?'])).toEqual({ left: 5, tail: false, end: false });
-    expect(an).toContain('НДС «сверху» или «в том числе»');
-    expect(M.introNote([] as never, new Set(), [])).toContain('Это начало знакомства: поздоровайся одной короткой фразой, скажи, что вопросов несколько');
-    expect(M.introNote([] as never, new Set(), ['Привет! Как к тебе обращаться?'])).not.toContain('Это начало знакомства');
+    expect(M.introNote([] as never, new Set(), [])).toContain('Это начало знакомства: поздоровайся одной короткой фразой, скажи, что вопроса три и это полминуты');
+    expect(M.introNote([] as never, new Set(), ['Привет! Чем вы занимаетесь?'])).not.toContain('Это начало знакомства');
   });
 
   it('бар ввода шторки — тот же /api/chat: модель и уровень знакомства, ответ сразу в память; правки и сравнения нет', async () => {

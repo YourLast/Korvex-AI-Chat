@@ -19,7 +19,7 @@ beforeAll(async () => {
   process.env.KX_ANTHROPIC_BASE_URL = `http://127.0.0.1:${mock.port}`;
   process.env.KX_ANTHROPIC_RETRIES = '0';
   process.env.KX_RETRY_PAUSE_MS = '1';
-  process.env.KX_ANTHROPIC_NOFUNDS_RETRY_MS = '300';
+  process.env.KX_ANTHROPIC_NOFUNDS_RETRY_MS = '1200';
   process.env.KX_PUSH_SINK = '1';
   const cfg = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'tests/fixtures/models.json'), 'utf8'));
   for (const m of cfg.models) { if (m.provider !== 'anthropic') m.baseUrl = 'http://127.0.0.1:9/v1'; else { delete m.via; delete m.baseUrl; } delete m.systemPromptFile; delete m.extract; }
@@ -141,7 +141,7 @@ describe('роли', () => {
 });
 
 describe('ключи Anthropic: основной без денег -> запасной без потери хода', () => {
-  it('402 billing_error на основном: тот же ход на запасном; учёт $ по ключам; через 30 мин (в тесте 300 мс) — снова основной', async () => {
+  it('402 billing_error на основном: тот же ход на запасном; учёт $ по ключам; через 30 мин (в тесте 1,2 с) — снова основной', async () => {
     C._resetClaudeKeys();
     const t = newThread('alp');
     const n0 = reqs().length;
@@ -159,7 +159,7 @@ describe('ключи Anthropic: основной без денег -> запас
     const n1 = reqs().length;
     await ask(t, 'alp', 'Ещё вопрос');
     expect(reqs().slice(n1).map((r) => r.key)).toEqual(['k2']);
-    await new Promise((r) => setTimeout(r, 350));
+    await new Promise((r) => setTimeout(r, 1250));
     const n2 = reqs().length;
     await ask(t, 'alp', 'Снова основной');
     expect(reqs().slice(n2).map((r) => r.key)).toEqual(['k1']);

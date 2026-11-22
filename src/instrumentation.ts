@@ -24,6 +24,7 @@ export async function register() {
     try { (await import('./ext')).ext.boot?.(); } catch (e) { console.error('[ext] boot', (e as Error).message); }
     try { (await import('./lib/titles')).registerTitles(); } catch (e) { console.error('[titles]', (e as Error).message); }
     try { (await import('./lib/curator')).registerCurator(); } catch (e) { console.error('[memory]', (e as Error).message); }
+    try { (await import('./lib/night')).registerNight(); } catch (e) { console.error('[night]', (e as Error).message); }
     try { (await import('./lib/memoryRules')).registerRules(); } catch (e) { console.error('[rules]', (e as Error).message); }
     try { (await import('./lib/ops')).registerOps(); } catch (e) { console.error('[ops]', (e as Error).message); }
     try { (await import('./lib/code/janitor')).startJanitor(); } catch (e) { console.error('[code] janitor', (e as Error).message); }

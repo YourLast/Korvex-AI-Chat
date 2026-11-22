@@ -70,7 +70,7 @@ describe('три сценария', () => {
     expect(info.endHow).toBe('asked');
     expect(info.note).toContain('он попросил закончить');
     expect(info.note).not.toContain('Ещё не знаешь');
-    expect(info.note).toContain('пунктов не перечисляй');
+    expect(info.note).toContain('«Спасибо, запомнила:');
     expect(M.markIntroEnd('e2', info.endHow!, { chat: th })).toBe(true);
     expect(M.memoryMeta('e2').introEnd).toBeGreaterThan(0);
   });
@@ -172,13 +172,12 @@ describe('метки модели [[intro: …]]', () => {
     const th = TH('e9');
     await say(th, 'assistant', 'Чем занимаешься?'); await say(th, 'user', 'Пишу тексты для сайтов');
     const before = I.introView('e9').progress!.left;
-    expect(M.introAfterTurn('e9', th, 'Понял, копирайтер.\n[[intro: done=work skip=work_format done=nope]]')).toBe(false);
-    expect([...M.introMarked('e9', th)].sort()).toEqual(['work', 'work_format']);
+    expect(M.introAfterTurn('e9', th, 'Понял, копирайтер.\n[[intro: done=work skip=answer_format done=nope]]')).toBe(false);
+    expect([...M.introMarked('e9', th)].sort()).toEqual(['answer_format', 'work']);
     expect(M.parseIntroMarks('Ок.\n[[intro: done=[sample]]]\n[[intro: skip=[address]]]')).toMatchObject({ done: ['sample'], skip: ['address'], bad: [] });
     expect(I.introView('e9').progress!.left).toBeLessThan(before);
     const note = M.memoryBlockInfo('e9', { id: th, temporary: M.INTRO, createdAt: Date.now() - 1000 } as never).note!;
-    expect(note).not.toContain('[work_format]');
-    expect(note).toMatch(/\[o_tasks\]|\[acc_/);
+    expect(note).toMatch(/\[regprog\]|\[answer_format\]/);
     expect(M.introMarked('e9', TH('e1')).size).toBe(0);
   });
 });

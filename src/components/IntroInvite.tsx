@@ -34,30 +34,32 @@ export function Widget({ title, sub, acts, out, spin, testId, state, role = 'reg
 export function IntroInvite() {
   const t = useT();
   const router = useRouter();
-  const [show, setShow] = useState(false);
   const [rules, setRules] = useState(0);
-  const [ty, setTy] = useState(false);
+  const [night, setNight] = useState<{ notes: number; norms: number; fixes?: { id: string; th: string; fix: string }[] } | null>(null);
   const [out, leave] = useLeave();
   useEffect(() => {
     let gone = false;
-    void fetch('/api/memory/invite', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((j: { show?: boolean; rules?: number; ty?: boolean } | null) => { if (!gone) { setShow(!!j?.show); setRules(j?.rules ?? 0); setTy(!!j?.ty); } }).catch(() => {});
+    void fetch('/api/memory/invite', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).then((j: { rules?: number; night?: { notes: number; norms: number; fixes?: { id: string; th: string; fix: string }[] } | null } | null) => { if (!gone) { setRules(j?.rules ?? 0); setNight(j?.night ?? null); } }).catch(() => {});
     return () => { gone = true; };
   }, []);
-  const post = (action: 'later' | 'never' | 'rules-seen') => { void fetch('/api/memory/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) }).catch(() => {}); };
-  const act = (action: 'later' | 'never' | 'rules-seen') => { post(action); leave(() => { if (action === 'rules-seen') setRules(0); else setShow(false); }); };
-  if (rules > 0) return (
-    <Widget testId="rules-notice" role="status" out={out} title={t('tools.invite.rules', { n: rules })} sub={t('tools.invite.rulesS')} acts={<>
-      <Button kind="primary" onClick={() => { post('rules-seen'); router.push('/settings/memory'); }} testId="rules-open">{t('tools.invite.rulesOpen')}</Button>
-      <button type="button" className="icon-btn iiv-x" aria-label={t('tools.invite.rulesHide')} title={t('tools.invite.rulesHide')} onClick={() => act('rules-seen')} data-testid="rules-hide"><Icon n="x" sm /></button>
+  const send = (action: string) => { void fetch('/api/memory/invite', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }) }).catch(() => {}); };
+  const post = () => send('rules-seen');
+  if (rules <= 0 && night) {
+    const fix = night.fixes?.[0];
+    const parts = [night.notes ? t('tools.invite.nightNotes', { n: night.notes }) : '', night.norms ? t('tools.invite.nightNorms', { n: night.norms }) : ''].filter(Boolean);
+    const sum = parts.length ? t('tools.invite.night', { a: parts.join(', ') }) : null;
+    return (
+    <Widget testId="night-notice" role="status" out={out} title={fix ? fix.fix : sum ?? ''} sub={fix ? sum : null} acts={<>
+      <Button kind="primary" onClick={() => { send('night-seen'); router.push(fix ? `/c/${fix.th}#m-${fix.id}` : '/settings/memory'); }} testId="night-open">{t(fix ? 'tools.invite.nightChat' : 'tools.invite.rulesOpen')}</Button>
+      <button type="button" className="icon-btn iiv-x" aria-label={t('tools.invite.rulesHide')} title={t('tools.invite.rulesHide')} onClick={() => { send('night-seen'); leave(() => setNight(null)); }} data-testid="night-hide"><Icon n="x" sm /></button>
     </>} />
-  );
-  if (!show) return null;
-  const go = () => { setShow(false); router.push('/settings/memory#intro'); };
+    );
+  }
+  if (rules <= 0) return null;
   return (
-    <Widget testId="intro-invite" out={out} title={t(ty ? 'tools.invite.vTTy' : 'tools.invite.vT')} sub={t(ty ? 'tools.invite.vSTy' : 'tools.invite.vS')} acts={<>
-      <Button kind="primary" onClick={go} testId="invite-go">{t('tools.invite.vGoTime')}</Button>
-      <button type="button" className="iiv-never" onClick={() => act('never')} data-testid="invite-never">{t('tools.invite.vNever')}</button>
-      <button type="button" className="icon-btn iiv-x" aria-label={t('tools.invite.later')} title={t('tools.invite.later')} onClick={() => act('later')} data-testid="invite-later"><Icon n="x" sm /></button>
+    <Widget testId="rules-notice" role="status" out={out} title={t('tools.invite.rules', { n: rules })} sub={t('tools.invite.rulesS')} acts={<>
+      <Button kind="primary" onClick={() => { post(); router.push('/settings/memory'); }} testId="rules-open">{t('tools.invite.rulesOpen')}</Button>
+      <button type="button" className="icon-btn iiv-x" aria-label={t('tools.invite.rulesHide')} title={t('tools.invite.rulesHide')} onClick={() => { post(); leave(() => setRules(0)); }} data-testid="rules-hide"><Icon n="x" sm /></button>
     </>} />
   );
 }

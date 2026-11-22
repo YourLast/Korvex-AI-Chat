@@ -256,7 +256,7 @@ describe('знакомство (служебный чат)', () => {
     expect(first.body.tools).toBeUndefined();
     expect(first.q.startsWith('Давай познакомимся.\n\n[Служебная заметка Korvex')).toBe(true);
     expect(first.sys).toContain('## Знакомство');
-    expect(first.q).toMatch(/Ещё не знаешь \(по порядку\): чем занимается и в какой роли/);
+    expect(first.q).toMatch(/Ещё не знаешь \(по порядку\): чем он занимается/);
     expect(first.sys).not.toContain('Ещё не знаешь');
     expect(first.sys).not.toContain('Можно задать один короткий');
     let v = I.introView('a4');
@@ -289,7 +289,7 @@ describe('знакомство (служебный чат)', () => {
     expect(note).toContain('Узнал в этом разговоре: Зовут Мила; Дизайнер интерфейсов.');
     expect(note).not.toMatch(/Ещё не знаешь[^.]*как к нему обращаться/);
     expect(note).not.toMatch(/Ещё не знаешь[^.]*чем занимается/);
-    expect(note).toContain('с какими задачами чаще всего');
+    expect(note).toContain('с какими программами и форматами');
     expect(I.introThread('a4')!.titleManual).toBe(1);
     expect(engine.some((e) => e.user.includes('познакомимся'))).toBe(false);
     M.setPrefs('a4', { auto: true });

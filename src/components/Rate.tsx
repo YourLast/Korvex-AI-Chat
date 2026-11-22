@@ -1,18 +1,19 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import type { MsgView } from '@/lib/types';
-import { REASONS, type RatingView } from '@/lib/rating';
+import type { RatingView } from '@/lib/rating';
+import { createPortal } from 'react-dom';
 import { useT } from '@/lib/i18n/react';
 import { Icon } from './Icon';
-import { Popover } from './Popover';
+import '@/styles/user-memory.css';
+
+const LINE = ['long', 'format', 'misread', 'wrong', 'other'] as const;
 
 export function Rate({ m }: { m: MsgView }) {
   const tx = useT();
   const [r, setR] = useState<RatingView | null>(m.rating ?? null);
   const [open, setOpen] = useState(false);
-  const [reasons, setReasons] = useState<string[]>([]);
   const [comment, setComment] = useState('');
-  const [down, setDown] = useState<HTMLButtonElement | null>(null);
   const seq = useRef(0);
   const srv = m.rating ? `${m.rating.value}|${m.rating.reasons.join(',')}|${m.rating.comment}` : '';
   useEffect(() => { setR(m.rating ?? null); }, [m.id, srv]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -33,42 +34,53 @@ export function Rate({ m }: { m: MsgView }) {
     if (r?.value === v) { setR(null); setOpen(false); void put({ value: 0 }, prev); return; }
     setR({ value: v, reasons: [], comment: '' });
     void put({ value: v }, prev);
-    if (v === -1) { setReasons([]); setComment(''); setOpen(true); } else setOpen(false);
+    if (v === -1) { setComment(''); setOther(false); setDone(null); setOpen(true); } else setOpen(false);
   };
-  const submit = () => {
-    setOpen(false);
-    if (!reasons.length && !comment.trim()) return;
+  const pick = (id: string, note = '') => {
     const prev = r;
-    setR({ value: -1, reasons, comment: comment.trim() });
-    void put({ value: -1, reasons, comment }, prev);
+    const rs = id === 'other' ? (note.trim() ? ['other'] : []) : [id];
+    setR({ value: -1, reasons: rs, comment: note.trim() });
+    void put({ value: -1, reasons: rs, ...(note.trim() ? { comment: note.trim() } : {}) }, prev);
+    setDone(id === 'wrong' || id === 'misread' ? 'recheck' : 'thanks');
+    window.setTimeout(() => { setOpen(false); setDone(null); setOther(false); setComment(''); }, 2600);
   };
-  const toggle = (id: string) => setReasons((x) => (x.includes(id) ? x.filter((y) => y !== id) : [...x, id]));
+  const [done, setDone] = useState<null | 'thanks' | 'recheck'>(null);
+  const [other, setOther] = useState(false);
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => { setSlot(document.getElementById(`rate-why-${m.id}`)); }, [m.id, open]);
+  const line = !open ? null : done ? (
+    <div className="ans-line" role="status" data-testid="rate-done">{tx(done === 'recheck' ? 'rate.line.recheck' : 'rate.line.thanks')}</div>
+  ) : other ? (
+    <form className="ans-line ans-line--edit" data-testid="rate-other" onSubmit={(e) => { e.preventDefault(); pick('other', comment); }}>
+      <input className="ans-line-in" value={comment} maxLength={2000} autoFocus placeholder={tx('rate.line.otherPh')} aria-label={tx('rate.comment')} onChange={(e) => setComment(e.target.value)} data-testid="rate-comment" />
+      <span className="ans-line-acts">
+        <button type="submit" className="ans-link" disabled={!comment.trim()} data-testid="rate-send">{tx('rate.line.send')}</button>
+        <span aria-hidden="true"> · </span>
+        <button type="button" className="ans-link" onClick={() => setOther(false)} data-testid="rate-other-back">{tx('rate.skip')}</button>
+      </span>
+    </form>
+  ) : (
+    <div className="ans-line" data-testid="rate-why">
+      <span>{tx('rate.line')}</span>{' '}
+      {LINE.map((id, i) => (
+        <span key={id}>{i > 0 && <span aria-hidden="true"> · </span>}
+          <button type="button" className="ans-link" onClick={() => (id === 'other' ? setOther(true) : pick(id))} data-testid={`why-${id}`}>{tx(`rate.line.${id}`)}</button>
+        </span>
+      ))}
+      <span aria-hidden="true"> · </span>
+      <button type="button" className="ans-link ans-link--quiet" onClick={() => setOpen(false)} data-testid="rate-skip">{tx('rate.line.hide')}</button>
+    </div>
+  );
 
   return (
     <>
       <button type="button" className="icon-btn rate" aria-label={tx('rate.good')} aria-pressed={r?.value === 1} data-testid="rate-up" onClick={() => tap(1)}>
         <Icon n="thumb" sm />
       </button>
-      <button type="button" className="icon-btn rate" aria-label={tx('rate.bad')} aria-pressed={r?.value === -1} data-testid="rate-down" ref={setDown} onClick={() => tap(-1)}>
+      <button type="button" className="icon-btn rate" aria-label={tx('rate.bad')} aria-pressed={r?.value === -1} data-testid="rate-down" onClick={() => tap(-1)}>
         <Icon n="thumb" sm className="flip" />
       </button>
-      <Popover anchor={down} open={open} onClose={() => setOpen(false)} title={tx('rate.title')} sub={tx('rate.optional')} align="right" className="pop--rate" sheetClass="sheet--rate"
-        focusFirst=".why-chip" testId="rate-pop"
-        foot={<>
-          <span className="grow" />
-          <button type="button" className="btn btn--ghost" onClick={() => setOpen(false)} data-testid="rate-skip">{tx('rate.skip')}</button>
-          <button type="button" className="btn btn--primary" onClick={submit} disabled={!reasons.length && !comment.trim()} data-testid="rate-send">{tx('comp.send')}</button>
-        </>}>
-        <div className="why" role="group" aria-label={tx('rate.reason')}>
-          {REASONS.map((x) => (
-            <button type="button" key={x.id} className="why-chip" aria-pressed={reasons.includes(x.id)} data-testid={`why-${x.id}`} onClick={() => toggle(x.id)}>{tx(`rate.why.${x.id}`)}</button>
-          ))}
-        </div>
-        <label className="why-note">
-          <span className="sr">{tx('rate.comment')}</span>
-          <textarea rows={3} maxLength={2000} placeholder={tx('rate.commentPh')} value={comment} onChange={(e) => setComment(e.target.value)} data-testid="rate-comment" />
-        </label>
-      </Popover>
+      {line && slot ? createPortal(line, slot) : null}
     </>
   );
 }

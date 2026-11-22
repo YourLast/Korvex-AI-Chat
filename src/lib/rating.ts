@@ -4,6 +4,7 @@ export const REASONS = [
   { id: 'incomplete', label: 'не доделал' },
   { id: 'slow', label: 'медленно' },
   { id: 'format', label: 'формат' },
+  { id: 'long', label: 'длинно' },
   { id: 'other', label: 'другое' },
 ] as const;
 export type ReasonId = (typeof REASONS)[number]['id'];

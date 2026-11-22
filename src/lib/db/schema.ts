@@ -419,7 +419,10 @@ export type MemoryMeta = { askedName?: number; introAt?: number; introDone?: num
   introEnd?: number;
   introMarks?: { chat: string; done: string[]; skip: string[] };
   endReason?: string;
-  invite?: { start?: number; shown?: number; day?: string; later?: string; never?: number };
+  invite?: { start?: number; shown?: number; day?: string; later?: string; never?: number;
+    msg?: string; at?: number; laterN?: number; laterAt?: number };
+  likes?: Record<string, number>;
+  night?: { key: string; at?: number; notes?: number; norms?: number; seen?: number;  fixes?: { id: string; th: string; kind: string; fix: string }[] };
   rules?: { pending?: number; done?: number; n?: number; ids?: string[]; seen?: number; failed?: number; now?: number; later?: number; nowSeen?: number } };
 
 export const browserSessions = sqliteTable('browser_sessions', {
