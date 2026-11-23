@@ -216,6 +216,8 @@ export function mountElastic(host: HTMLElement, init: EOpts): ElasticHandle {
     const cs = rowBase.children;
     for (let i = 0; i < cs.length; i++) cs[i].className = `kxe-cell${i === near ? ' is-on' : ''}`;
     const ms = mrow.children;
+    const w = warmAt();
+    if (w >= 0) { const off = near !== w; mrow.classList.toggle('kxe-mrow--off', off); mrow.toggleAttribute('aria-hidden', off); return; }
     for (let i = 0; i < ms.length; i++) ms[i].classList.toggle('is-on', i === near);
   };
   const paintText = (animateIt: boolean) => {

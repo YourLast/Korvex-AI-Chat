@@ -78,6 +78,14 @@ describe("'warm': только тёплая метка под max и подск�
     expect(w[0].getAttribute('aria-label')).toBe('в 3 раза больше');
     expect(host.querySelector<HTMLElement>('.kxe-mult')!.hidden).toBe(true);
     expect(host.querySelector<HTMLElement>('.kxe-note')!.hidden).toBe(true);
+    const row = host.querySelector<HTMLElement>('.kxe-mrow')!;
+    expect(row.classList.contains('kxe-mrow--off')).toBe(true);
+    expect(row.getAttribute('aria-hidden')).not.toBeNull();
+    for (const [v, off] of [['max', false], ['low', true], ['off', true], ['max', false]] as const) {
+      h.update({ value: v });
+      expect([v, row.classList.contains('kxe-mrow--off'), row.hasAttribute('aria-hidden')]).toEqual([v, off, off]);
+    }
+    expect(host.querySelectorAll('[data-testid=lvl-warm]')).toHaveLength(1);
     h.update({ levels: ['low', 'max'].map((id) => ({ id, label: id, mult: 17 })), value: 'max' });
     expect(host.querySelector('[data-testid=lvl-warm]')).toBeNull();
     expect(host.querySelector<HTMLElement>('.kxe-mult')!.hidden).toBe(true);
