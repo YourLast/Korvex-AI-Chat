@@ -197,7 +197,8 @@ export function applyOps(userId: string, ops: Op[], refs: Map<string, string>, c
       }
       continue;
     }
-    const sure = o.sure !== false || (remember && o.asked);
+    const redo = asksDifferently(ctx.user) && (o.section === 'style' || o.section === 'rules' || (!!o.key && KEYS[o.key] === 'style'));
+    const sure = (o.sure !== false && !redo) || (remember && o.asked);
     let text = (sure ? o.text : stripHedge(o.text)).trim();
     if (!text) { skipped.push({ op: o.op, why: 'empty' }); continue; }
     if (isSecret(text)) { skipped.push({ op: o.op, why: 'secret' }); continue; }
@@ -364,6 +365,7 @@ async function runSignal(t: Task, url: string): Promise<'ok' | 'none' | 'skip' |
     if (/\d{3,}|ИНН|КПП|[«"]/u.test(got.pref)) return 'none';
     const w = addMemory(t.userId, { section: got.section, text: got.pref, origin: 'auto', sure: false, threadId: t.threadId, messageId: t.annotate });
     if (!w.ok || w.action === 'same') return 'none';
+    try { refreshWritingProfile(t.userId); } catch {  }
     const item: MemUpdItem = { op: 'add', text: w.row.text, id: w.row.id, maybe: w.row.sure === 0, section: w.row.section };
     const msg = db.select({ meta: schema.messages.meta }).from(schema.messages).where(eq(schema.messages.id, t.annotate)).get();
     if (msg) {

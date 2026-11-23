@@ -535,24 +535,36 @@ const EMOJI = /\p{Extended_Pictographic}/u;
 const TY = /(?<![\p{L}])(ты|тебя|тебе|тобой|твой|твоя|твоё|твое|твои|твоего|твоей|сделай|напиши|скажи|помоги|расскажи|объясни|подскажи|глянь|посмотри)(?![\p{L}])/iu;
 const VY = /(?<![\p{L}])(вы|вас|вам|вами|ваш|ваша|ваше|ваши|сделайте|напишите|скажите|помогите|расскажите|объясните|подскажите|посмотрите)(?![\p{L}])/iu;
 const SLANG = /(?<![\p{L}])(щас|чё|че|норм|ок|окей|плиз|пасиб|спс|типа|короче|кста|имхо|лол|ваще|прикол|го|хз|ну)(?![\p{L}])/iu;
-export function writingProfile(texts: string[]): string | null {
+export type ProfileSkip = { length?: boolean; emoji?: boolean; address?: boolean };
+export function writingProfile(texts: string[], skip: ProfileSkip = {}): string | null {
   const xs = texts.map((t) => t.replace(/```[\s\S]*?```/g, ' ').replace(/https?:\/\/\S+/g, ' ').trim()).filter((t) => t.length > 0 && t.length < 2000).slice(0, 40);
   if (xs.length < 5) return null;
   const wc = xs.map((t) => t.split(/\s+/).filter(Boolean).length).sort((a, b) => a - b);
   const med = wc[Math.floor(wc.length / 2)];
   const parts: string[] = [];
-  parts.push(med <= 4 ? 'очень коротко' : med <= 12 ? 'коротко' : med <= 35 ? 'средними сообщениями' : 'развёрнуто');
+  if (!skip.length) parts.push(med <= 4 ? 'очень коротко' : med <= 12 ? 'коротко' : med <= 35 ? 'средними сообщениями' : 'развёрнуто');
   const emo = xs.filter((t) => EMOJI.test(t)).length / xs.length;
-  parts.push(emo >= 0.3 ? 'часто с эмодзи' : emo > 0.05 ? 'иногда с эмодзи' : 'без эмодзи');
+  if (!skip.emoji) parts.push(emo >= 0.3 ? 'часто с эмодзи' : emo > 0.05 ? 'иногда с эмодзи' : 'без эмодзи');
   const ty = xs.filter((t) => TY.test(t)).length, vy = xs.filter((t) => VY.test(t)).length;
-  if (ty + vy >= 2) parts.push(ty >= vy * 2 ? 'на «ты»' : vy >= ty * 2 ? 'на «вы»' : 'то на «ты», то на «вы»');
+  if (ty + vy >= 2 && !skip.address) parts.push(ty >= vy * 2 ? 'на «ты»' : vy >= ty * 2 ? 'на «вы»' : 'то на «ты», то на «вы»');
   const low = xs.filter((t) => /^\p{Ll}/u.test(t)).length / xs.length;
   if (low >= 0.6) parts.push('часто с маленькой буквы');
   if (xs.filter((t) => SLANG.test(t)).length / xs.length >= 0.25) parts.push('разговорно');
   const cyr = xs.join(' ').match(/\p{Script=Cyrillic}/gu)?.length ?? 0, lat = xs.join(' ').match(/\p{Script=Latin}/gu)?.length ?? 0;
   const sr = xs.filter((t) => /[čćžšđ]/i.test(t)).length;
   parts.push(cyr >= lat * 1.5 ? 'по-русски' : sr >= 2 ? 'по-сербски' : lat >= cyr * 1.5 ? 'по-английски' : 'на нескольких языках');
+  if ((skip.length || skip.emoji || skip.address) && parts.every((x) => PROFILE_PLAIN.has(x))) return null;
   return `Пишет: ${parts.join(', ')}`;
+}
+const PROFILE_PLAIN = new Set(['без эмодзи', 'по-русски']);
+export function profileSkip(rows: MemoryRow[]): ProfileSkip {
+  const xs = rows.filter((r) => r.section === 'style' && r.key !== 'writes').map((r) => r.text);
+  const any = (re: RegExp) => xs.some((t) => re.test(t));
+  return {
+    length: rows.some((r) => r.key === 'length') || any(/(коротк|кратк|короче|лаконичн|сжат|одн(ой|у)\s+строк|подробн|развёрнут|развернут|длинн|short|brief|concise|detail)/iu),
+    emoji: rows.some((r) => r.key === 'emoji') || any(/(эмодзи|смайл|emoji)/iu),
+    address: rows.some((r) => r.key === 'address') || any(/(на\s+«?(ты|вы)»?(?![\p{L}]))/iu),
+  };
 }
 export function recentUserTexts(userId: string, limit = 40): string[] {
   const rows = getDb().select({ content: schema.messages.content, meta: schema.messages.meta }).from(schema.messages)
@@ -567,8 +579,13 @@ export function refreshWritingProfile(userId: string): WriteOut | null {
   const rows = listMemory(userId);
   const cur = rows.find((r) => r.key === 'writes');
   if (cur && cur.origin !== 'auto') return null;
-  const line = writingProfile(recentUserTexts(userId));
-  if (!line || (cur?.text === line && cur.sure === 0)) return null;
+  const texts = recentUserTexts(userId);
+  const line = writingProfile(texts, profileSkip(rows));
+  if (!line) {
+    if (cur && cur.sure === 0 && writingProfile(texts)) { getDb().delete(schema.userMemory).where(eq(schema.userMemory.id, cur.id)).run(); changed(userId); }
+    return null;
+  }
+  if (cur?.text === line && cur.sure === 0) return null;
   if (cur) {
     const set = { text: line, sure: 0, updatedAt: Date.now() };
     getDb().update(schema.userMemory).set(set).where(eq(schema.userMemory.id, cur.id)).run();
