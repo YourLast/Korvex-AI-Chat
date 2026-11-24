@@ -7,7 +7,7 @@ export type IngestResult = ({ ok: true } & Extracted) | { ok: false; status: num
 
 export const extractText = (data: Buffer, name: string): Promise<Extracted> => (ext.extractLocal ?? extractNode)(data, name);
 
-export async function ingestDocument(data: Buffer, name: string, chosenModelId: string | null | undefined, opts?: { uploadId?: string | null }): Promise<IngestResult> {
+export async function ingestDocument(data: Buffer, name: string, chosenModelId: string | null | undefined, opts?: { uploadId?: string | null; userId?: string | null }): Promise<IngestResult> {
   if (ext.ingestDocument) return ext.ingestDocument(data, name, chosenModelId, opts);
   let got: Extracted;
   try { got = await extractNode(data, name); } catch (e) { return { ok: false, status: 422, message: `Не удалось прочитать файл: ${(e as Error).message}` }; }

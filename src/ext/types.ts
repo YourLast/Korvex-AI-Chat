@@ -8,7 +8,7 @@ export type ServerExt = {
   introOpened?(userId: string, timezone?: string | null): void;
   beforeThreadsGone?(threadIds: string[]): void;
   afterThreadsGone?(userId: string, threadIds: string[]): void;
-  ingestDocument?(data: Buffer, name: string, chosenModelId: string | null | undefined, opts?: { uploadId?: string | null }): Promise<IngestResult>;
+  ingestDocument?(data: Buffer, name: string, chosenModelId: string | null | undefined, opts?: { uploadId?: string | null; userId?: string | null }): Promise<IngestResult>;
   extractLocal?(data: Buffer, name: string): Promise<{ text: string; info: Record<string, unknown> }>;
   claudeIdentity?(name: string): string;
   filesInMessage?(question: string, files: { id: string; name: string; text: string }[]): string;

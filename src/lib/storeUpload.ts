@@ -42,7 +42,7 @@ export async function storeUpload(p: StoreIn): Promise<StoreOut> {
   }
   const ext = path.extname(name).toLowerCase();
   const safeExt = /^\.[a-z0-9]{1,10}$/.test(ext) ? ext : '';
-  const ex = await ingestDocument(buf, name, p.modelId ?? null, p.uploadId ? { uploadId: p.uploadId } : undefined);
+  const ex = await ingestDocument(buf, name, p.modelId ?? null, { uploadId: p.uploadId ?? null, userId });
   let text: string, info: Record<string, unknown>;
   if (ex.ok) { text = ex.text; info = ex.info; }
   else if (!OK_EXT.has(ext)) {
