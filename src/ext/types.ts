@@ -11,5 +11,6 @@ export type ServerExt = {
   ingestDocument?(data: Buffer, name: string, chosenModelId: string | null | undefined, opts?: { uploadId?: string | null; userId?: string | null }): Promise<IngestResult>;
   extractLocal?(data: Buffer, name: string): Promise<{ text: string; info: Record<string, unknown> }>;
   claudeIdentity?(name: string): string;
+  claudeMaker?: string;
   filesInMessage?(question: string, files: { id: string; name: string; text: string }[]): string;
 };
